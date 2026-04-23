@@ -1,6 +1,9 @@
-FROM tileforgeacr.azurecr.io/nginx:alpine
-COPY index.html /usr/share/nginx/html/index.html
-COPY phi.html /usr/share/nginx/html/phi.html
-COPY wavefunction.html /usr/share/nginx/html/wavefunction.html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+FROM node:20-alpine
+WORKDIR /app
+COPY server.js .
+RUN mkdir -p public
+COPY index.html public/index.html
+COPY phi.html public/phi.html
+COPY wavefunction.html public/wavefunction.html
 EXPOSE 80
+CMD ["node", "server.js"]

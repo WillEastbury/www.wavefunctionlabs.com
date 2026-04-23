@@ -146,6 +146,19 @@ const OBSTACLE_TYPES = [
     { name: 'ENTROPY', color: '#a55eea', w: 40, h: 15, speed: 0.6, shape: 'rect' },
     { name: 'CLASSICAL LIMIT', color: '#ff9f43', w: 50, h: 12, speed: 0.7, shape: 'rect' },
     { name: 'EIGENSTATE', color: '#ee5a24', w: 18, h: 18, speed: 1.4, shape: 'diamond' },
+    { name: 'HEISENBERG', color: '#c44dff', w: 22, h: 22, speed: 1.1, shape: 'circle', jitter: true },
+    { name: 'SCHRÖDINGER', color: '#7bed9f', w: 28, h: 28, speed: 0.9, shape: 'diamond', blink: true },
+    { name: 'TUNNELLER', color: '#00d4ff', w: 16, h: 16, speed: 2.0, shape: 'circle' },
+    { name: 'DARK ENERGY', color: '#2c003e', w: 45, h: 18, speed: 0.5, shape: 'rect', invisible: true },
+    { name: 'PLANCK WALL', color: '#ff6348', w: 60, h: 10, speed: 0.4, shape: 'rect' },
+    { name: 'ENTANGLE', color: '#ff79c6', w: 20, h: 20, speed: 1.0, shape: 'circle', pair: true },
+    { name: 'FERMION', color: '#f8a5c2', w: 15, h: 24, speed: 1.3, shape: 'diamond' },
+    { name: 'BOSON', color: '#63cdda', w: 24, h: 15, speed: 1.5, shape: 'rect' },
+    { name: 'GRAVITY WELL', color: '#574b90', w: 35, h: 35, speed: 0.3, shape: 'circle', pull: true },
+    { name: 'NOISE', color: '#888', w: 12, h: 12, speed: 1.8, shape: 'rect', swarm: true },
+    { name: 'SINGULARITY', color: '#fff', w: 10, h: 10, speed: 0.2, shape: 'circle', grow: true },
+    { name: 'RED SHIFT', color: '#e74c3c', w: 35, h: 14, speed: 1.0, shape: 'rect', accel: true },
+    { name: 'PHASE FLIP', color: '#1abc9c', w: 22, h: 22, speed: 1.1, shape: 'diamond', zigzag: true },
 ];
 
 function initGame() {
@@ -295,7 +308,17 @@ function drawPlayer() {
 }
 
 function drawObstacle(ob) {
-    const a = ob.y < 50 ? ob.y / 50 : 1;
+    let a = ob.y < 50 ? ob.y / 50 : 1;
+
+    // Schrödinger blinks in and out
+    if (ob.type.blink && Math.sin((ob.age || 0) * 6) > 0.3) return;
+
+    // Dark energy is nearly invisible until close to player
+    if (ob.type.invisible) {
+        const dy = Math.abs(ob.y - game.py);
+        a *= Math.max(0.08, 1 - dy / 200);
+    }
+
     ctx.globalAlpha = a;
     ctx.shadowColor = ob.type.color;
     ctx.shadowBlur = 10;
@@ -315,13 +338,24 @@ function drawObstacle(ob) {
         ctx.beginPath();
         ctx.arc(cx, cy, hw, 0, Math.PI * 2);
         ctx.fill();
+        // Gravity well draws pull ring
+        if (ob.type.pull) {
+            ctx.strokeStyle = `rgba(87,75,144,${0.2 + Math.sin((ob.age||0) * 3) * 0.15})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 75, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 120, 0, Math.PI * 2);
+            ctx.stroke();
+        }
     } else {
         ctx.fillRect(cx - hw, cy - hh, ob.type.w, ob.type.h);
     }
 
     // Label
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#07070c';
+    ctx.fillStyle = ob.type.invisible ? ob.type.color : '#07070c';
     ctx.font = 'bold 7px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillText(ob.type.name, cx, cy + 3);
@@ -422,22 +456,56 @@ function update(dt) {
         const type = OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
         const roadTop = getRoadEdges(0);
         const x = roadTop.left + Math.random() * (roadTop.right - roadTop.left);
-        game.obstacles.push({ x, y: -30, type });
+        const ob = { x, y: -30, type, age: 0, phase: Math.random() * Math.PI * 2 };
+        game.obstacles.push(ob);
+
+        // Entangled pair spawns a mirror obstacle
+        if (type.pair) {
+            const mirror = roadTop.left + roadTop.right - x;
+            game.obstacles.push({ x: mirror, y: -30, type, age: 0, phase: ob.phase + Math.PI });
+        }
+
+        // Noise swarm spawns a cluster
+        if (type.swarm) {
+            for (let s = 0; s < 4; s++) {
+                game.obstacles.push({
+                    x: x + (Math.random() - 0.5) * 60,
+                    y: -30 - Math.random() * 40,
+                    type, age: 0, phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
         game.lastObstacle = Math.max(0.3, 1.5 / game.difficultyMult);
     }
 
     // Update obstacles
     for (let i = game.obstacles.length - 1; i >= 0; i--) {
         const ob = game.obstacles[i];
+        ob.age += dt;
         ob.y += game.speed * ob.type.speed * 2.5;
 
         // Road curve moves obstacles too
         const t = (H - ob.y) / H;
         ob.x -= game.roadCurve * game.speed * 0.15 * (1 - t);
 
+        // Special behaviours
+        if (ob.type.jitter) ob.x += (Math.random() - 0.5) * 4;
+        if (ob.type.zigzag) ob.x += Math.sin(ob.age * 8) * 3;
+        if (ob.type.accel) ob.y += ob.age * 2;
+        if (ob.type.grow) { ob.type = {...ob.type, w: Math.min(50, 10 + ob.age * 15), h: Math.min(50, 10 + ob.age * 15)}; }
+        if (ob.type.pull) {
+            const pullDx = ob.x - game.px;
+            const pullDy = ob.y - game.py;
+            const pullDist = Math.sqrt(pullDx * pullDx + pullDy * pullDy);
+            if (pullDist < 150 && pullDist > 5) {
+                game.px += (pullDx / pullDist) * 0.8;
+            }
+        }
+
         if (ob.y > H + 50) { game.obstacles.splice(i, 1); continue; }
 
-        // Collision
+        // Collision — invisible obstacles only show on proximity
         const dx = Math.abs(ob.x - game.px);
         const dy = Math.abs(ob.y - game.py);
         const hitW = (ob.type.w + PLAYER_W) / 2 - 4;
@@ -496,15 +564,22 @@ function showScreen(id) {
 }
 
 function hideUI() {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('ui-overlay').style.display = 'none';
 }
 
 function showTitle() {
     if (animId) cancelAnimationFrame(animId);
+    animId = null;
     document.getElementById('hud').style.display = 'none';
     document.getElementById('touch-left').style.display = 'none';
     document.getElementById('touch-right').style.display = 'none';
+    game = initGame();
+    game.speed = 1.5;
+    game.roadCurve = 0.5;
+    lastTime = performance.now();
     showScreen('screen-title');
+    requestAnimationFrame(bgLoop);
 }
 
 function startGame() {
@@ -526,16 +601,25 @@ function endGame() {
     document.getElementById('touch-left').style.display = 'none';
     document.getElementById('touch-right').style.display = 'none';
 
-    // Check if high score
-    const scores = loadScores();
-    const alltime = scores.alltime || [];
-    const isHigh = alltime.length < 20 || score > (alltime[alltime.length - 1]?.score || 0);
-
-    if (isHigh && score > 0) {
-        document.getElementById('name-prompt').style.display = 'block';
-        document.getElementById('gameover-buttons').style.display = 'none';
-        document.getElementById('name-input').value = '';
-        setTimeout(() => document.getElementById('name-input').focus(), 100);
+    // Check if high score (fetch from server)
+    if (score > 0) {
+        fetch('/api/scores').then(r => r.json()).then(data => {
+            const alltime = data.alltime || [];
+            const isHigh = alltime.length < 20 || score > (alltime[alltime.length - 1]?.score || 0);
+            if (isHigh) {
+                document.getElementById('name-prompt').style.display = 'block';
+                document.getElementById('gameover-buttons').style.display = 'none';
+                document.getElementById('name-input').value = '';
+                setTimeout(() => document.getElementById('name-input').focus(), 100);
+            } else {
+                document.getElementById('name-prompt').style.display = 'none';
+                document.getElementById('gameover-buttons').style.display = 'block';
+            }
+        }).catch(() => {
+            document.getElementById('name-prompt').style.display = 'block';
+            document.getElementById('gameover-buttons').style.display = 'none';
+            document.getElementById('name-input').value = '';
+        });
     } else {
         document.getElementById('name-prompt').style.display = 'none';
         document.getElementById('gameover-buttons').style.display = 'block';
@@ -544,50 +628,18 @@ function endGame() {
     showScreen('screen-gameover');
 }
 
-// ── High Scores ──
-const SCORES_KEY = 'wfl-wavefunction-scores';
+// ── High Scores (Server-side) ──
 
-function loadScores() {
-    try {
-        return JSON.parse(localStorage.getItem(SCORES_KEY)) || { alltime: [], daily: {} };
-    } catch { return { alltime: [], daily: {} }; }
-}
-
-function saveScores(data) {
-    localStorage.setItem(SCORES_KEY, JSON.stringify(data));
-}
-
-function todayKey() {
-    return new Date().toISOString().slice(0, 10);
-}
-
-function submitScore() {
+async function submitScore() {
     const name = document.getElementById('name-input').value.trim() || 'φ operator';
     const score = Math.floor(game.dist);
-    const data = loadScores();
-    const today = todayKey();
-    const entry = { name, score, date: today };
-
-    // All time
-    if (!data.alltime) data.alltime = [];
-    data.alltime.push(entry);
-    data.alltime.sort((a, b) => b.score - a.score);
-    data.alltime = data.alltime.slice(0, 20);
-
-    // Daily
-    if (!data.daily) data.daily = {};
-    if (!data.daily[today]) data.daily[today] = [];
-    data.daily[today].push(entry);
-    data.daily[today].sort((a, b) => b.score - a.score);
-    data.daily[today] = data.daily[today].slice(0, 10);
-
-    // Clean old daily entries (keep last 7 days)
-    const keys = Object.keys(data.daily).sort();
-    while (keys.length > 7) {
-        delete data.daily[keys.shift()];
-    }
-
-    saveScores(data);
+    try {
+        await fetch('/api/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, score })
+        });
+    } catch (e) { console.warn('Score submit failed', e); }
 
     document.getElementById('name-prompt').style.display = 'none';
     document.getElementById('gameover-buttons').style.display = 'block';
@@ -618,9 +670,13 @@ function escHtml(s) {
 }
 
 function showScores() {
-    const data = loadScores();
-    renderScoreList(document.getElementById('scores-alltime'), data.alltime || []);
-    renderScoreList(document.getElementById('scores-today'), (data.daily || {})[todayKey()] || []);
+    fetch('/api/scores').then(r => r.json()).then(data => {
+        renderScoreList(document.getElementById('scores-alltime'), data.alltime || []);
+        renderScoreList(document.getElementById('scores-today'), data.today || []);
+    }).catch(() => {
+        renderScoreList(document.getElementById('scores-alltime'), []);
+        renderScoreList(document.getElementById('scores-today'), []);
+    });
     showScreen('screen-scores');
 }
 

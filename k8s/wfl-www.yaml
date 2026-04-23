@@ -20,6 +20,9 @@ spec:
           image: tileforgeacr.azurecr.io/wfl-www:v1arm
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: scores-data
+              mountPath: /data
           readinessProbe:
             httpGet:
               path: /
@@ -39,6 +42,10 @@ spec:
             limits:
               cpu: 200m
               memory: 64Mi
+      volumes:
+        - name: scores-data
+          persistentVolumeClaim:
+            claimName: wfl-www-scores
 ---
 apiVersion: v1
 kind: Service
@@ -89,3 +96,15 @@ spec:
                 name: wfl-www
                 port:
                   number: 80
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wfl-www-scores
+  namespace: wfl-www
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
