@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bedlam
+  namespace: games
+  labels:
+    app: bedlam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bedlam
+  template:
+    metadata:
+      labels:
+        app: bedlam
+    spec:
+      containers:
+        - name: bedlam
+          image: tileforgeacr.azurecr.io/bedlam:v1
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bedlam
+  namespace: games
+spec:
+  selector:
+    app: bedlam
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hambargness
+  namespace: games
+  labels:
+    app: hambargness
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hambargness
+  template:
+    metadata:
+      labels:
+        app: hambargness
+    spec:
+      containers:
+        - name: hambargness
+          image: tileforgeacr.azurecr.io/hambargness:v1
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hambargness
+  namespace: games
+spec:
+  selector:
+    app: hambargness
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bedlam
+  namespace: games
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - bedlam.wavefunctionlabs.com
+      secretName: bedlam-tls
+  rules:
+    - host: bedlam.wavefunctionlabs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bedlam
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hambargness
+  namespace: games
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - hambargness.wavefunctionlabs.com
+      secretName: hambargness-tls
+  rules:
+    - host: hambargness.wavefunctionlabs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hambargness
+                port:
+                  number: 80

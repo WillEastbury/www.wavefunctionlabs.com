@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wfl-www
+  namespace: wfl-www
+  labels:
+    app: wfl-www
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wfl-www
+  template:
+    metadata:
+      labels:
+        app: wfl-www
+    spec:
+      containers:
+        - name: wfl-www
+          image: tileforgeacr.azurecr.io/wfl-www:v1arm
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wfl-www
+  namespace: wfl-www
+spec:
+  selector:
+    app: wfl-www
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wfl-www
+  namespace: wfl-www
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - www.wavefunctionlabs.com
+        - wavefunctionlabs.com
+      secretName: wfl-www-tls
+  rules:
+    - host: www.wavefunctionlabs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wfl-www
+                port:
+                  number: 80
+    - host: wavefunctionlabs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wfl-www
+                port:
+                  number: 80
