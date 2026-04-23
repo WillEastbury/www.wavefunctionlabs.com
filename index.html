@@ -743,6 +743,7 @@
         .wf-me-links:hover{opacity:1}
         .wf-me-links a{font-size:.72rem;color:var(--wf-muted);letter-spacing:.06em;text-transform:lowercase;transition:color .2s;text-decoration:none;border-bottom:1px solid transparent}
         .wf-me-links a:hover{color:var(--wf-cyan);border-bottom-color:var(--wf-cyan)}
+        .wf-tile-group-label{font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--wf-muted);margin:2rem 0 .6rem;padding-left:.2rem;opacity:.55}
 
         /* ── Off-System segments ── */
         .wf-seg{min-height:80vh;display:flex;flex-direction:column;justify-content:center;padding:4rem 2rem;max-width:700px;margin:0 auto;position:relative}
@@ -778,15 +779,15 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
     <nav class="wf-nav">
         <div class="wf-nav-brand" onclick="route('home')" style="cursor: pointer;">Ψ<span style="font-size:.85rem;font-weight:400;letter-spacing:.06em;">ill</span> <span style="font-size:1.6rem;font-weight:700;">ε</span><span style="font-size:.85rem;font-weight:400;letter-spacing:.06em;">astbury</span></div>
         <div class="wf-nav-links">
-            <a href="#/cognition" data-route="cognition">🧠 cognition</a>
-            <a href="#/forge" data-route="forge">⚒️ forge</a>
-            <a href="#/swarm" data-route="swarm">🐝 swarm</a>
-            <a href="#/metal" data-route="metal">🔌 metal</a>
-            <a href="#/play" data-route="play">🃏 play</a>
-            <a href="#/collapse" data-route="collapse">❓ metaphor</a>
-            <a href="#/broadcast" data-route="broadcast">🎙️ broadcast</a>
-            <a href="#/me" data-route="me">👤 me</a>
-            <a href="#/signal" data-route="signal">📡 signal (cv)</a>
+            <a href="#/cognition" data-route="cognition" title="How I think about thinking — mental models, pattern recognition, first principles">🧠 cognition</a>
+            <a href="#/forge" data-route="forge" title="Tools, frameworks and systems I've built from scratch">⚒️ forge</a>
+            <a href="#/swarm" data-route="swarm" title="Distributed systems, AI agents, and coordinated intelligence">🐝 swarm</a>
+            <a href="#/metal" data-route="metal" title="Bare metal, hardware, low-level performance and real silicon">🔌 metal</a>
+            <a href="#/play" data-route="play" title="Games I've built — strategy, word, card, and chaos">🃏 play</a>
+            <a href="#/collapse" data-route="collapse" title="The wavefunction metaphor — how this site models cognition and decisions">❓ metaphor</a>
+            <a href="#/broadcast" data-route="broadcast" title="Talks, streams, content, and public-facing output">🎙️ broadcast</a>
+            <a href="#/me" data-route="me" title="Will Eastbury — builder, thinker, family man, DJ, maker of things">👤 me</a>
+            <a href="#/signal" data-route="signal" title="CV — 30 years of experience, skills, certifications, and career history">📡 signal (cv)</a>
         </div>
     </nav>
 
@@ -3774,23 +3775,54 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
     <div id="me" class="wf-section">
         <h1 class="wf-section-hdr">Will Eastbury</h1>
         <p class="wf-section-desc">Builder. Bare metal to cloud. Bytes over everything.</p>
+
+        <div class="wf-tile-group-label">how i think</div>
         <div class="wf-tiles">
-            <div class="wf-tile" onclick="route('me/off-system')">
-                <div class="wf-tile-name">Off-System</div>
-                <div class="wf-tile-desc">the runtime environment behind the cognition. family, builds, signal, cost.</div>
+            <div class="wf-tile" onclick="route('me/first-principles')">
+                <div class="wf-tile-name">First Principles</div>
+                <div class="wf-tile-desc">IO dominates everything. abstraction is a tax. the simplest path is the fastest.</div>
                 <span class="wf-tile-action">read</span>
             </div>
-            <div class="wf-tile" onclick="route('me/how-i-think')">
-                <div class="wf-tile-name">How I Think</div>
-                <div class="wf-tile-desc">first principles. constraints as features. propagation over ceremony.</div>
-                <span class="wf-tile-action">read</span>
-            </div>
-            <div class="wf-tile" onclick="route('me/what-i-build')">
-                <div class="wf-tile-name">What I Build</div>
-                <div class="wf-tile-desc">from silicon to software to a bus in a field. if it can be built, it will be.</div>
+            <div class="wf-tile" onclick="route('me/operating-model')">
+                <div class="wf-tile-name">Operating Model</div>
+                <div class="wf-tile-desc">30 years across every part of the trade. idea → system → proof → deal.</div>
                 <span class="wf-tile-action">read</span>
             </div>
         </div>
+
+        <div class="wf-tile-group-label">what i build</div>
+        <div class="wf-tiles">
+            <div class="wf-tile" onclick="route('me/systems')">
+                <div class="wf-tile-name">Systems</div>
+                <div class="wf-tile-desc">ultra-low allocation architectures. custom storage engines. AI pipelines. bytes through a system, optimised.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" onclick="route('me/builds')">
+                <div class="wf-tile-name">Builds</div>
+                <div class="wf-tile-desc">pirate ships, home bars, BBQ kitchens, DJ rigs, F1 simulators, a bus. make it real, make it work.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+        </div>
+
+        <div class="wf-tile-group-label">off-system</div>
+        <div class="wf-tiles">
+            <div class="wf-tile" onclick="route('me/family')">
+                <div class="wf-tile-name">Family</div>
+                <div class="wf-tile-desc">klaire. bradley. chloe. the scheduler, the clock, and the reason any of this runs at all.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" onclick="route('me/signal')">
+                <div class="wf-tile-name">Signal &amp; Rhythm</div>
+                <div class="wf-tile-desc">F1 and rave energy are the same pattern. telemetry, timing, knowing when to commit.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" onclick="route('me/constraints')">
+                <div class="wf-tile-name">Constraints</div>
+                <div class="wf-tile-desc">autism and ADHD-C. not a label — the constraints that shaped the operating model.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+        </div>
+
         <div class="wf-me-links">
             <a href="https://www.linkedin.com/in/willeastbury" target="_blank">LinkedIn</a>
             <a href="https://github.com/WillEastbury" target="_blank">GitHub</a>
@@ -3804,12 +3836,11 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
         </div>
     </div>
 
-    <!-- How I Think sub-page -->
-    <div id="me/how-i-think" class="wf-section">
+    <!-- me/first-principles -->
+    <div id="me/first-principles" class="wf-section">
         <a class="wf-back" onclick="route('me')">← back to me</a>
-
         <div class="wf-seg">
-            <div class="wf-seg-label">me / how i think</div>
+            <div class="wf-seg-label">me / first principles</div>
             <h2>First principles. Always.</h2>
             <p>I build systems that move at the speed of thought.</p>
             <p>Not frameworks. Not abstraction layered on abstraction.<br>
@@ -3824,7 +3855,11 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             <p>Computation, at its core, is just propagation.<br>
             Everything else is ceremony.</p>
         </div>
+    </div>
 
+    <!-- me/operating-model -->
+    <div id="me/operating-model" class="wf-section">
+        <a class="wf-back" onclick="route('me')">← back to me</a>
         <div class="wf-seg">
             <div class="wf-seg-label">me / operating model</div>
             <h2>Full-spectrum, full wavefunction operator.</h2>
@@ -3834,17 +3869,15 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             <p>30 years across every part of the trade — engineering, consulting, development, analysis, management, leadership, making, breaking. From low-level code all the way up to platform, AI, and commercial strategy at Microsoft. Somewhere along the way I stopped caring how things are supposed to be built, and started focusing on how they actually behave under pressure.</p>
             <p>The "Metaphor" side of this site is how I model my own cognition: triggers, flow, overload, recovery. Not as theory, but as a working system I can reason about.</p>
         </div>
-
         <div class="wf-seg wf-seg-coda">
             <p>I don't operate in a single state.<br>I explore the space, hold multiple possibilities, and collapse deliberately.</p>
             <p class="wf-seg-muted" style="font-style:normal;margin-top:1rem;">Sometimes that looks like code. Sometimes a system. Sometimes a bus in a field with a firepit and music playing. Sometimes with headphones on and music blasting. Sometimes kissing a virtual apex and accelerating through the corner. Sometimes it's making a curry or a themed night with the family. Sometimes it's a pink-themed mystery trail across London with my wife. Life is never dull. Same underlying model.</p>
         </div>
     </div>
 
-    <!-- What I Build sub-page -->
-    <div id="me/what-i-build" class="wf-section">
+    <!-- me/systems -->
+    <div id="me/systems" class="wf-section">
         <a class="wf-back" onclick="route('me')">← back to me</a>
-
         <div class="wf-seg">
             <div class="wf-seg-label">me / systems</div>
             <h2>I design and build systems where constraints are the feature.</h2>
@@ -3857,11 +3890,15 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             </ul>
             <p>If it can be reduced to bytes moving through a system, I can optimise it.</p>
         </div>
+    </div>
 
+    <!-- me/builds -->
+    <div id="me/builds" class="wf-section">
+        <a class="wf-back" onclick="route('me')">← back to me</a>
         <div class="wf-seg">
-            <div class="wf-seg-label">me / physical builds</div>
+            <div class="wf-seg-label">me / builds</div>
             <h2>That mindset doesn't stop at software.</h2>
-            <p>If it can be built with a saw, pipecutter, screwdriver, hammer or drill, I can probably build it.</p>
+            <p>If it can be built with a saw, pipecutter, screwdriver, hammer or drill, I can probably build it. These are not hobbies — they're live systems involving flow, timing, feedback, load, and experience design.</p>
             <p><strong style="color:#e2e8f0;">I build things. Properly.</strong></p>
             <div class="wf-seg-builds">
                 <div class="wf-seg-build">
@@ -3869,59 +3906,12 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                     <p>Full-scale kids pirate ship. Structural engineering meets imagination.</p>
                 </div>
                 <div class="wf-seg-build">
-                    <h4>The Pile On Inn &amp; Garden Bar</h4>
-                    <p>Two full home bars from raw materials. Experience design — lighting, layout, atmosphere.</p>
-                </div>
-                <div class="wf-seg-build">
-                    <h4>F1 Simulator Rig</h4>
-                    <p>Full build. Performance, telemetry, optimisation. Feel the data, adjust, iterate.</p>
-                </div>
-                <div class="wf-seg-build">
-                    <h4>Bussy</h4>
-                    <p>A Mellor disabled transport bus converted into a motorhome. Half engineering, half adventure, fully real.</p>
-                </div>
-            </div>
-            <p class="wf-seg-muted">Same pattern everywhere: take something abstract, make it real, make it work.</p>
-        </div>
-    </div>
-
-    <!-- Off-System sub-page -->
-    <div id="me/off-system" class="wf-section">
-        <a class="wf-back" onclick="route('me')">← back to me</a>
-
-        <!-- Segment 1: Origin -->
-        <div class="wf-seg">
-            <div class="wf-seg-label">off-system / origin</div>
-            <h2>This is not a bio. It's the runtime environment that produced the cognition.</h2>
-            <p>Identity isn't a list of traits. It's emergent. The output of lived experience, accumulated load, repeated failure, and the rare moments where everything aligns and something real gets built.</p>
-            <p>What follows is the system behind the thinking. The environments, the people, the builds, the constraints. Not curated. Observed.</p>
-            <p class="wf-seg-muted">WaveFunctionLabs is a cognition log and a system forge. This is where the raw material comes from.</p>
-        </div>
-
-        <!-- Segment 2: Core System -->
-        <div class="wf-seg">
-            <div class="wf-seg-label">off-system / core system</div>
-            <h2>Klaire. Bradley. Chloe.</h2>
-            <p>Not a separate "life section". This is the main thread.</p>
-            <p>Klaire keeps the whole system stable when it shouldn't be. She absorbs the spikes, manages the load, and makes space for the kind of thinking that only happens when someone else is holding the line. Pink is non-negotiable. So is she.</p>
-            <p>Bradley asks questions that break your assumptions before lunch. He doesn't know he's debugging your worldview, but he is. Every time.</p>
-            <p>Chloe operates on pure instinct and zero latency. No buffer, no queue, just immediate response. The kind of signal clarity most systems never achieve.</p>
-            <p class="wf-seg-accent">These aren't background processes. They're the scheduler, the clock, and the reason any of this runs at all.</p>
-        </div>
-
-        <!-- Segment 3: Live Builds -->
-        <div class="wf-seg">
-            <div class="wf-seg-label">off-system / live builds</div>
-            <h2>The same system thinking, applied in different mediums.</h2>
-            <p>These are not hobbies. They're live systems — each one involving flow, timing, feedback, load, and experience design.</p>
-            <div class="wf-seg-builds">
-                <div class="wf-seg-build">
                     <h4>Garden BBQ Kitchen</h4>
                     <p>Heat management, timing across multiple zones, throughput under pressure. Feeding people is a real-time system with no rollback.</p>
                 </div>
                 <div class="wf-seg-build">
-                    <h4>The Pile On Inn</h4>
-                    <p>Garden bar. Built from raw materials. Experience design — lighting, layout, atmosphere. A venue, not furniture.</p>
+                    <h4>The Pile On Inn &amp; Garden Bar</h4>
+                    <p>Two full home bars from raw materials. Experience design — lighting, layout, atmosphere. A venue, not furniture.</p>
                 </div>
                 <div class="wf-seg-build">
                     <h4>Integrated DJ Rig</h4>
@@ -3929,15 +3919,36 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                 </div>
                 <div class="wf-seg-build">
                     <h4>F1 Simulator</h4>
-                    <p>Full rig build. Performance, telemetry, optimisation. The same feedback loop that drives system tuning — feel the data, adjust, iterate.</p>
+                    <p>Full rig build. Performance, telemetry, optimisation. Feel the data, adjust, iterate. The same feedback loop that drives system tuning.</p>
+                </div>
+                <div class="wf-seg-build">
+                    <h4>Bussy</h4>
+                    <p>A Mellor disabled transport bus converted into a motorhome. Half engineering, half adventure, fully real.</p>
                 </div>
             </div>
-            <p class="wf-seg-muted">Same pattern, every time: take something abstract, make it physical, make it work under load.</p>
+            <p class="wf-seg-muted">Same pattern everywhere: take something abstract, make it real, make it work under load.</p>
         </div>
+    </div>
 
-        <!-- Segment 4: Signal & Rhythm -->
+    <!-- me/family -->
+    <div id="me/family" class="wf-section">
+        <a class="wf-back" onclick="route('me')">← back to me</a>
         <div class="wf-seg">
-            <div class="wf-seg-label">off-system / signal</div>
+            <div class="wf-seg-label">me / family</div>
+            <h2>Klaire. Bradley. Chloe.</h2>
+            <p>Not a separate "life section". This is the main thread.</p>
+            <p>Klaire keeps the whole system stable when it shouldn't be. She absorbs the spikes, manages the load, and makes space for the kind of thinking that only happens when someone else is holding the line. Pink is non-negotiable. So is she.</p>
+            <p>Bradley asks questions that break your assumptions before lunch. He doesn't know he's debugging your worldview, but he is. Every time.</p>
+            <p>Chloe operates on pure instinct and zero latency. No buffer, no queue, just immediate response. The kind of signal clarity most systems never achieve.</p>
+            <p class="wf-seg-accent">These aren't background processes. They're the scheduler, the clock, and the reason any of this runs at all.</p>
+        </div>
+    </div>
+
+    <!-- me/signal -->
+    <div id="me/signal" class="wf-section">
+        <a class="wf-back" onclick="route('me')">← back to me</a>
+        <div class="wf-seg">
+            <div class="wf-seg-label">me / signal &amp; rhythm</div>
             <h2>F1 and rave energy are the same underlying pattern.</h2>
             <p>F1 is performance telemetry made visceral. Hundredths of a second. Tyre degradation curves. Setup choices that compound over 50 laps. It's not spectating — it's reading a system under load and feeling where it's about to break.</p>
             <p>DJing is the same thing in a different medium. Signal, rhythm, state control. Reading a room is reading a system. Knowing when to push, when to hold, when to drop everything and rebuild the energy from nothing.</p>
@@ -3945,10 +3956,13 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             <p>These days the sets are quieter, but the pattern recognition never stopped. The feedback loop between signal and response — that's the same muscle used in systems design, in negotiation, in engineering under pressure.</p>
             <p class="wf-seg-accent">It was never about the music or the cars. It was always about signal, timing, and knowing when to commit.</p>
         </div>
+    </div>
 
-        <!-- Segment 5: Constraints -->
+    <!-- me/constraints -->
+    <div id="me/constraints" class="wf-section">
+        <a class="wf-back" onclick="route('me')">← back to me</a>
         <div class="wf-seg">
-            <div class="wf-seg-label">off-system / constraints</div>
+            <div class="wf-seg-label">me / constraints</div>
             <h2>Shaped by what it cost.</h2>
             <div class="wf-seg-constraint">
                 <p>Autism and ADHD-C. Not a label — a set of constraints that shaped the operating model.</p>
@@ -3959,14 +3973,8 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             <p>This isn't listed for sympathy. It's listed because it's real, and because the capabilities on the other pages have a cost that isn't visible from the output alone.</p>
             <p class="wf-seg-muted">The need for understanding isn't weakness. It's the minimum viable input for a system that runs this hot.</p>
         </div>
-
-        <!-- Segment 6: Closing -->
-        <div class="wf-seg wf-seg-coda">
-            <div class="wf-seg-label">off-system / coda</div>
-            <p>This isn't work and life.<br>It's one system, observed from different angles.</p>
-        </div>
-
     </div>
+
 
     <footer class="wf-footer">
         Ψ · wavefunctionlabs · φ = 1.618… · collapse is execution
