@@ -13,14 +13,30 @@ Static marketing site for WaveFunctionLabs, served via Nginx in a Docker contain
 
 ## Build & Deploy
 
+The cluster runs **arm64** nodes. Docker is not available in the dev environment — use `az acr build` to build remotely via ACR Tasks.
+
 ```sh
-# Build the container image
-docker build -t tileforgeacr.azurecr.io/wfl-www:v1arm .
+# Build arm64 image via ACR Tasks (no local Docker needed)
+az acr build --registry tileforgeacr --image wfl-www:v1arm --platform linux/arm64 --file Dockerfile .
 
-# Run locally for testing
-docker run -p 8080:80 tileforgeacr.azurecr.io/wfl-www:v1arm
+# Roll out to the cluster
+kubectl rollout restart deployment/wfl-www -n wfl-www
+kubectl rollout status deployment/wfl-www -n wfl-www --timeout=90s
 
-# Apply Kubernetes manifests
+# Verify
+kubectl get pods -n wfl-www
+```
+
+If you need to run locally for testing, `podman` is available but may not work in all environments:
+
+```sh
+podman build -t tileforgeacr.azurecr.io/wfl-www:v1arm .
+podman run -p 8080:80 tileforgeacr.azurecr.io/wfl-www:v1arm
+```
+
+To apply manifest changes (only needed if `k8s/*.yaml` files change):
+
+```sh
 kubectl apply -f k8s/wfl-www.yaml
 ```
 
