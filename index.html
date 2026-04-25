@@ -1034,6 +1034,11 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                 <div class="wf-tile-desc">intelligence emerges from flow, not hierarchy.</div>
                 <span class="wf-tile-action">read</span>
             </div>
+            <div class="wf-tile" onclick="route('cognition/how-ai-works')">
+                <div class="wf-tile-name">How AI Actually Works: Transformers &amp; Diffusion</div>
+                <div class="wf-tile-desc">the maths, the intuition, and the wavefunction metaphor. both models, one frame.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
 
             <!-- ⚡ Constraint & Collapse — Why Less Work Wins -->
             <div style="grid-column:1/-1;padding:.6rem 0 .2rem;border-bottom:1px solid var(--wf-border);margin:.8rem 0 .4rem;">
@@ -1092,6 +1097,11 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             <div class="wf-tile" onclick="route('cognition/wal-as-living-system')">
                 <div class="wf-tile-name">WAL as a Living System</div>
                 <div class="wf-tile-desc">state is not stored. it is reconstructed.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" onclick="route('cognition/index-types')">
+                <div class="wf-tile-name">Index Types: The Lookup Landscape</div>
+                <div class="wf-tile-desc">every index is a bet on how you'll ask the question.</div>
                 <span class="wf-tile-action">read</span>
             </div>
 
@@ -2622,6 +2632,441 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             <p>You can't fix this with process. You can't retrospective your way to trust. It has to be real, and it has to come from someone willing to absorb the cost of giving a damn.</p>
 
             <p class="wf-insight">Empathy isn't soft. It's the transport layer. Without it, nothing else you build will hold under load.</p>
+        </div>
+    </div>
+
+    <div id="cognition/index-types" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('cognition')">← cognition</a>
+        <h1 class="wf-section-hdr">Index Types: The Lookup Landscape</h1>
+        <p class="wf-section-desc">Every index is a bet on how you'll ask the question. Choose wrong, and you pay on every query.</p>
+
+        <div class="wf-article-body">
+            <p>An index is not a feature. It's a <strong style="color:var(--wf-gold);">precomputed answer to a class of question</strong>. The structure you choose determines which questions are cheap and which are catastrophic.</p>
+            <p>There is no universal index. There are only trade-offs.</p>
+
+            <!-- Hash Table -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Hash Table</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Key → hash function → bucket → value. O(1) average lookup. No ordering. Just a direct mapping from input to slot.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Exact-match lookups. Session stores, caches, deduplication, symbol tables. When you know the key and just need the value. Fast, simple, brutal.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Cannot answer: "give me everything between A and M." No ordering, no range, no neighbours.</p>
+
+            <!-- B-Tree -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">B-Tree</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Self-balancing tree. Keys sorted across wide, shallow nodes optimised for disk pages. O(log n) search, insert, delete. Every node holds multiple keys — minimises disk seeks.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>General-purpose database indexes. Point lookups and range queries. The default choice when you don't yet know your access pattern. Mature, predictable, well understood.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Data lives in both internal and leaf nodes. Good all-rounder, but B+Tree often wins for pure scan workloads.</p>
+
+            <!-- B+Tree -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">B+Tree</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Like a B-Tree, but all data lives in the leaves. Internal nodes are pure routing. Leaves are linked together in a doubly-linked list — you can walk the entire dataset in order without touching the tree.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Range scans, ordered iteration, pagination. The backbone of most relational databases (InnoDB, Postgres). When you need both point lookups <em>and</em> efficient sequential access.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The linked leaf chain is the key insight — range queries become sequential I/O instead of tree traversals.</p>
+
+            <!-- LSM Tree -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">LSM Tree (Log-Structured Merge Tree)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Writes go to an in-memory buffer (memtable). When full, it flushes to sorted, immutable files on disk (SSTables). Background compaction merges levels. Reads check memtable first, then each level.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Write-heavy workloads. Time-series data, event logs, metrics. RocksDB, LevelDB, Cassandra, ScyllaDB. When writes must be fast and reads can tolerate some amplification.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Trades read amplification for write throughput. Bloom filters on each level help avoid pointless disk reads.</p>
+
+            <!-- Inverted Index -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Inverted Index</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Flips the relationship: instead of document → words, it maps word → list of documents containing it. Each term points to a posting list of document IDs, positions, and frequencies.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Full-text search. "Find every document containing these words." Elasticsearch, Lucene, Solr. Also used in search engines, log analysis, and anywhere you query by content rather than key.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Expensive to build, cheap to query. The cost is paid at write time so reads are near-instant.</p>
+
+            <!-- Bloom Filter -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Bloom Filter</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>A probabilistic bit array. Hash the key k times, set those bits. To check membership, hash again — if all bits are set, "probably yes". If any bit is unset, "definitely no". No false negatives. Controllable false positive rate.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Avoiding expensive lookups. "Is this key definitely <em>not</em> here?" Used in LSM trees, CDNs, network routers, spell checkers. Tiny memory footprint for massive keyspaces.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Not an index in the retrieval sense — it's a filter. It tells you when <em>not</em> to bother looking.</p>
+
+            <!-- Range Index / Skip List -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Skip List</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>A sorted linked list with express lanes. Multiple layers of forward pointers let you skip ahead, giving O(log n) search on a structure that's simpler than a balanced tree. Probabilistic balancing — no rotations needed.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>In-memory sorted structures where concurrency matters. Redis sorted sets. Memtable internals in LSM trees. When you want ordered access without the complexity of tree rebalancing.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Elegant because it replaces structural complexity with randomness. Lock-free variants make it ideal for concurrent access.</p>
+
+            <!-- R-Tree / Spatial Index -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">R-Tree (Spatial Index)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Organises multi-dimensional data into nested bounding rectangles. Each node contains a minimum bounding box that encloses its children. Queries test overlap with the target region and prune entire subtrees.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Geospatial queries. "Find all restaurants within 2km." PostGIS, mapping systems, collision detection. Any domain where data lives in 2D/3D space and you query by proximity or containment.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Extends the B-Tree idea to multiple dimensions. Degrades with high-dimensional data — that's where vector indexes take over.</p>
+
+            <!-- Bitmap Index -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Bitmap Index</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>One bit per row, per distinct value. "Status = active" becomes a bit vector across all rows. Queries combine bitmaps with AND/OR/NOT — hardware-level bitwise operations on entire columns at once.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Low-cardinality columns in analytics. Gender, status, region, boolean flags. OLAP warehouses, column stores. When the number of distinct values is small relative to row count.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Compresses beautifully with run-length encoding. Falls apart on high-cardinality columns — don't bitmap a UUID.</p>
+
+            <!-- Trie -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Trie (Prefix Tree)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Each node represents a character. Paths from root to leaf spell out keys. Shared prefixes share nodes. Lookup time is O(key length), independent of dataset size.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Autocomplete, IP routing tables, dictionary lookups, prefix matching. When queries are "everything starting with X". Variants like radix trees (PATRICIA) compress sparse paths.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Memory-hungry in the naive form. Radix compression and adaptive node sizing (ART) make it practical at scale.</p>
+
+            <!-- Vector Index -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Vector Index (ANN)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Maps high-dimensional vectors into a structure that supports approximate nearest-neighbour search. Approaches include HNSW (hierarchical navigable small-world graphs), IVF (inverted file with clustering), and quantisation (PQ/SQ) to compress vectors. Trade exactness for speed.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Semantic search, RAG, image similarity, recommendation engines. "Find the 10 things most <em>like</em> this." The query isn't a key — it's a point in meaning-space. This is what we built into <a href="#/forge" onclick="event.preventDefault();route('forge')" style="color:var(--wf-cyan);text-decoration:none;border-bottom:1px solid var(--wf-cyan);">PicoWAL</a>.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The only index type where the question is fuzzy. Not "find this" but "find things near this." The shape of AI-era retrieval.</p>
+
+            <!-- The Pattern -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Pattern</h3>
+            <p>Every index encodes an assumption:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Hash Table</strong> — "I know the exact key"<br>
+                    <strong style="color:var(--wf-cyan);">B-Tree</strong> — "I need point + range on disk"<br>
+                    <strong style="color:var(--wf-cyan);">B+Tree</strong> — "I need to scan in order"<br>
+                    <strong style="color:var(--wf-cyan);">LSM Tree</strong> — "I write far more than I read"<br>
+                    <strong style="color:var(--wf-cyan);">Inverted Index</strong> — "I'm searching by content"<br>
+                    <strong style="color:var(--wf-cyan);">Bloom Filter</strong> — "I need to avoid wasted reads"<br>
+                    <strong style="color:var(--wf-cyan);">Skip List</strong> — "I want sorted + concurrent + simple"<br>
+                    <strong style="color:var(--wf-cyan);">R-Tree</strong> — "My data lives in space"<br>
+                    <strong style="color:var(--wf-cyan);">Bitmap</strong> — "I'm filtering low-cardinality columns"<br>
+                    <strong style="color:var(--wf-cyan);">Trie</strong> — "I'm matching prefixes"<br>
+                    <strong style="color:var(--wf-gold);">Vector Index</strong> — "I'm searching by meaning"
+                </p>
+            </div>
+
+            <p>The wrong index doesn't just slow things down. It changes what questions your system can answer.</p>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">Choose the index before you choose the database. The index <em>is</em> the database.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">An index is a precomputed constraint on the wavefunction of possible queries. It collapses lookup from "search everything" to "go here."</p>
+        </div>
+    </div>
+
+    <!-- Forge -->
+    <div id="cognition/how-ai-works" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('cognition')">← cognition</a>
+        <h1 class="wf-section-hdr">How AI Actually Works: Transformers &amp; Diffusion</h1>
+        <p class="wf-section-desc">The maths. The intuition. And why both models are the same idea wearing different clothes.</p>
+
+        <div class="wf-article-body">
+            <p>Two architectures dominate AI right now: the <strong style="color:var(--wf-cyan);">Transformer</strong> (language, code, reasoning) and the <strong style="color:var(--wf-accent);">Diffusion Model</strong> (images, video, audio). They look completely different on the surface. Underneath, they're both doing the same thing: <strong style="color:var(--wf-gold);">collapsing a field of possibilities into a single coherent output.</strong></p>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- PART 1: TRANSFORMERS                    -->
+            <!-- ═══════════════════════════════════════ -->
+
+            <h2 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 1 — THE TRANSFORMER</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">GPT, Claude, Gemini, LLaMA — all built on this.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Plain English</h3>
+            <p>A Transformer reads a sequence of tokens (words, subwords, symbols) and predicts what comes next. It does this by letting every token look at every other token and decide how much attention to pay to each one. The result is a probability distribution over the entire vocabulary — and the model samples from it to produce the next token.</p>
+            <p>It doesn't "understand" language. It compresses patterns in sequences so effectively that the output <em>looks</em> like understanding.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Architecture</h3>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
+                <strong style="color:var(--wf-cyan);">1. Tokenisation</strong> — raw text → integer token IDs<br>
+                <strong style="color:var(--wf-cyan);">2. Embedding</strong> — token IDs → dense vectors in ℝᵈ<br>
+                <strong style="color:var(--wf-cyan);">3. Positional encoding</strong> — inject sequence order<br>
+                <strong style="color:var(--wf-cyan);">4. Self-attention (× N layers)</strong> — tokens attend to each other<br>
+                <strong style="color:var(--wf-cyan);">5. Feed-forward network</strong> — per-token nonlinear transformation<br>
+                <strong style="color:var(--wf-cyan);">6. Layer norm + residual connections</strong> — stabilise gradients<br>
+                <strong style="color:var(--wf-cyan);">7. Output projection</strong> — final vector → logits over vocabulary<br>
+                <strong style="color:var(--wf-cyan);">8. Softmax</strong> — logits → probability distribution → sample next token
+            </p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Maths: Self-Attention</h3>
+            <p>The core mechanism. For each token, compute three vectors from its embedding:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:0;">
+                    Q = X · W<sub>Q</sub> &nbsp;&nbsp; K = X · W<sub>K</sub> &nbsp;&nbsp; V = X · W<sub>V</sub>
+                </p>
+                <p style="color:var(--wf-cyan);font-size:1rem;line-height:2;margin:.8rem 0 0;">
+                    Attention(Q, K, V) = softmax( Q · K<sup>T</sup> / √d<sub>k</sub> ) · V
+                </p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;"><strong style="color:var(--wf-cyan);">Q (Query)</strong><br>"What am I looking for?"</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;"><strong style="color:var(--wf-gold);">K (Key)</strong><br>"What do I contain?"</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;"><strong style="color:var(--wf-accent);">V (Value)</strong><br>"What do I contribute?"</p>
+                </div>
+            </div>
+
+            <p><strong style="color:var(--wf-gold);">Q · K<sup>T</sup></strong> computes a similarity score between every pair of tokens. The <strong>softmax</strong> normalises these into weights that sum to 1. Dividing by <strong>√d<sub>k</sub></strong> prevents the dot products from growing too large (which would push softmax into saturation, killing gradients).</p>
+
+            <p>The result: each token's output is a <em>weighted blend</em> of all other tokens' values, where the weights are learned relevance scores.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Multi-Head Attention</h3>
+            <p>One attention head learns one kind of relationship. Multiple heads (typically 32–128) run in parallel, each with their own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> projections:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    MultiHead(Q, K, V) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) · W<sub>O</sub><br>
+                    <span style="color:var(--wf-muted);">where head<sub>i</sub> = Attention(Q·W<sub>Qi</sub>, K·W<sub>Ki</sub>, V·W<sub>Vi</sub>)</span>
+                </p>
+            </div>
+
+            <p>One head might learn syntax. Another learns co-reference. Another learns semantic similarity. The model doesn't choose — it learns all of them simultaneously.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Feed-Forward + Residuals</h3>
+            <p>After attention, each token passes through a two-layer MLP (feed-forward network) with a nonlinearity (GeLU/SiLU):</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    FFN(x) = W<sub>2</sub> · GeLU(W<sub>1</sub> · x + b<sub>1</sub>) + b<sub>2</sub><br>
+                    <span style="color:var(--wf-muted);">Output = LayerNorm(x + Attention(x)) → LayerNorm(x + FFN(x))</span>
+                </p>
+            </div>
+
+            <p>The <strong>residual connections</strong> (the + x) are critical — they let gradients flow directly back through the network, preventing deep layers from collapsing to nothing. Attention decides <em>what to look at</em>. The FFN decides <em>what to do with it</em>.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Training: Next-Token Prediction</h3>
+            <p>The entire model is trained on one objective: given all previous tokens, predict the next one. The loss function is cross-entropy over the vocabulary:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.88rem;line-height:2;margin:0;">
+                    ℒ = −Σ log P(x<sub>t</sub> | x<sub>1</sub>, …, x<sub>t−1</sub>)
+                </p>
+            </div>
+
+            <p>Simple objective. Massive scale. The model learns grammar, facts, reasoning patterns, code structure — all as side effects of predicting the next token well enough.</p>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- PART 2: DIFFUSION                       -->
+            <!-- ═══════════════════════════════════════ -->
+
+            <h2 style="color:var(--wf-accent);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 2 — DIFFUSION MODELS</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">Stable Diffusion, DALL-E, Midjourney, Sora — all built on this.</p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Plain English</h3>
+            <p>Start with pure noise. Gradually remove the noise, step by step, guided by a text prompt, until a coherent image emerges. The model doesn't "draw" — it <em>denoises</em>. It's been trained on millions of image–caption pairs and learned what "looks right" for a given description at every noise level.</p>
+            <p>The image was always there, buried in the noise. The model just learned how to find it.</p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Architecture</h3>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">1. Text encoder</strong> — prompt → embedding vectors (CLIP / T5)<br>
+                <strong style="color:var(--wf-accent);">2. Noise schedule</strong> — define T timesteps of increasing noise<br>
+                <strong style="color:var(--wf-accent);">3. Forward process</strong> — gradually add Gaussian noise to training images<br>
+                <strong style="color:var(--wf-accent);">4. U-Net / DiT</strong> — neural network that predicts the noise to remove<br>
+                <strong style="color:var(--wf-accent);">5. Reverse process</strong> — iteratively denoise from pure noise → image<br>
+                <strong style="color:var(--wf-accent);">6. Latent space (optional)</strong> — operate in compressed space via VAE<br>
+                <strong style="color:var(--wf-accent);">7. Classifier-free guidance</strong> — amplify the effect of the text condition
+            </p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Maths: Forward Process</h3>
+            <p>Take a clean image x₀. At each timestep t, add Gaussian noise according to a schedule β<sub>t</sub>:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-accent);font-size:.9rem;line-height:2;margin:0;">
+                    q(x<sub>t</sub> | x<sub>t−1</sub>) = 𝒩(x<sub>t</sub>; √(1 − β<sub>t</sub>) · x<sub>t−1</sub>, β<sub>t</sub> · I)
+                </p>
+                <p style="color:var(--wf-muted);font-size:.82rem;line-height:1.8;margin:.6rem 0 0;">
+                    With α<sub>t</sub> = 1 − β<sub>t</sub> and ᾱ<sub>t</sub> = ∏ α<sub>s</sub>, we can jump to any timestep directly:
+                </p>
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:.4rem 0 0;">
+                    q(x<sub>t</sub> | x<sub>0</sub>) = 𝒩(x<sub>t</sub>; √ᾱ<sub>t</sub> · x<sub>0</sub>, (1 − ᾱ<sub>t</sub>) · I)
+                </p>
+            </div>
+
+            <p>At t = 0, you have the original image. At t = T, you have pure Gaussian noise. The schedule ᾱ<sub>t</sub> controls how fast information is destroyed.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Maths: Reverse Process</h3>
+            <p>The model learns to reverse this: given a noisy image at timestep t, predict what the slightly-less-noisy version looks like:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-accent);font-size:.9rem;line-height:2;margin:0;">
+                    p<sub>θ</sub>(x<sub>t−1</sub> | x<sub>t</sub>) = 𝒩(x<sub>t−1</sub>; μ<sub>θ</sub>(x<sub>t</sub>, t), Σ<sub>θ</sub>(x<sub>t</sub>, t))
+                </p>
+                <p style="color:var(--wf-muted);font-size:.82rem;line-height:1.8;margin:.6rem 0 0;">
+                    In practice, the network predicts the noise ε<sub>θ</sub> that was added, and μ is derived from it:
+                </p>
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:.4rem 0 0;">
+                    μ<sub>θ</sub>(x<sub>t</sub>, t) = (1/√α<sub>t</sub>) · (x<sub>t</sub> − (β<sub>t</sub>/√(1 − ᾱ<sub>t</sub>)) · ε<sub>θ</sub>(x<sub>t</sub>, t))
+                </p>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Training Objective</h3>
+            <p>Beautifully simple. Sample a random timestep, add noise, and train the network to predict what noise was added:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:0;">
+                    ℒ = 𝔼<sub>t, x₀, ε</sub> [ ‖ε − ε<sub>θ</sub>(√ᾱ<sub>t</sub> · x₀ + √(1−ᾱ<sub>t</sub>) · ε, t)‖² ]
+                </p>
+            </div>
+
+            <p>The model learns: "given this noisy mess at this noise level, what does the noise look like?" That's it. Do this well enough across millions of images and every noise level, and the model can reverse-engineer any image from static.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Conditioning: Text → Image</h3>
+            <p>The text prompt enters via <strong>cross-attention</strong>. The U-Net's attention layers receive text embeddings as keys and values, while the noisy image features are the queries:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    CrossAttention(Q<sub>image</sub>, K<sub>text</sub>, V<sub>text</sub>) = softmax(Q · K<sup>T</sup> / √d) · V
+                </p>
+            </div>
+
+            <p>Same attention mechanism as the Transformer, but <em>cross-modal</em>: the image queries text for guidance on what to denoise towards. The text doesn't tell the model what to draw — it constrains what the noise can collapse into.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Classifier-Free Guidance</h3>
+            <p>To strengthen the text's influence, the model runs two predictions — one conditioned on the prompt, one unconditional — and amplifies the difference:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-accent);font-size:.88rem;line-height:2;margin:0;">
+                    ε̃ = ε<sub>uncond</sub> + w · (ε<sub>cond</sub> − ε<sub>uncond</sub>)
+                </p>
+                <p style="color:var(--wf-muted);font-size:.82rem;margin:.4rem 0 0;">w > 1 pushes the output further toward the prompt (typical: 7–15)</p>
+            </div>
+
+            <p>Higher guidance = more prompt adherence, less diversity. It's a knob that controls how tightly the constraint is applied.</p>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- PART 3: THE UNIFIED VIEW                -->
+            <!-- ═══════════════════════════════════════ -->
+
+            <h2 style="color:var(--wf-gold);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 3 — THE WAVEFUNCTION METAPHOR</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">Both models are the same idea. Here's why.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">Transformer</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Superposition:</strong> Every position holds a distribution over the full vocabulary — all possible continuations exist simultaneously.<br><br>
+                        <strong>Observation:</strong> Attention selectively observes the context, collapsing relevance weights from uniform to sharply peaked.<br><br>
+                        <strong>Collapse:</strong> Softmax + sampling forces one token to be chosen. The wavefunction collapses. A single reality is selected from the probability field.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.88rem;margin-bottom:.6rem;">Diffusion</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Superposition:</strong> Pure Gaussian noise is the maximum entropy state — every possible image exists as a superposition in the noise.<br><br>
+                        <strong>Observation:</strong> The text condition acts as the observer, constraining which images are consistent with the prompt.<br><br>
+                        <strong>Collapse:</strong> Each denoising step reduces entropy. The noise field collapses toward a single coherent image. T steps of gradual wavefunction collapse.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Shared Pattern</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Transformer</strong> — field of possible tokens → attention constrains → one token collapses out<br>
+                    <strong style="color:var(--wf-accent);">Diffusion</strong> — field of possible images → conditioning constrains → one image collapses out<br>
+                    <strong style="color:var(--wf-gold);">Wavefunction</strong> — field of possible states → observation constrains → one reality collapses out
+                </p>
+            </div>
+
+            <p>Both start in a high-entropy state (all possibilities). Both apply constraints (attention/conditioning). Both collapse to a single output (token/image). The mechanism differs. The structure is identical.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Transformer Collapse</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Discrete. One token at a time.<br>
+                        Autoregressive: each collapse feeds the next.<br>
+                        Fast collapse — one forward pass per token.<br>
+                        The constraint is <em>context</em>.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Diffusion Collapse</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Continuous. The entire image at once.<br>
+                        Iterative: each step refines the whole field.<br>
+                        Slow collapse — 20-50 denoising steps.<br>
+                        The constraint is <em>the prompt</em>.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Why This Matters</h3>
+            <p>If you see AI models as "clever prediction machines," you'll use them like tools. If you see them as <strong style="color:var(--wf-gold);">constrained collapse systems</strong>, you'll understand:</p>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+                Why prompt engineering works — you're shaping the constraint field<br>
+                Why temperature matters — it controls collapse sharpness<br>
+                Why hallucinations happen — underconstrained regions collapse to plausible-but-wrong states<br>
+                Why guidance scale works — it amplifies the observer's influence<br>
+                Why longer context helps — more constraints, tighter collapse<br>
+                Why these models feel creative — they explore the possibility space before collapsing
+            </p>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2.5rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">A Transformer is a discrete sequential collapse engine.<br>A Diffusion model is a continuous parallel collapse engine.<br>Both are wavefunctions. The prompt is the observer.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The architecture is different. The computation is different. The maths is different. But the shape is the same: a field of possibilities, constrained by observation, collapsing into reality.</p>
         </div>
     </div>
 
