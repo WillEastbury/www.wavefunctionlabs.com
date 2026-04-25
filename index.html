@@ -4194,7 +4194,16 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Wall Clock</h3>
                     <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
-                        Can jump backwards (NTP sync). Can leap forward (daylight saving). Two machines disagree on "now" by milliseconds to seconds. Timestamps from different machines are not comparable without a synchronisation protocol.
+                        Can jump backwards (NTP sync — the daemon can <em>slew</em> time gradually or <em>step</em> it instantly, depending on how far off you are). Can leap forward (daylight saving, leap seconds). Two machines disagree on "now" by milliseconds to seconds. Timestamps from different machines are not comparable without a synchronisation protocol.
+                    </p>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">NTP adjustments</strong> — ntpd/chrony periodically discipline the clock. A large correction can shift wall time by hundreds of milliseconds in a single adjustment. Any code measuring elapsed time via wall clock (<code style="color:var(--wf-cyan);font-size:.78rem;">Date.now()</code>, <code style="color:var(--wf-cyan);font-size:.78rem;">gettimeofday()</code>) will see phantom durations — intervals that appear negative or impossibly long.
+                    </p>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">Process pre-emption</strong> — the OS scheduler can suspend your process at any point to run another. Your code sees this as time vanishing. A function that "takes 2ms" might measure as 50ms because the kernel gave the CPU to someone else in the middle. On a busy system, pre-emption is frequent and unpredictable. Priority inversion, CPU throttling, and other runnable processes all affect when your thread gets time.
+                    </p>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">Hypervisor pauses</strong> — in virtualised environments (EC2, Azure VMs, VMware), the hypervisor can <em>steal</em> entire vCPUs to serve other tenants. Your guest OS doesn't know this happened — it just sees time jump forward when it gets scheduled back. These "steal time" pauses can be tens to hundreds of milliseconds. In extreme cases (live migration, noisy neighbours), seconds. Every timing assumption your code makes is invalidated — health checks fire, locks expire, leader elections trigger, all because the hypervisor took your CPU away and your wall clock jumped.
                     </p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
@@ -4209,6 +4218,9 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                 Timeouts are non-deterministic — they depend on system load.<br>
                 Cache TTLs are non-deterministic — expiry timing varies.<br>
                 Rate limiters are non-deterministic — request timing varies.<br>
+                Pre-emption pauses are non-deterministic — OS scheduler decides, not you.<br>
+                Hypervisor steal time is non-deterministic — you can't even detect it from inside the VM without checking <code style="color:var(--wf-cyan);font-size:.82rem;">/proc/stat</code>.<br>
+                NTP corrections are non-deterministic — clock discipline happens when the daemon decides.<br>
                 Any test that uses <code style="color:var(--wf-cyan);font-size:.82rem;">sleep()</code> or <code style="color:var(--wf-cyan);font-size:.82rem;">Date.now()</code> is a non-deterministic test.
             </p>
 
