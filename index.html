@@ -783,6 +783,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
         <div class="wf-nav-brand" onclick="route('home')" style="cursor: pointer;">Ψ<span style="font-size:.85rem;font-weight:400;letter-spacing:.06em;">ill</span> <span style="font-size:1.6rem;font-weight:700;">ε</span><span style="font-size:.85rem;font-weight:400;letter-spacing:.06em;">astbury</span></div>
         <div class="wf-nav-links">
             <a href="#/cognition" data-route="cognition" title="How I think about thinking — mental models, pattern recognition, first principles">🧠 cognition</a>
+            <a href="#/ai" data-route="ai" title="How AI actually works — transformers, diffusion, GANs, finetuning, and the maths behind them">🤖 how ai works</a>
             <a href="#/forge" data-route="forge" title="Tools, frameworks and systems I've built from scratch">⚒️ forge</a>
             <a href="#/swarm" data-route="swarm" title="Distributed systems, AI agents, and coordinated intelligence">🐝 swarm</a>
             <a href="#/metal" data-route="metal" title="Bare metal, hardware, low-level performance and real silicon">🔌 metal</a>
@@ -1034,11 +1035,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                 <div class="wf-tile-desc">intelligence emerges from flow, not hierarchy.</div>
                 <span class="wf-tile-action">read</span>
             </div>
-            <div class="wf-tile" onclick="route('cognition/how-ai-works')">
-                <div class="wf-tile-name">How AI Actually Works: Transformers &amp; Diffusion</div>
-                <div class="wf-tile-desc">the maths, the intuition, and the wavefunction metaphor. both models, one frame.</div>
-                <span class="wf-tile-action">read</span>
-            </div>
+
             <div class="wf-tile" onclick="route('cognition/big-o')">
                 <div class="wf-tile-name">Big O: How Fast Things Actually Scale</div>
                 <div class="wf-tile-desc">O(1) vs O(n) vs O(log n) — what the notation means, why it matters, when it lies.</div>
@@ -2914,21 +2911,61 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
     </div>
 
     <!-- Forge -->
-    <div id="cognition/how-ai-works" class="wf-section wf-article">
-        <a class="wf-back" onclick="route('cognition')">← cognition</a>
-        <h1 class="wf-section-hdr">How AI Actually Works: Transformers &amp; Diffusion</h1>
-        <p class="wf-section-desc">The maths. The intuition. And why both models are the same idea wearing different clothes.</p>
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- AI SERIES SECTION                                   -->
+    <!-- ═══════════════════════════════════════════════════ -->
+
+    <div id="ai" class="wf-section">
+        <h1 class="wf-section-hdr">How AI Actually Works</h1>
+        <p class="wf-section-desc">The maths. The intuition. And why every generative model is the same idea wearing different clothes.</p>
+
+        <div class="wf-tile-grid">
+            <div class="wf-tile" style="border-left:3px solid var(--wf-cyan);" onclick="route('ai/transformers')">
+                <div style="font-size:.7rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.3rem;">PART 1 OF 6</div>
+                <div class="wf-tile-name">The Transformer</div>
+                <div class="wf-tile-desc">GPT, Claude, Gemini, LLaMA — all built on this.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" style="border-left:3px solid var(--wf-accent);" onclick="route('ai/diffusion')">
+                <div style="font-size:.7rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.3rem;">PART 2 OF 6</div>
+                <div class="wf-tile-name">Diffusion Models</div>
+                <div class="wf-tile-desc">Stable Diffusion, DALL-E, Midjourney — the other architecture.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" style="border-left:3px solid var(--wf-gold);" onclick="route('ai/determinism-seeds')">
+                <div style="font-size:.7rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.3rem;">PART 3 OF 6</div>
+                <div class="wf-tile-name">Determinism, Seeds & Sampling</div>
+                <div class="wf-tile-desc">Why the same prompt gives different outputs.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" style="border-left:3px solid var(--wf-accent);" onclick="route('ai/architectures')">
+                <div style="font-size:.7rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.3rem;">PART 4 OF 6</div>
+                <div class="wf-tile-name">Beyond Transformers & Diffusion</div>
+                <div class="wf-tile-desc">GANs, video models, audio models — the rest of the landscape.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" style="border-left:3px solid var(--wf-cyan);" onclick="route('ai/finetuning')">
+                <div style="font-size:.7rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.3rem;">PART 5 OF 6</div>
+                <div class="wf-tile-name">Finetuning, LoRA & PEFT</div>
+                <div class="wf-tile-desc">How you adapt a model without training from scratch.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" style="border-left:3px solid var(--wf-gold);" onclick="route('ai/metaphor')">
+                <div style="font-size:.7rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.3rem;">PART 6 OF 6</div>
+                <div class="wf-tile-name">The Wavefunction Metaphor</div>
+                <div class="wf-tile-desc">They're all the same idea. Here's why.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="ai/transformers" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('ai')">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 1 OF 6</div>
+        <h1 class="wf-section-hdr">The Transformer</h1>
+        <p class="wf-section-desc">GPT, Claude, Gemini, LLaMA — all built on this.</p>
 
         <div class="wf-article-body">
-            <p>Two architectures dominate AI right now: the <strong style="color:var(--wf-cyan);">Transformer</strong> (language, code, reasoning) and the <strong style="color:var(--wf-accent);">Diffusion Model</strong> (images, video, audio). They look completely different on the surface. Underneath, they're both doing the same thing: <strong style="color:var(--wf-gold);">collapsing a field of possibilities into a single coherent output.</strong></p>
-
-            <!-- ═══════════════════════════════════════ -->
-            <!-- PART 1: TRANSFORMERS                    -->
-            <!-- ═══════════════════════════════════════ -->
-
-            <h2 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 1 — THE TRANSFORMER</h2>
-            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">GPT, Claude, Gemini, LLaMA — all built on this.</p>
-
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Plain English</h3>
             <p>A Transformer reads a sequence of tokens (words, subwords, symbols) and predicts what comes next. It does this by letting every token look at every other token and decide how much attention to pay to each one. The result is a probability distribution over the entire vocabulary — and the model samples from it to produce the next token.</p>
             <p>It doesn't "understand" language. It compresses patterns in sequences so effectively that the output <em>looks</em> like understanding.</p>
@@ -3075,13 +3112,21 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p>Simple objective. Massive scale. The model learns grammar, facts, reasoning patterns, code structure — all as side effects of predicting the next token well enough.</p>
 
-            <!-- ═══════════════════════════════════════ -->
-            <!-- PART 2: DIFFUSION                       -->
-            <!-- ═══════════════════════════════════════ -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <span></span>
+                <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a onclick="route('ai/diffusion')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 2: Diffusion Models →</a>
+            </div>
+        </div>
+    </div>
 
-            <h2 style="color:var(--wf-accent);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 2 — DIFFUSION MODELS</h2>
-            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">Stable Diffusion, DALL-E, Midjourney, Sora — all built on this.</p>
+    <div id="ai/diffusion" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('ai')">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 2 OF 6</div>
+        <h1 class="wf-section-hdr">Diffusion Models</h1>
+        <p class="wf-section-desc">Stable Diffusion, DALL-E, Midjourney — the other architecture.</p>
 
+        <div class="wf-article-body">
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Plain English</h3>
             <p>Start with pure noise. Gradually remove the noise, step by step, guided by a text prompt, until a coherent image emerges. The model doesn't "draw" — it <em>denoises</em>. It's been trained on millions of image–caption pairs and learned what "looks right" for a given description at every noise level.</p>
             <p>The image was always there, buried in the noise. The model just learned how to find it.</p>
@@ -3197,13 +3242,21 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p>Higher guidance = more prompt adherence, less diversity. It's a knob that controls how tightly the constraint is applied.</p>
 
-            <!-- ═══════════════════════════════════════ -->
-            <!-- PART 3: DETERMINISM, SEEDS, SAMPLING   -->
-            <!-- ═══════════════════════════════════════ -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a onclick="route('ai/transformers')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 1: The Transformer</a>
+                <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a onclick="route('ai/determinism-seeds')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 3: Determinism, Seeds & Sampling →</a>
+            </div>
+        </div>
+    </div>
 
-            <h2 style="color:var(--wf-gold);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 3 — DETERMINISM, SEEDS &amp; SAMPLING</h2>
-            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">Why the same prompt gives different outputs — and the two completely different reasons why.</p>
+    <div id="ai/determinism-seeds" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('ai')">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 3 OF 6</div>
+        <h1 class="wf-section-hdr">Determinism, Seeds & Sampling</h1>
+        <p class="wf-section-desc">Why the same prompt gives different outputs.</p>
 
+        <div class="wf-article-body">
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Seeds: The Starting Point of Randomness</h3>
             <p>Both Transformers and diffusion models use random numbers during generation. A <strong style="color:var(--wf-gold);">seed</strong> is the starting value for the random number generator (RNG). Same seed → same sequence of random numbers → same output (in theory).</p>
 
@@ -3303,13 +3356,21 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">True determinism requires: same seed + same model weights + same precision + same hardware + same driver + deterministic CUDA kernels + same batch size. In practice, most systems settle for "reproducible enough" — same seed gives visually similar results, not bit-identical ones.</p>
 
-            <!-- ═══════════════════════════════════════ -->
-            <!-- PART 4: OTHER ARCHITECTURES             -->
-            <!-- ═══════════════════════════════════════ -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a onclick="route('ai/diffusion')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 2: Diffusion Models</a>
+                <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a onclick="route('ai/architectures')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 4: Beyond Transformers & Diffusion →</a>
+            </div>
+        </div>
+    </div>
 
-            <h2 style="color:var(--wf-accent);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 4 — BEYOND TRANSFORMERS &amp; DIFFUSION</h2>
-            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">GANs, video models, audio models — and how they relate to what you've already seen.</p>
+    <div id="ai/architectures" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('ai')">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 4 OF 6</div>
+        <h1 class="wf-section-hdr">Beyond Transformers & Diffusion</h1>
+        <p class="wf-section-desc">GANs, video models, audio models — the rest of the landscape.</p>
 
+        <div class="wf-article-body">
             <!-- GAN -->
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Generative Adversarial Networks (GANs)</h3>
 
@@ -3460,13 +3521,21 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The reason every modality is converging on Transformers + diffusion isn't because those are the "right" architectures. It's because they're the most general-purpose collapse engines. GANs are faster but harder to train and less flexible. Autoregressive models are simpler but sequential. Diffusion is parallel but slow. The field is still searching for the architecture that is fast, parallel, stable, <em>and</em> general.</p>
 
-            <!-- ═══════════════════════════════════════ -->
-            <!-- PART 5: FINETUNING & ADAPTATION         -->
-            <!-- ═══════════════════════════════════════ -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a onclick="route('ai/determinism-seeds')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 3: Determinism, Seeds & Sampling</a>
+                <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a onclick="route('ai/finetuning')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 5: Finetuning, LoRA & PEFT →</a>
+            </div>
+        </div>
+    </div>
 
-            <h2 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 5 — FINETUNING, LoRA &amp; PEFT</h2>
-            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">You don't always train from scratch. Here's how you adapt a model that already knows things.</p>
+    <div id="ai/finetuning" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('ai')">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 5 OF 6</div>
+        <h1 class="wf-section-hdr">Finetuning, LoRA & PEFT</h1>
+        <p class="wf-section-desc">How you adapt a model without training from scratch.</p>
 
+        <div class="wf-article-body">
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Why Finetune?</h3>
             <p>Training a foundation model from scratch costs millions of dollars and months of compute. But you can take an existing model and <strong style="color:var(--wf-cyan);">adapt</strong> it to your domain — your data, your tone, your task — for a fraction of the cost. This is finetuning. You start with a model that already understands language (or images, or audio), and you <em>nudge</em> its weights toward your specific use case.</p>
 
@@ -3649,13 +3718,21 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The economics of AI deployment are defined by this pipeline. Pre-training is a fixed cost amortised across all users. Finetuning is the marginal cost per use case. LoRA made that marginal cost collapse by 100×. QLoRA collapsed it again. The trend is clear: adaptation is getting cheaper faster than pre-training is getting cheaper.</p>
 
-            <!-- ═══════════════════════════════════════ -->
-            <!-- PART 6: THE UNIFIED VIEW                -->
-            <!-- ═══════════════════════════════════════ -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a onclick="route('ai/architectures')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 4: Beyond Transformers & Diffusion</a>
+                <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a onclick="route('ai/metaphor')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 6: The Wavefunction Metaphor →</a>
+            </div>
+        </div>
+    </div>
 
-            <h2 style="color:var(--wf-gold);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 6 — THE WAVEFUNCTION METAPHOR</h2>
-            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">They're all the same idea. Here's why.</p>
+    <div id="ai/metaphor" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('ai')">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 6 OF 6</div>
+        <h1 class="wf-section-hdr">The Wavefunction Metaphor</h1>
+        <p class="wf-section-desc">They're all the same idea. Here's why.</p>
 
+        <div class="wf-article-body">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">Transformer</h3>
@@ -3725,9 +3802,13 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             </div>
 
             <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The architecture is different. The computation is different. The maths is different. But the shape is the same: a field of possibilities, constrained by observation, collapsing into reality.</p>
-        </div>
-    </div>
 
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a onclick="route('ai/finetuning')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 5: Finetuning, LoRA & PEFT</a>
+                <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <span></span>
+            </div>
+        </div>
     </div>
 
     <div id="cognition/big-o" class="wf-section wf-article">
@@ -3963,7 +4044,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                     <h3 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">AI Model Sampling</h3>
                     <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
                         The model outputs probabilities. Sampling picks one outcome. Temperature controls how much the model explores vs exploits.<br><br>
-                        Intentional variation — you <em>want</em> different responses to the same prompt. Creativity requires non-determinism. See <a href="#/cognition/how-ai-works" onclick="event.preventDefault();route('cognition/how-ai-works')" style="color:var(--wf-cyan);text-decoration:none;border-bottom:1px solid var(--wf-cyan);">how AI works</a>.
+                        Intentional variation — you <em>want</em> different responses to the same prompt. Creativity requires non-determinism. See <a href="#/ai/determinism-seeds" onclick="event.preventDefault();route('ai/determinism-seeds')" style="color:var(--wf-cyan);text-decoration:none;border-bottom:1px solid var(--wf-cyan);">how AI works</a>.
                     </p>
                 </div>
             </div>
