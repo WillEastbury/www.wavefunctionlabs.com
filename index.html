@@ -2839,6 +2839,10 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p>You can only have <strong>one</strong> clustered index per table, because data can only be physically sorted one way. Choose it carefully — it determines the physical layout of everything.</p>
 
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:1.8;margin-top:1rem;">
+                <strong style="color:var(--wf-gold);">SQL Server default behaviour:</strong> When you add a primary key with a unique constraint, SQL Server automatically creates a clustered index on that column. If you don't add a primary key, the table is stored as a heap. Most people don't realise they're making a physical storage decision when they type <code style="color:var(--wf-cyan);font-size:.82rem;">PRIMARY KEY</code> — but they are. No primary key = no clustered index = heap = full scan on every query without a non-clustered index.
+            </p>
+
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Non-Clustered Index: A Separate Lookup Structure</h3>
             <p>A non-clustered index is a <em>separate</em> B+Tree that stores a copy of the indexed columns plus a pointer back to the actual row. If the table has a clustered index, the pointer is the clustered key. If it's a heap, the pointer is a physical row ID (page + slot).</p>
 
