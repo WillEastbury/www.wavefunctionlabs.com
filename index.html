@@ -2964,6 +2964,72 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p>The result: each token's output is a <em>weighted blend</em> of all other tokens' values, where the weights are learned relevance scores.</p>
 
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What "Matrix × Vector" Actually Does</h3>
+            <p>Every time you see a <strong>W · x</strong> in this model, something concrete is happening. A matrix is just a grid of numbers. A vector is a list of numbers. Multiplying them together produces a new list — each output number is a <em>weighted sum</em> of all the inputs.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">The mechanical view</strong><br>
+                    Take each row of the matrix. Multiply it element-by-element with the input vector. Sum the results. That's one output number. Repeat for every row. If the matrix is 512×512 and the input is 512 numbers, you get 512 output numbers — each one a different weighted combination of the same 512 inputs.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">What it means</strong><br>
+                    Each row of the matrix is a <em>question</em>: "how much of each input feature do I want?" The weights were learned during training. So W<sub>Q</sub> · x asks: "given this token's embedding, what query should it produce?" The matrix <em>is</em> the learned transformation — it remixes the inputs into a new representation.</p>
+                </div>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">That's it. Every "linear layer" in the model is just this: multiply a matrix by a vector. The entire Transformer is matrix multiplications, with nonlinearities and normalisation between them. The "intelligence" lives in the specific numbers that training put into those matrices.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What "Q · K<sup>T</sup>" Actually Computes</h3>
+            <p>Q and K are both matrices — one row per token, each row a vector of numbers. <strong>Q · K<sup>T</sup></strong> computes the <em>dot product</em> between every query and every key.</p>
+
+            <p>A dot product between two vectors is simple: multiply each pair of corresponding numbers and add them up. If two vectors point in the same direction, the dot product is large. If they're unrelated, it's near zero. If they point in opposite directions, it's negative.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:1.8;">
+                Token 5 has a query vector: [0.3, −0.1, 0.8, …]<br>
+                Token 2 has a key vector: [0.4, −0.2, 0.7, …]<br>
+                Dot product = (0.3×0.4) + (−0.1×−0.2) + (0.8×0.7) + … = <strong style="color:var(--wf-gold);">high score</strong> → these tokens are relevant to each other
+            </p>
+
+            <p>Do this for every pair and you get a square matrix of scores — row i, column j tells you how much token i should pay attention to token j. This is the <strong style="color:var(--wf-gold);">attention score matrix</strong>.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What "Softmax" Actually Does</h3>
+            <p>The attention scores are raw numbers — they could be anything. Softmax converts each row into a <em>probability distribution</em>: all positive, all summing to 1.</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.88rem;line-height:2;margin:0;">
+                    softmax(z<sub>i</sub>) = e<sup>z<sub>i</sub></sup> / Σ e<sup>z<sub>j</sub></sup>
+                </p>
+            </div>
+
+            <p>In plain english:</p>
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">1.</strong> Take each score and raise e (≈2.718) to its power — this makes everything positive and amplifies differences<br>
+                <strong style="color:var(--wf-gold);">2.</strong> Add up all the results<br>
+                <strong style="color:var(--wf-gold);">3.</strong> Divide each one by the total
+            </p>
+
+            <p>The biggest scores get most of the weight. Small scores get almost nothing. The output is a set of weights that says: <em>"pay 72% attention to token 3, 15% to token 7, 8% to token 1, and basically ignore everything else."</em></p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Softmax is the collapse mechanism. It takes a field of raw relevance scores and forces a decision: which tokens matter right now? The sharper the scores, the more decisive the collapse.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Putting It Together: One Step of Attention</h3>
+            <p>Here's the full flow for one token, in plain operations:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
+                <strong style="color:var(--wf-cyan);">1.</strong> Take this token's embedding (a list of ~512–4096 numbers)<br>
+                <strong style="color:var(--wf-cyan);">2.</strong> Multiply by W<sub>Q</sub> to get a query vector — "what am I looking for?"<br>
+                <strong style="color:var(--wf-cyan);">3.</strong> Every other token also multiplied by W<sub>K</sub> to get key vectors — "what do I contain?"<br>
+                <strong style="color:var(--wf-cyan);">4.</strong> Dot product of my query against every key — "how relevant is each token to me?"<br>
+                <strong style="color:var(--wf-cyan);">5.</strong> Divide by √d<sub>k</sub> to keep the numbers stable<br>
+                <strong style="color:var(--wf-cyan);">6.</strong> Softmax to turn those scores into weights that sum to 1<br>
+                <strong style="color:var(--wf-cyan);">7.</strong> Every token also multiplied by W<sub>V</sub> to get value vectors — "what do I contribute?"<br>
+                <strong style="color:var(--wf-cyan);">8.</strong> Multiply each value vector by its attention weight and add them all up<br>
+                <strong style="color:var(--wf-cyan);">9.</strong> The result is this token's new representation — a blend of everything relevant in the sequence
+            </p>
+
+            <p style="color:var(--wf-gold);font-weight:400;margin-top:1rem;">That's it. That's attention. Every layer does this for every token. Each layer refines the representations. By the final layer, each token's vector encodes its meaning <em>in context</em> — not just what the word means, but what it means <em>here</em>.</p>
+
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Multi-Head Attention</h3>
             <p>One attention head learns one kind of relationship. Multiple heads (typically 32–128) run in parallel, each with their own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> projections:</p>
 
@@ -3075,6 +3141,39 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             </div>
 
             <p>Same attention mechanism as the Transformer, but <em>cross-modal</em>: the image queries text for guidance on what to denoise towards. The text doesn't tell the model what to draw — it constrains what the noise can collapse into.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What the U-Net Actually Computes</h3>
+            <p>The U-Net is a convolutional neural network. Convolutions are similar to the matrix multiplications in a Transformer, but instead of operating on sequences, they operate on grids of pixels.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-accent);">What a convolution does</strong><br>
+                    Take a small grid of weights (e.g. 3×3 — called a kernel). Slide it across the image. At each position, multiply the kernel weights by the pixel values underneath, add them up → one output number. Repeat for every position. The result is a new grid — a <em>feature map</em> — that responds to a particular pattern (edges, textures, shapes).</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Why it works for images</strong><br>
+                    Convolutions exploit the fact that images have <em>local structure</em> — nearby pixels are related. A 3×3 kernel can detect an edge. Stack layers and deeper kernels detect eyes, faces, objects. Same principle as attention (weighted combination of inputs) but spatially local instead of global.</p>
+                </div>
+            </div>
+
+            <p>The "U" shape: the network <strong>downsamples</strong> (compresses the image to smaller and smaller feature maps — capturing what, losing where) then <strong>upsamples</strong> (expands back to full resolution — recovering where, guided by what). Skip connections link matching resolution levels so detail isn't lost.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What One Denoising Step Actually Does</h3>
+            <p>Each step is concrete:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">1.</strong> Take the current noisy image x<sub>t</sub> (a grid of numbers — pixel values with noise)<br>
+                <strong style="color:var(--wf-accent);">2.</strong> Tell the U-Net what timestep t we're at (embedded as a vector, injected into every layer)<br>
+                <strong style="color:var(--wf-accent);">3.</strong> Feed the text prompt via cross-attention — the image features query the text: "what should I look like?"<br>
+                <strong style="color:var(--wf-accent);">4.</strong> The U-Net outputs ε<sub>θ</sub> — its prediction of the noise in the current image<br>
+                <strong style="color:var(--wf-accent);">5.</strong> Subtract a scaled version of that predicted noise from x<sub>t</sub><br>
+                <strong style="color:var(--wf-accent);">6.</strong> Add a small amount of fresh random noise (keeps the process stochastic)<br>
+                <strong style="color:var(--wf-accent);">7.</strong> The result is x<sub>t−1</sub> — slightly less noisy, slightly more coherent
+            </p>
+
+            <p>Repeat 20–50 times. Each step the image gets a little clearer. The first few steps establish the broad composition (sky at top, ground at bottom). The middle steps add structure (buildings, trees). The final steps add fine detail (textures, edges, lighting).</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The U-Net isn't drawing. It's looking at static and answering: "what part of this is noise and what part is signal?" At each step, it peels away a layer of noise. What remains is the image that was always there — the text just told the model which image to find in the noise.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Classifier-Free Guidance</h3>
             <p>To strengthen the text's influence, the model runs two predictions — one conditioned on the prompt, one unconditional — and amplifies the difference:</p>
