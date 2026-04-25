@@ -2798,6 +2798,94 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
             <p>The wrong index doesn't just slow things down. It changes what questions your system can answer.</p>
 
+            <!-- Clustered vs Heap Storage -->
+            <h2 style="color:var(--wf-gold);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">HOW DATA IS ACTUALLY STORED</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">Forget "primary keys" and "foreign keys" as relational theory. Think about what's physically happening on disk.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Heap: The Junk Drawer</h3>
+            <p>A heap is unsorted storage. Rows go wherever there's space. Insert is fast — just append. But finding anything means scanning the entire thing, because there's no physical order.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-muted);line-height:1.8;">
+                No structure. No sort. No promise about where anything lives.<br>
+                Every query without an index = full table scan.
+            </p>
+            <p>A heap with no indexes is a flat file. You're paying disk I/O to read every row every time. The only thing making heaps usable is the indexes you put on top.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Clustered Index: The Data <em>Is</em> the Index</h3>
+            <p>A clustered index doesn't sit alongside the data. It <strong style="color:var(--wf-gold);">is</strong> the data. The rows are physically sorted on disk in the order of the clustered key. The leaf nodes of the B+Tree <em>contain the actual rows</em>.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Heap + Index</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Index says: "row 47 is at page 312, slot 5"<br>
+                        Then you go to page 312 and read it.<br>
+                        <strong>Two lookups.</strong> Index → pointer → data.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Clustered Index</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Index says: "row 47 is <em>right here</em>"<br>
+                        The leaf node <em>is</em> the data page.<br>
+                        <strong>One lookup.</strong> Index = data.
+                    </p>
+                </div>
+            </div>
+
+            <p>You can only have <strong>one</strong> clustered index per table, because data can only be physically sorted one way. Choose it carefully — it determines the physical layout of everything.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Non-Clustered Index: A Separate Lookup Structure</h3>
+            <p>A non-clustered index is a <em>separate</em> B+Tree that stores a copy of the indexed columns plus a pointer back to the actual row. If the table has a clustered index, the pointer is the clustered key. If it's a heap, the pointer is a physical row ID (page + slot).</p>
+
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:1.8;">
+                Non-clustered on a <strong style="color:var(--wf-accent);">clustered table</strong>: stores the clustered key as the bookmark → then uses the clustered index to find the row. Two B+Tree traversals.<br>
+                Non-clustered on a <strong style="color:var(--wf-accent);">heap</strong>: stores the physical RID (file:page:slot) → goes straight there. One traversal + one seek.
+            </p>
+
+            <p>You can have many non-clustered indexes on one table. Each is an extra structure to maintain on writes, but a fast path for reads that match its key pattern.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Primary Key vs Secondary Key: What It Actually Means</h3>
+            <p>Strip away the relational theory. A key is just a column (or columns) you use to find rows.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Primary Key</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        The <em>identity</em> of the row. Unique, not null.<br>
+                        In most engines, the primary key <strong>becomes the clustered index</strong> by default. The data is physically sorted by this key.<br><br>
+                        It's not special because of theory. It's special because <strong>it determines how the bytes are laid out on disk</strong>.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Secondary Key</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Any other column you index. Always a non-clustered index.<br>
+                        Contains a copy of the indexed columns + a pointer back to the primary key (or RID on a heap).<br><br>
+                        It's a <strong>separate data structure</strong> optimised for a different access pattern. More secondary indexes = faster reads on those columns, slower writes everywhere.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Covering Index Trick</h3>
+            <p>If a non-clustered index contains <em>all</em> the columns your query needs, the engine never touches the base table. It answers the query entirely from the index. This is a <strong style="color:var(--wf-gold);">covering index</strong> — the query is "covered" by the index alone.</p>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">This is why you sometimes see indexes with INCLUDE columns — they're not part of the sort key, but they're carried along so the index can cover more queries without going back to the table.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Physical Reality</h3>
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Heap</strong> — unsorted pages. append-only. scan everything to find anything.<br>
+                    <strong style="color:var(--wf-cyan);">Clustered index</strong> — the data <em>is</em> the B+Tree. one per table. defines physical order.<br>
+                    <strong style="color:var(--wf-cyan);">Non-clustered index</strong> — separate B+Tree. points back to clustered key or RID.<br>
+                    <strong style="color:var(--wf-gold);">Primary key</strong> — usually the clustered key. the identity that everything else points at.<br>
+                    <strong style="color:var(--wf-gold);">Secondary key</strong> — non-clustered index on other columns. a separate access path.<br>
+                    <strong style="color:var(--wf-gold);">Covering index</strong> — carries enough columns to answer the query without touching the table.
+                </p>
+            </div>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">The primary key isn't important because of relational theory. It's important because it determines the physical shape of your data on disk. Everything else — every secondary index, every join, every foreign key — is just a pointer back to that shape.</p>
+            </div>
+
             <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
                 <p style="color:var(--wf-gold);font-weight:400;">Choose the index before you choose the database. The index <em>is</em> the database.</p>
             </div>
