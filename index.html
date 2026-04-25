@@ -3304,11 +3304,357 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">True determinism requires: same seed + same model weights + same precision + same hardware + same driver + deterministic CUDA kernels + same batch size. In practice, most systems settle for "reproducible enough" — same seed gives visually similar results, not bit-identical ones.</p>
 
             <!-- ═══════════════════════════════════════ -->
-            <!-- PART 4: THE UNIFIED VIEW                -->
+            <!-- PART 4: OTHER ARCHITECTURES             -->
             <!-- ═══════════════════════════════════════ -->
 
-            <h2 style="color:var(--wf-gold);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 4 — THE WAVEFUNCTION METAPHOR</h2>
-            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">Both models are the same idea. Here's why.</p>
+            <h2 style="color:var(--wf-accent);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 4 — BEYOND TRANSFORMERS &amp; DIFFUSION</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">GANs, video models, audio models — and how they relate to what you've already seen.</p>
+
+            <!-- GAN -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Generative Adversarial Networks (GANs)</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Two neural networks play a game. The <strong style="color:var(--wf-accent);">Generator</strong> tries to create fake data that looks real. The <strong style="color:var(--wf-cyan);">Discriminator</strong> tries to spot the fakes. They train against each other — the generator gets better at faking, the discriminator gets better at detecting — until the fakes are indistinguishable from real data.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Think of it as a forger vs an art inspector. The forger keeps improving until the inspector can't tell the difference. At that point, the forger <em>is</em> a generative model.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Maths</h4>
+                    <div style="margin:.5rem 0;padding:.8rem 1rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                        <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                            min<sub>G</sub> max<sub>D</sub> V(D, G) =<br>
+                            &nbsp;&nbsp;𝔼<sub>x~p<sub>data</sub></sub>[log D(x)] + 𝔼<sub>z~p<sub>z</sub></sub>[log(1 − D(G(z)))]
+                        </p>
+                    </div>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">D(x)</strong> — discriminator's confidence that x is real (0→1)<br>
+                        <strong style="color:var(--wf-accent);">G(z)</strong> — generator's output from random noise z<br>
+                        <strong style="color:var(--wf-gold);">The game:</strong> D wants to maximise (correctly classify real vs fake). G wants to minimise (fool D). At Nash equilibrium, D outputs 0.5 for everything — it can't tell.
+                    </p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">GAN Architecture Variants</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">DCGAN</strong> — convolutional generator/discriminator. Replaced fully-connected layers with conv layers. Made training stable enough to actually work.<br>
+                    <strong style="color:var(--wf-accent);">StyleGAN</strong> — injects style at each resolution layer. Produces photorealistic faces. Introduced the "mapping network" that converts z to a style space w before generation.<br>
+                    <strong style="color:var(--wf-accent);">CycleGAN</strong> — unpaired image-to-image translation (horses→zebras). Two generators, two discriminators, cycle-consistency loss.<br>
+                    <strong style="color:var(--wf-accent);">Pix2Pix</strong> — paired image-to-image (sketch→photo). Conditional GAN with L1 reconstruction loss.<br>
+                    <strong style="color:var(--wf-accent);">WGAN</strong> — uses Wasserstein distance instead of JS divergence. Smoother gradients, more stable training. Solved the "mode collapse" problem where the generator only produces a few outputs.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">GANs dominated image generation from 2014–2021. Diffusion models largely replaced them for quality, but GANs remain faster at inference — a single forward pass vs 20–50 denoising steps. Some modern systems combine both: use diffusion for quality, then distil into a GAN for speed.</p>
+
+            <!-- VIDEO MODELS -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Video Generative Models</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Video is images + time. The fundamental challenge is <strong style="color:var(--wf-cyan);">temporal coherence</strong> — making sure frame 47 looks like it belongs after frame 46. A video model doesn't generate frames independently; it has to understand motion, physics, and continuity.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Most video models extend image architectures into the time dimension. The same attention mechanisms that let a Transformer look across tokens, or a diffusion model denoise pixels, are extended to look across <em>frames</em>.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Core Problem</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">An image is a 2D grid of pixels: H × W × 3 (height, width, RGB). A video is a 3D grid: T × H × W × 3 — where T is time (frames). For a 5-second 1080p clip at 24fps, that's 120 × 1080 × 1920 × 3 ≈ <strong style="color:var(--wf-gold);">746 million values</strong>.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">You can't just do attention over 746M tokens. So video models use <strong style="color:var(--wf-cyan);">compressed latent spaces</strong> — encode the video into a much smaller representation, generate in that space, then decode back.</p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-accent);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Video Architecture Approaches</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Temporal Diffusion (Sora, Runway)</strong> — extend a 2D diffusion model to 3D. Add temporal attention layers between spatial attention layers. The U-Net (or DiT) denoises across space <em>and</em> time simultaneously. The noise schedule applies to all frames at once.<br>
+                    <strong style="color:var(--wf-cyan);">DiT (Diffusion Transformer)</strong> — replace the U-Net with a Transformer operating on video patches. Chop each frame into patches, flatten across time, apply full attention. Sora uses this. The patch-based approach lets you handle variable resolutions and durations.<br>
+                    <strong style="color:var(--wf-cyan);">Autoregressive Video</strong> — generate frame-by-frame, conditioning each frame on the previous ones. Like a text Transformer but for images. Slower but naturally handles arbitrarily long sequences.<br>
+                    <strong style="color:var(--wf-cyan);">Latent Video Diffusion</strong> — encode each frame with a VAE into a small latent, run diffusion in latent space across time, decode back. The latent compresses 8×–16× spatially. This is how most practical systems work — raw pixel diffusion is too expensive.
+                </p>
+            </div>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                    Spatial attention: attend across pixels within one frame<br>
+                    Temporal attention: attend across the same spatial position across frames<br>
+                    Full 3D attention: attend across everything (expensive, accurate)<br>
+                    <br>
+                    Video = Spatial structure × Temporal coherence × Prompt conditioning
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The biggest challenge isn't architecture — it's data and compute. Training video models requires orders of magnitude more data than images (each training example is hundreds of frames) and the 3D attention is O(T² × H² × W²) without tricks. Practical systems use factored attention: spatial-then-temporal rather than full 3D.</p>
+
+            <!-- AUDIO MODELS -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Audio Generative Models</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Audio is a 1D signal — amplitude over time — typically sampled at 16–48kHz. That's 16,000–48,000 values per second. A 10-second clip is 480,000 samples. Raw audio generation needs to produce coherent structure at <em>multiple timescales</em>: individual waveform cycles (microseconds), phonemes (milliseconds), words (hundreds of ms), sentences (seconds), and musical phrases (many seconds).</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Most models don't work on raw waveforms directly. They work on compressed representations — spectrograms, learned codecs, or discrete audio tokens.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Representations</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong style="color:var(--wf-gold);">Mel spectrogram</strong> — a 2D image of frequency vs time. Convert audio to this, generate it like an image, then invert it back to audio with a vocoder.<br><br>
+                        <strong style="color:var(--wf-gold);">Neural audio codec (EnCodec, SoundStream)</strong> — compress audio into discrete tokens using a learned encoder. Now audio generation becomes a <em>language modelling problem</em> — predict the next audio token.<br><br>
+                        <strong style="color:var(--wf-gold);">Raw waveform</strong> — generate samples directly. Highest quality, highest cost. WaveNet pioneered this with autoregressive generation at 16kHz — 16,000 predictions per second.
+                    </p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Audio Architecture Approaches</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">WaveNet</strong> — autoregressive CNN. Generates one sample at a time, conditioned on all previous samples. Dilated causal convolutions give exponentially growing receptive field. Extremely high quality, extremely slow at inference.<br>
+                    <strong style="color:var(--wf-accent);">Transformer TTS (Tacotron → VALL-E → Bark)</strong> — text → mel spectrogram via attention, then a vocoder (HiFi-GAN, WaveGlow) converts to audio. VALL-E tokenises audio with a codec, then does language-model-style next-token prediction on audio tokens. Voice cloning in 3 seconds of reference audio.<br>
+                    <strong style="color:var(--wf-accent);">AudioLM / MusicLM</strong> — hierarchical token generation. Coarse tokens capture structure and rhythm. Fine tokens capture acoustic detail. A Transformer generates coarse tokens first, then another generates fine tokens conditioned on them.<br>
+                    <strong style="color:var(--wf-accent);">Audio Diffusion (Riffusion, Stable Audio)</strong> — generate mel spectrograms using image diffusion. The spectrogram is literally a 2D image — frequency on one axis, time on the other. Text-conditioned diffusion produces the spectrogram, a vocoder converts to waveform.<br>
+                    <strong style="color:var(--wf-accent);">Flow Matching (Voicebox, E2 TTS)</strong> — learns a continuous flow from noise to speech. Like diffusion but with straight-line paths in latent space instead of the forward/reverse noise schedule. Faster inference, comparable quality.
+                </p>
+            </div>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                    Speech = text → phonemes → mel spectrogram → waveform<br>
+                    Music = prompt → coarse audio tokens → fine audio tokens → waveform<br>
+                    Sound effects = text → spectrogram via diffusion → waveform<br>
+                    <br>
+                    Every approach eventually needs a decoder back to raw samples.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The trend across all audio models is the same as vision: compress into a latent space, generate there, decode back. The codec-based approach (turning audio into tokens) is winning because it lets you reuse all the Transformer infrastructure that already works for text.</p>
+
+            <!-- HOW THEY ALL CONNECT -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Unifying Pattern</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Text (Transformers)</strong> — tokens are words. Predict next token autoregressively.<br>
+                    <strong style="color:var(--wf-accent);">Images (Diffusion)</strong> — tokens are pixel patches. Denoise all patches simultaneously.<br>
+                    <strong style="color:var(--wf-accent);">Video (Temporal Diffusion/DiT)</strong> — tokens are spatiotemporal patches. Denoise across space and time.<br>
+                    <strong style="color:var(--wf-accent);">Audio (Codec + Transformer)</strong> — tokens are audio codec frames. Predict next audio token.<br>
+                    <strong style="color:var(--wf-gold);">GANs</strong> — no tokens. Direct mapping from noise → output. Generator and discriminator in adversarial equilibrium.
+                </p>
+            </div>
+
+            <p>Every modality converges on the same two ideas: <strong style="color:var(--wf-cyan);">compress the signal into tokens or latents</strong>, then either <strong style="color:var(--wf-accent);">predict the next one</strong> (autoregressive) or <strong style="color:var(--wf-accent);">denoise them all at once</strong> (diffusion). The architecture differences are engineering — the underlying mechanism is always constrained collapse of a possibility space.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.82rem;margin-bottom:.4rem;">GAN Collapse</h4>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;font-weight:300;">Single-shot. Noise → output in one pass. The adversarial training <em>was</em> the collapse — it happened during training, not inference. The generator learned the collapsed distribution.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.82rem;margin-bottom:.4rem;">Video Collapse</h4>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;font-weight:300;">3D collapse. The possibility space includes all possible videos. The prompt + temporal coherence constrains it. Denoising collapses space and time simultaneously.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.82rem;margin-bottom:.4rem;">Audio Collapse</h4>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;font-weight:300;">Hierarchical collapse. Coarse structure collapses first (rhythm, melody). Fine detail collapses second (timbre, articulation). Like zooming in — macro to micro.</p>
+                </div>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The reason every modality is converging on Transformers + diffusion isn't because those are the "right" architectures. It's because they're the most general-purpose collapse engines. GANs are faster but harder to train and less flexible. Autoregressive models are simpler but sequential. Diffusion is parallel but slow. The field is still searching for the architecture that is fast, parallel, stable, <em>and</em> general.</p>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- PART 5: FINETUNING & ADAPTATION         -->
+            <!-- ═══════════════════════════════════════ -->
+
+            <h2 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 5 — FINETUNING, LoRA &amp; PEFT</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">You don't always train from scratch. Here's how you adapt a model that already knows things.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Why Finetune?</h3>
+            <p>Training a foundation model from scratch costs millions of dollars and months of compute. But you can take an existing model and <strong style="color:var(--wf-cyan);">adapt</strong> it to your domain — your data, your tone, your task — for a fraction of the cost. This is finetuning. You start with a model that already understands language (or images, or audio), and you <em>nudge</em> its weights toward your specific use case.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Full Finetuning</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Update <strong>every weight</strong> in the model using your dataset. The model sees your examples and adjusts all parameters via backpropagation, exactly like pre-training but with a smaller learning rate and far fewer steps.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong style="color:var(--wf-gold);">Pros:</strong> Maximum expressiveness. The model can learn completely new behaviours.<br>
+                        <strong style="color:var(--wf-accent);">Cons:</strong> You need the full model in GPU memory (a 70B model needs ~140GB in fp16). Risk of <strong style="color:var(--wf-accent);">catastrophic forgetting</strong> — the model becomes great at your task but forgets its general knowledge. You also produce a full-size copy of every weight.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Memory Problem</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">A 7B parameter model in fp16 needs ~14GB just to hold the weights. But training also needs:</p>
+                    <div style="margin:.5rem 0;padding:.6rem .8rem;border:1px solid var(--wf-border);border-radius:4px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                        <p style="color:var(--wf-gold);font-size:.78rem;line-height:2;margin:0;">
+                            Weights:     14 GB (fp16)<br>
+                            Gradients:   14 GB (same shape as weights)<br>
+                            Optimiser:   28 GB (Adam stores 2× states)<br>
+                            Activations: variable (depends on batch/seq)<br>
+                            ─────────────────────<br>
+                            Total:       ~56 GB minimum for a 7B model
+                        </p>
+                    </div>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;margin-top:.6rem;">For a 70B model: ~560GB. That's 7× A100-80GB GPUs just for the training state. This is why parameter-efficient methods exist.</p>
+                </div>
+            </div>
+
+            <!-- LoRA -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">LoRA — Low-Rank Adaptation</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Instead of updating all 7 billion weights, freeze the original model entirely and inject <strong style="color:var(--wf-accent);">tiny trainable side-matrices</strong> into each attention layer. These matrices learn the <em>difference</em> between the base model and what you want. At inference, merge them back in — zero extra latency.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">The key insight: the weight changes during finetuning are <strong style="color:var(--wf-gold);">low-rank</strong>. You don't need to adjust all dimensions of a weight matrix — most of the change can be captured by a much smaller matrix decomposition.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Maths</h4>
+                    <div style="margin:.5rem 0;padding:.8rem 1rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                        <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                            Original: h = W · x &nbsp;&nbsp; (W is d×d, e.g. 4096×4096)<br>
+                            <br>
+                            LoRA: h = W · x + (B · A) · x<br>
+                            <br>
+                            Where: A is d×r, B is r×d &nbsp; (r ≪ d, e.g. r=16)<br>
+                            <br>
+                            Merged: W' = W + B · A &nbsp; (no extra cost at inference)
+                        </p>
+                    </div>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">W</strong> — frozen original weight matrix (4096 × 4096 = 16.7M params)<br>
+                        <strong style="color:var(--wf-accent);">A</strong> — down-projection (4096 × 16 = 65K params)<br>
+                        <strong style="color:var(--wf-accent);">B</strong> — up-projection (16 × 4096 = 65K params)<br>
+                        <strong style="color:var(--wf-gold);">Total trainable:</strong> 130K params instead of 16.7M — a <strong>128× reduction</strong> per layer
+                    </p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">LoRA In Practice</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Rank (r)</strong> — controls capacity. r=4 for simple style changes. r=16–64 for domain adaptation. r=256 for complex tasks. Higher rank = more params = closer to full finetune.<br>
+                    <strong style="color:var(--wf-cyan);">Alpha (α)</strong> — scaling factor. The LoRA output is scaled by α/r. Higher alpha = stronger adaptation. Typical: α = 2×r.<br>
+                    <strong style="color:var(--wf-cyan);">Target modules</strong> — which layers get LoRA adapters. Usually Q, K, V projection matrices in attention. Some approaches add them to feed-forward layers too.<br>
+                    <strong style="color:var(--wf-cyan);">Merging</strong> — after training, compute W' = W + (α/r)·B·A and replace the original weights. The adapter disappears — same model size, different behaviour.<br>
+                    <strong style="color:var(--wf-cyan);">Stacking</strong> — you can train multiple LoRA adapters for different tasks and swap them at inference without retraining. One base model, many specialisations.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">A LoRA adapter for a 7B model is typically 10–100MB. The full model is 14GB. You can share the base model across 100 customers, each with their own adapter — the economics change completely.</p>
+
+            <!-- QLoRA -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">QLoRA — Quantised LoRA</h3>
+
+            <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;margin:1rem 0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">LoRA freezes the base model but still loads it in fp16. QLoRA goes further: <strong style="color:var(--wf-cyan);">quantise the base model to 4-bit</strong> (NF4 format), then train LoRA adapters in fp16 on top. The adapters train at full precision, but the frozen base takes 4× less memory.</p>
+                <div style="margin:.8rem 0;padding:.6rem .8rem;border:1px solid var(--wf-border);border-radius:4px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                    <p style="color:var(--wf-gold);font-size:.78rem;line-height:2;margin:0;">
+                        Full finetune 7B:  ~56 GB (multiple GPUs)<br>
+                        LoRA 7B (fp16):    ~16 GB (one good GPU)<br>
+                        QLoRA 7B (4-bit):  ~6 GB  (consumer GPU)
+                    </p>
+                </div>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;margin-top:.6rem;">QLoRA made it possible to finetune a 65B parameter model on a single 48GB GPU. It finetunes a 7B model on a gaming GPU with 8GB VRAM. The quality loss from quantisation is surprisingly small — within 1% of full-precision LoRA on most benchmarks.</p>
+            </div>
+
+            <!-- PEFT overview -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">PEFT — Parameter-Efficient Fine-Tuning</h3>
+
+            <p>LoRA is the most popular PEFT method, but it's not the only one. PEFT is the <strong style="color:var(--wf-gold);">family of techniques</strong> that adapt a model by training only a small fraction of its parameters. They all share the same goal: don't touch most of the weights.</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">LoRA</strong> — low-rank side-matrices in attention layers. Merge at inference. The winner for most use cases.<br>
+                    <strong style="color:var(--wf-accent);">Prefix Tuning</strong> — prepend trainable "virtual tokens" to the input at each layer. The model learns to condition on these soft prefixes. No weight modification at all — just extra context.<br>
+                    <strong style="color:var(--wf-accent);">Prompt Tuning</strong> — simpler version: trainable embeddings prepended to the input only at the first layer. Even cheaper than prefix tuning. Works surprisingly well on large models.<br>
+                    <strong style="color:var(--wf-accent);">Adapters</strong> — small bottleneck layers inserted between existing layers. Input → down-project → nonlinearity → up-project → add back. Similar idea to LoRA but as separate modules rather than side-matrices.<br>
+                    <strong style="color:var(--wf-accent);">IA³ (Infused Adapter by Inhibiting and Amplifying Inner Activations)</strong> — learn <em>scaling vectors</em> that multiply the keys, values, and FFN outputs. Even fewer parameters than LoRA — just one vector per layer instead of two matrices.<br>
+                    <strong style="color:var(--wf-accent);">DoRA (Weight-Decomposed Low-Rank Adaptation)</strong> — decomposes weight into magnitude and direction, applies LoRA only to the direction component. Better training dynamics, closer to full finetune quality.
+                </p>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">When to Use What</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Choose LoRA / QLoRA When</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        You have domain-specific data (legal, medical, code, your company's tone)<br>
+                        You want to merge back into the base model for zero-overhead inference<br>
+                        You need multiple task-specific adapters on one base model<br>
+                        You're working with limited GPU budget (QLoRA on consumer hardware)<br>
+                        You want to avoid catastrophic forgetting of general knowledge
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Choose Full Finetune When</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        You have massive domain-specific data (millions of examples)<br>
+                        The task requires fundamentally new capabilities, not just style/tone<br>
+                        You have the compute budget (multi-GPU cluster)<br>
+                        You're building a foundation model variant for a specific domain<br>
+                        LoRA at maximum rank still underperforms
+                    </p>
+                </div>
+            </div>
+
+            <!-- RLHF / DPO -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Alignment Finetuning: RLHF &amp; DPO</h3>
+
+            <p>Finetuning isn't just about domain knowledge. The reason ChatGPT sounds helpful instead of just completing text is <strong style="color:var(--wf-accent);">alignment finetuning</strong> — teaching the model <em>how</em> to respond, not just <em>what</em> to say.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">RLHF (Reinforcement Learning from Human Feedback)</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Step 1 — SFT:</strong> Supervised finetuning on human-written examples of good responses. Teaches format and helpfulness.<br><br>
+                        <strong>Step 2 — Reward model:</strong> Humans rank multiple outputs. Train a model to predict which response humans prefer.<br><br>
+                        <strong>Step 3 — PPO:</strong> Use the reward model as a signal to further finetune the language model via reinforcement learning. The model learns to maximise human preference scores while staying close to the SFT model (KL penalty).
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">DPO (Direct Preference Optimisation)</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        Skip the reward model entirely. Given pairs of (preferred, rejected) responses, directly optimise the language model to increase the probability of preferred outputs and decrease rejected ones.<br><br>
+                        <strong style="color:var(--wf-gold);">The insight:</strong> the optimal RLHF policy has a closed-form solution that only depends on the preference data and the reference model. You can train it with a simple binary cross-entropy loss — no RL, no reward model, no PPO instability.<br><br>
+                        Simpler, cheaper, more stable. Increasingly preferred over RLHF for alignment.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Diffusion finetuning -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Finetuning Diffusion Models</h3>
+
+            <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;margin:1rem 0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Everything above applies to image/video models too. You can LoRA a Stable Diffusion model to learn a specific style, face, or object with just 5–20 images and 15 minutes of training on a consumer GPU.</p>
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;font-weight:300;margin-top:.6rem;">
+                    <strong style="color:var(--wf-accent);">DreamBooth</strong> — finetune the entire model on a few images of a subject, binding it to a unique token (e.g. "sks person"). The model learns to generate that specific subject in any context.<br>
+                    <strong style="color:var(--wf-accent);">Textual Inversion</strong> — freeze the model, learn only a new embedding vector for a concept. The cheapest approach — a single vector. Limited expressiveness but zero risk to base model.<br>
+                    <strong style="color:var(--wf-accent);">LoRA for Diffusion</strong> — inject low-rank adapters into the U-Net's cross-attention layers. Style transfer, character consistency, aesthetic control. Adapters are ~10–100MB vs 2GB+ for the full model. Composable: mix multiple LoRAs at inference with weighted merging.
+                </p>
+            </div>
+
+            <!-- The training pipeline -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Full Training Pipeline</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.82rem;line-height:2.2;margin:0;">
+                    1. Pre-training &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ learn language/vision from massive data &nbsp;(billions of tokens, months, millions of $)<br>
+                    2. SFT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ supervised finetuning on curated examples &nbsp;(thousands of examples, hours)<br>
+                    3. RLHF / DPO &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ align to human preferences &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(preference pairs, hours-days)<br>
+                    4. Domain LoRA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ adapt to specific use case &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(your data, minutes-hours)<br>
+                    <br>
+                    Each stage is cheaper and faster than the last.<br>
+                    Each stage changes less of the model.<br>
+                    The expensive work is done once. The cheap work is done per customer.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The economics of AI deployment are defined by this pipeline. Pre-training is a fixed cost amortised across all users. Finetuning is the marginal cost per use case. LoRA made that marginal cost collapse by 100×. QLoRA collapsed it again. The trend is clear: adaptation is getting cheaper faster than pre-training is getting cheaper.</p>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- PART 6: THE UNIFIED VIEW                -->
+            <!-- ═══════════════════════════════════════ -->
+
+            <h2 style="color:var(--wf-gold);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">PART 6 — THE WAVEFUNCTION METAPHOR</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">They're all the same idea. Here's why.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
