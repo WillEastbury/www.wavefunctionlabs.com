@@ -322,6 +322,12 @@
             gap: 1rem;
         }
 
+        .wf-tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
         .wf-tile {
             background: var(--wf-surface);
             border: 1px solid var(--wf-border);
@@ -2922,39 +2928,45 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
         <div class="wf-tile-grid">
             <div class="wf-tile" style="border-left:3px solid var(--wf-cyan);" onclick="route('ai/transformers')">
-                <div style="font-size:.7rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.3rem;">PART 1 OF 6</div>
+                <div style="font-size:.7rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.3rem;">PART 1 OF 7</div>
                 <div class="wf-tile-name">The Transformer</div>
                 <div class="wf-tile-desc">GPT, Claude, Gemini, LLaMA — all built on this.</div>
                 <span class="wf-tile-action">read</span>
             </div>
             <div class="wf-tile" style="border-left:3px solid var(--wf-accent);" onclick="route('ai/diffusion')">
-                <div style="font-size:.7rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.3rem;">PART 2 OF 6</div>
+                <div style="font-size:.7rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.3rem;">PART 2 OF 7</div>
                 <div class="wf-tile-name">Diffusion Models</div>
                 <div class="wf-tile-desc">Stable Diffusion, DALL-E, Midjourney — the other architecture.</div>
                 <span class="wf-tile-action">read</span>
             </div>
             <div class="wf-tile" style="border-left:3px solid var(--wf-gold);" onclick="route('ai/determinism-seeds')">
-                <div style="font-size:.7rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.3rem;">PART 3 OF 6</div>
+                <div style="font-size:.7rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.3rem;">PART 3 OF 7</div>
                 <div class="wf-tile-name">Determinism, Seeds & Sampling</div>
                 <div class="wf-tile-desc">Why the same prompt gives different outputs.</div>
                 <span class="wf-tile-action">read</span>
             </div>
             <div class="wf-tile" style="border-left:3px solid var(--wf-accent);" onclick="route('ai/architectures')">
-                <div style="font-size:.7rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.3rem;">PART 4 OF 6</div>
+                <div style="font-size:.7rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.3rem;">PART 4 OF 7</div>
                 <div class="wf-tile-name">Beyond Transformers & Diffusion</div>
                 <div class="wf-tile-desc">GANs, video models, audio models — the rest of the landscape.</div>
                 <span class="wf-tile-action">read</span>
             </div>
             <div class="wf-tile" style="border-left:3px solid var(--wf-cyan);" onclick="route('ai/finetuning')">
-                <div style="font-size:.7rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.3rem;">PART 5 OF 6</div>
+                <div style="font-size:.7rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.3rem;">PART 5 OF 7</div>
                 <div class="wf-tile-name">Finetuning, LoRA & PEFT</div>
                 <div class="wf-tile-desc">How you adapt a model without training from scratch.</div>
                 <span class="wf-tile-action">read</span>
             </div>
             <div class="wf-tile" style="border-left:3px solid var(--wf-gold);" onclick="route('ai/metaphor')">
-                <div style="font-size:.7rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.3rem;">PART 6 OF 6</div>
+                <div style="font-size:.7rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.3rem;">PART 6 OF 7</div>
                 <div class="wf-tile-name">The Wavefunction Metaphor</div>
                 <div class="wf-tile-desc">They're all the same idea. Here's why.</div>
+                <span class="wf-tile-action">read</span>
+            </div>
+            <div class="wf-tile" style="border-left:3px solid var(--wf-cyan);" onclick="route('ai/inference')">
+                <div style="font-size:.7rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.3rem;">PART 7 OF 7</div>
+                <div class="wf-tile-name">Inference: The Vocabulary of Running AI</div>
+                <div class="wf-tile-desc">Tensors, layers, quantisation, and why the numbers matter.</div>
                 <span class="wf-tile-action">read</span>
             </div>
         </div>
@@ -2962,7 +2974,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
     <div id="ai/transformers" class="wf-section wf-article">
         <a class="wf-back" onclick="route('ai')">← how ai works</a>
-        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 1 OF 6</div>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 1 OF 7</div>
         <h1 class="wf-section-hdr">The Transformer</h1>
         <p class="wf-section-desc">GPT, Claude, Gemini, LLaMA — all built on this.</p>
 
@@ -3123,7 +3135,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
     <div id="ai/diffusion" class="wf-section wf-article">
         <a class="wf-back" onclick="route('ai')">← how ai works</a>
-        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 2 OF 6</div>
+        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 2 OF 7</div>
         <h1 class="wf-section-hdr">Diffusion Models</h1>
         <p class="wf-section-desc">Stable Diffusion, DALL-E, Midjourney — the other architecture.</p>
 
@@ -3253,7 +3265,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
     <div id="ai/determinism-seeds" class="wf-section wf-article">
         <a class="wf-back" onclick="route('ai')">← how ai works</a>
-        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 3 OF 6</div>
+        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 3 OF 7</div>
         <h1 class="wf-section-hdr">Determinism, Seeds & Sampling</h1>
         <p class="wf-section-desc">Why the same prompt gives different outputs.</p>
 
@@ -3367,7 +3379,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
     <div id="ai/architectures" class="wf-section wf-article">
         <a class="wf-back" onclick="route('ai')">← how ai works</a>
-        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 4 OF 6</div>
+        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 4 OF 7</div>
         <h1 class="wf-section-hdr">Beyond Transformers & Diffusion</h1>
         <p class="wf-section-desc">GANs, video models, audio models — the rest of the landscape.</p>
 
@@ -3532,7 +3544,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
     <div id="ai/finetuning" class="wf-section wf-article">
         <a class="wf-back" onclick="route('ai')">← how ai works</a>
-        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 5 OF 6</div>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 5 OF 7</div>
         <h1 class="wf-section-hdr">Finetuning, LoRA & PEFT</h1>
         <p class="wf-section-desc">How you adapt a model without training from scratch.</p>
 
@@ -3729,7 +3741,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
     <div id="ai/metaphor" class="wf-section wf-article">
         <a class="wf-back" onclick="route('ai')">← how ai works</a>
-        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 6 OF 6</div>
+        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 6 OF 7</div>
         <h1 class="wf-section-hdr">The Wavefunction Metaphor</h1>
         <p class="wf-section-desc">They're all the same idea. Here's why.</p>
 
@@ -3806,6 +3818,681 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <a onclick="route('ai/finetuning')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 5: Finetuning, LoRA & PEFT</a>
+                <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a onclick="route('ai/inference')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 7: Inference Vocabulary →</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="ai/inference" class="wf-section wf-article">
+        <a class="wf-back" onclick="route('ai')">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 7 OF 7</div>
+        <h1 class="wf-section-hdr">Inference: The Vocabulary of Running AI</h1>
+        <p class="wf-section-desc">Tensors, layers, weights, quantisation — and why the number format you choose changes everything.</p>
+
+        <div class="wf-article-body">
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Building Blocks</h3>
+            <p>When you run an AI model — inference — you're executing a computational graph. Every concept below is something that graph is made of. None of them are magical. All of them are just numbers being multiplied and added together, at extraordinary scale.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">Decoder vs Encoder: Two Families of Transformer</h3>
+            <p>The original 2017 Transformer had two halves — an encoder and a decoder. The field split them apart and built entirely different model families from each half. Understanding which half you're using explains most of the differences between models.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">Decoder-Only (Autoregressive)</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Models:</strong> GPT-4, Claude, LLaMA, Mistral, Gemini, Qwen, Command R<br><br>
+                        <strong>How it works:</strong> Processes tokens left-to-right. Each token can only attend to tokens that came <em>before</em> it (causal masking). Generates one token at a time, feeding each output back as input.<br><br>
+                        <strong>Trained on:</strong> Next-token prediction — "given everything so far, what comes next?"<br><br>
+                        <strong>Good at:</strong> Text generation, reasoning, conversation, code, creative writing — anything where you produce a sequence one step at a time.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.88rem;margin-bottom:.6rem;">Encoder-Only (Bidirectional)</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Models:</strong> BERT, RoBERTa, DeBERTa, DistilBERT, BGE, E5<br><br>
+                        <strong>How it works:</strong> Processes all tokens simultaneously. Every token can attend to every other token — forward <em>and</em> backward. The model sees the full input at once.<br><br>
+                        <strong>Trained on:</strong> Masked language modelling — hide random tokens and predict them from context, plus next-sentence prediction.<br><br>
+                        <strong>Good at:</strong> Understanding, classification, named entity recognition, semantic search, embeddings — anything where you analyse existing text rather than generate new text.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Key Difference: Causal Mask vs Full Attention</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Decoder (GPT, Claude, LLaMA):</strong> Token 5 can see tokens 1–4. Token 6 can see tokens 1–5. Never looks ahead.<br>
+                    <strong style="color:var(--wf-accent);">Encoder (BERT):</strong> Token 5 can see tokens 1–4 <em>and</em> tokens 6–N. Every token sees the whole sequence.
+                </p>
+            </div>
+
+            <p>This single difference — whether attention is <strong>causal</strong> (forward-only) or <strong>bidirectional</strong> (full) — determines what the model can do. Decoders can generate because they're trained to predict the future without seeing it. Encoders can't generate, but they understand context more deeply because they see the entire input at once.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Why BERT can't write a story:</strong> It was trained to fill in blanks, not to continue sequences. It has no concept of "what comes next" — only "what fits here, given everything around it."<br>
+                <strong style="color:var(--wf-gold);">Why GPT can't do BERT's job as well:</strong> When GPT classifies a sentence, each token only sees what came before it. BERT sees the whole sentence. For understanding tasks, bidirectional context wins.
+            </p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Encoder-Decoder (The Original Architecture)</h3>
+            <p>Some models keep both halves. The encoder processes the full input bidirectionally, then the decoder generates output autoregressively while attending to the encoder's representations.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2;">
+                <strong style="color:var(--wf-accent);">Models:</strong> T5, FLAN-T5, mBART, Whisper (for speech)<br>
+                <strong style="color:var(--wf-accent);">Good at:</strong> Translation, summarisation, speech-to-text — tasks where the input and output are different sequences with different structures
+            </p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Size and Scale</h3>
+            <p>The model families also differ dramatically in scale, which explains their different roles in practice:</p>
+
+            <div style="margin:1.2rem 0;overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--wf-border);">
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Architecture</th>
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Typical Size</th>
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Inference Cost</th>
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Primary Use</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom:1px solid var(--wf-border);">
+                            <td style="padding:.5rem .8rem;color:var(--wf-accent);">Encoder (BERT-class)</td>
+                            <td style="padding:.5rem .8rem;">110M – 350M</td>
+                            <td style="padding:.5rem .8rem;">Low — single forward pass</td>
+                            <td style="padding:.5rem .8rem;">Embeddings, classification, search, NER</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--wf-border);">
+                            <td style="padding:.5rem .8rem;color:var(--wf-gold);">Encoder-Decoder (T5-class)</td>
+                            <td style="padding:.5rem .8rem;">250M – 11B</td>
+                            <td style="padding:.5rem .8rem;">Medium — encode once, decode many</td>
+                            <td style="padding:.5rem .8rem;">Translation, summarisation, structured output</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:.5rem .8rem;color:var(--wf-cyan);">Decoder (GPT-class)</td>
+                            <td style="padding:.5rem .8rem;">1B – 2T+</td>
+                            <td style="padding:.5rem .8rem;">High — one forward pass per token</td>
+                            <td style="padding:.5rem .8rem;">General reasoning, generation, conversation</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>BERT-class models are small because they don't need to generate — they just need to understand. A 110M parameter BERT can power a semantic search system that handles millions of queries. A 70B decoder model can reason about novel problems but costs 600× more compute per input.</p>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">The big generative models (GPT, Claude, LLaMA) are all decoders. BERT and its descendants are encoders. They share the same attention mechanism, the same matrix multiplications, the same fundamental maths — the difference is which direction information is allowed to flow.</p>
+            </div>
+
+            <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">The Vocabulary</h3>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Parameter</h3>
+            <p>A parameter is any number in the model that was learned during training. When someone says "a 70 billion parameter model," they mean the model contains 70 billion individually tuned numbers that collectively encode everything the model knows.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Weights</strong> — the numbers inside the matrices (W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, FFN matrices, embeddings). The vast majority of parameters.<br>
+                <strong style="color:var(--wf-cyan);">Biases</strong> — offset values added after a matrix multiply (the +b in Wx + b). Some architectures omit them entirely.<br>
+                <strong style="color:var(--wf-cyan);">Scale factors</strong> — learned per-element multipliers in normalisation layers (γ in RMSNorm).
+            </p>
+
+            <p>Parameters are fixed after training — they don't change during inference. The number of parameters determines the model's capacity (how much it can learn), its memory footprint (how much RAM/VRAM it needs), and its compute cost (how many operations per token). More parameters generally means more capable, but also more expensive to run.</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Not all numbers in a running model are parameters. Activations (intermediate values), the KV cache, and optimizer states are all computed at runtime — they're not part of the model's parameter count.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Inference</h3>
+            <p>Inference is the act of running a trained model to produce an output. Training teaches the model. Inference uses what it learned.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Training</strong><br>
+                    Feed data in, compute how wrong the output was, adjust parameters to be less wrong. Repeat billions of times. Costs millions of dollars and weeks of GPU time. Happens once.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Inference</strong><br>
+                    Feed input in, run it forward through the model, get an output. No learning happens — the parameters are frozen. Costs fractions of a penny per request. Happens billions of times.</p>
+                </div>
+            </div>
+
+            <p>Everything on this page — matmuls, attention, softmax, quantisation — is about making inference faster, cheaper, and more accessible. Training is a one-off cost. Inference is the ongoing cost that scales with every user, every query, every token.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Token & Tokenisation</h3>
+            <p>Models don't process text as characters or words — they process <strong>tokens</strong>. A tokeniser splits text into subword chunks that the model was trained on. Each token maps to an integer ID, and each ID maps to a vector in the embedding table.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">"Hello world"</strong> → ["Hello", " world"] → [15496, 995]<br>
+                    <strong style="color:var(--wf-cyan);">"unbelievable"</strong> → ["un", "believ", "able"] → [348, 31141, 481]<br>
+                    <strong style="color:var(--wf-cyan);">"😊"</strong> → ["😊"] → [76460]
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Common words</strong> get a single token: "the", "Hello", "function"<br>
+                <strong style="color:var(--wf-gold);">Rare words</strong> get split into pieces: "quantisation" → "quant", "isation"<br>
+                <strong style="color:var(--wf-gold);">Vocabulary size</strong> is typically 32K–128K tokens — a fixed dictionary the model was trained with
+            </p>
+
+            <p>Tokens are the atomic unit of everything. Context length is measured in tokens. Cost is measured per token. The model generates one token at a time. When people say a model has a "128K context window," they mean it can process ~128,000 tokens in a single pass — roughly 100,000 words.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Embedding</h3>
+            <p>An embedding is a dense vector of numbers that represents a token (or any discrete item) as a point in continuous space. The embedding table is a matrix with one row per vocabulary token — look up a token ID, get its vector.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    token_id = 15496 &nbsp;→&nbsp; embedding[15496] &nbsp;→&nbsp; [0.012, −0.34, 0.77, …]<sub>4096 dims</sub>
+                </p>
+            </div>
+
+            <p>Words with similar meanings end up near each other in embedding space. "King" is near "queen." "Python" is near both "snake" and "programming" — in different directions. The geometry of the embedding space <em>is</em> the model's understanding of meaning.</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The embedding table is the first and last thing in the model. Input tokens are looked up in it to enter the model. At the output, the final hidden state is projected back against it (or a separate output matrix) to produce logits over the vocabulary.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Context Window (Sequence Length)</h3>
+            <p>The maximum number of tokens a model can process in a single pass. Everything — your prompt, the conversation history, the system instructions, and the model's response — must fit within this window.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">GPT-2 (2019):</strong> 1,024 tokens<br>
+                <strong style="color:var(--wf-cyan);">GPT-3 (2020):</strong> 2,048 tokens<br>
+                <strong style="color:var(--wf-cyan);">GPT-4 (2023):</strong> 8K–128K tokens<br>
+                <strong style="color:var(--wf-cyan);">Modern models (2024+):</strong> 128K–1M+ tokens
+            </p>
+
+            <p>Attention is O(N²) in sequence length — doubling the context quadruples the attention compute. FlashAttention and other optimisations reduce the memory cost, but the fundamental compute scaling remains. Long context is expensive.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">KV Cache</h3>
+            <p>During autoregressive generation, the model produces one token at a time. Without caching, it would need to recompute the Key and Value vectors for <em>every previous token</em> at each step — an enormous waste of compute.</p>
+
+            <p>The KV cache stores the K and V tensors from all previous tokens so they only need to be computed once:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">Step 1 (prefill):</strong> Process the entire prompt. Compute and cache K, V for all input tokens across all layers.<br>
+                <strong style="color:var(--wf-accent);">Step 2+ (decode):</strong> For each new token, compute its Q, K, V. Append its K, V to the cache. Attend to the full cached K, V. Generate the next token.
+            </p>
+
+            <p>The KV cache is often the dominant memory consumer during long-context inference. For a 70B model with 128K context in BF16, the KV cache alone can exceed 40 GB. This is why quantised KV caches (INT8, FP8) and techniques like GQA (grouped-query attention) matter — they reduce the cache size without meaningful quality loss.</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The distinction between "prefill" (processing the prompt) and "decode" (generating tokens) is fundamental to inference performance. Prefill is compute-bound (large MatMuls). Decode is memory-bound (reading the KV cache for a single token's attention).</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Tensor</h3>
+            <p>A tensor is a multi-dimensional array of numbers. That's it. A single number is a 0D tensor (scalar). A list of numbers is 1D (vector). A grid of numbers is 2D (matrix). Stack grids and you get 3D, 4D, and beyond.</p>
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Scalar</strong> — a single number: 3.14<br>
+                <strong style="color:var(--wf-cyan);">Vector</strong> — a list: [0.2, −0.5, 0.8]<br>
+                <strong style="color:var(--wf-cyan);">Matrix</strong> — a grid: 512 rows × 512 columns<br>
+                <strong style="color:var(--wf-cyan);">Tensor</strong> — any of the above, or higher: [batch × sequence × hidden_dim]
+            </p>
+            <p>Every weight, every activation, every input to an AI model is stored as a tensor. When people say "a 7B parameter model," they mean 7 billion numbers stored across hundreds of tensors.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Weight</h3>
+            <p>A weight is a single learned number inside the model. During training, the model adjusts billions of these weights so that the outputs become useful. After training, the weights are fixed — they <em>are</em> the model. The weight tensors (W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, the feed-forward matrices, the embeddings) hold everything the model has ever learned.</p>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The model file you download is just the weight tensors serialised to disk. Load them into GPU memory, and you have a model.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Layer</h3>
+            <p>A layer is one step in the model's processing pipeline. In a Transformer, each layer contains a self-attention block and a feed-forward block. The input enters, gets transformed, and exits as a new representation. Stack 32, 80, or 128 of these and you have a deep model — "deep" literally means "many layers."</p>
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Layer 1</strong> — learns surface patterns (syntax, common phrases)<br>
+                <strong style="color:var(--wf-gold);">Layer N/2</strong> — learns intermediate structure (relationships, grammar)<br>
+                <strong style="color:var(--wf-gold);">Layer N</strong> — learns abstract meaning (intent, reasoning, context)
+            </p>
+            <p>Each layer refines the representation. Early layers are concrete; later layers are abstract. The "depth" is what gives these models their power.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Feed-Forward Network (FFN / MLP)</h3>
+            <p>Inside every Transformer layer, after attention has decided <em>what to look at</em>, the feed-forward network decides <em>what to do with it</em>. It's a simple two-layer neural network applied independently to each token:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    FFN(x) = W<sub>2</sub> · activation(W<sub>1</sub> · x + b<sub>1</sub>) + b<sub>2</sub>
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Step 1:</strong> Project the token into a wider space (W<sub>1</sub> expands, e.g. 4096 → 11008 dimensions)<br>
+                <strong style="color:var(--wf-cyan);">Step 2:</strong> Apply a nonlinear activation function (GeLU, SiLU) — this is where the network gains its expressive power<br>
+                <strong style="color:var(--wf-cyan);">Step 3:</strong> Project back down to the original size (W<sub>2</sub> compresses, e.g. 11008 → 4096)
+            </p>
+
+            <p>The expand-then-compress pattern gives the network a "wide bottleneck" where it can mix features freely before squeezing them back down. The FFN accounts for roughly two-thirds of the total parameters in a Transformer — and two-thirds of the compute.</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Think of attention as routing — it chooses which information to combine. The FFN is processing — it transforms that information into something new. Every layer does both: route, then process.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Up Projection & Down Projection</h3>
+            <p>The two matrix multiplications inside the feed-forward network have specific names. They describe what happens to the dimensionality:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    h = activation(W<sub>up</sub> · x) &nbsp;&nbsp;&nbsp;<span style="color:var(--wf-muted);font-size:.82rem;">← up projection: 4096 → 11008</span><br>
+                    y = W<sub>down</sub> · h &nbsp;&nbsp;&nbsp;<span style="color:var(--wf-muted);font-size:.82rem;">← down projection: 11008 → 4096</span>
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Up projection (W<sub>up</sub>)</strong> — expands the hidden state into a wider intermediate space. This is where the network gets room to represent complex feature combinations. The expansion ratio is typically 2.7–4× the model dimension.<br>
+                <strong style="color:var(--wf-gold);">Down projection (W<sub>down</sub>)</strong> — compresses back to the original dimension. The information that survived the activation function gets squeezed back into the residual stream.
+            </p>
+
+            <p>In gated architectures (LLaMA, Mistral), there's also a <strong style="color:var(--wf-cyan);">gate projection</strong> — a second up projection whose output element-wise-multiplies the first, acting as a learned gate that controls which features pass through. This is the SwiGLU variant:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    FFN(x) = W<sub>down</sub> · (SiLU(W<sub>gate</sub> · x) ⊙ W<sub>up</sub> · x)
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The up and down projections are the largest weight matrices in the model. In a 7B model, each layer's FFN has three matrices of ~4096×11008 — that's ~135M parameters per layer, just in the FFN.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Activation Function</h3>
+            <p>An activation function is a simple nonlinear operation applied element-by-element to a vector. Without it, stacking layers of matrix multiplications would collapse into a single matrix multiplication — the network would be linear, incapable of learning anything complex.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">ReLU</strong> — max(0, x) — kills negatives, passes positives. Simple. Fast. The classic.<br>
+                    <strong style="color:var(--wf-gold);">GeLU</strong> — x · Φ(x) — a smooth, probabilistic gate. Used in GPT, BERT, most modern LLMs.<br>
+                    <strong style="color:var(--wf-accent);">SiLU / Swish</strong> — x · σ(x) — smooth, self-gated. Used in LLaMA, Mistral.<br>
+                    <strong style="color:var(--wf-muted);">Sigmoid</strong> — 1/(1+e<sup>−x</sup>) — squashes everything to (0,1). Used in gates and outputs.
+                </p>
+            </div>
+
+            <p>The word "activation" has a dual meaning in AI. The <strong>activation function</strong> is the nonlinearity (ReLU, GeLU, etc.). An <strong>activation</strong> (noun) is the output value after applying that function — the intermediate numbers flowing through the network during inference. When people talk about "activation memory," they mean the memory used to store all these intermediate values.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">RMSNorm — Root Mean Square Normalisation</h3>
+            <p>Normalisation keeps numbers from exploding or vanishing as they pass through dozens of layers. RMSNorm is the version most modern Transformers use (LLaMA, Mistral, Gemma). It's simpler and faster than the original LayerNorm.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    RMSNorm(x) = x / √(mean(x²) + ε) × γ
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Step 1:</strong> Square every element, take the mean, take the square root — that's the RMS (root mean square)<br>
+                <strong style="color:var(--wf-cyan);">Step 2:</strong> Divide each element by the RMS — now the vector has unit scale<br>
+                <strong style="color:var(--wf-cyan);">Step 3:</strong> Multiply by a learned scale factor γ (per element) — the model learns the right magnitude
+            </p>
+
+            <p>The difference from LayerNorm: RMSNorm skips the mean-subtraction step. It doesn't re-centre the values, only re-scales them. This removes one reduction operation per normalisation — which matters when you're doing it billions of times.</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">ε (epsilon) is a tiny constant (e.g. 10⁻⁶) added to prevent division by zero. Every normalisation formula has one.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">MatVec (Matrix-Vector Multiply)</h3>
+            <p>The fundamental operation of neural network inference. Take a matrix (the weights) and multiply it by a vector (the input). Every row of the matrix produces one output number — a weighted sum of the input.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    y = W · x<br>
+                    <span style="color:var(--wf-muted);font-size:.82rem;">where W is [out_dim × in_dim], x is [in_dim], y is [out_dim]</span>
+                </p>
+            </div>
+
+            <p>A model with 7 billion parameters does billions of these multiply-and-add operations per token. This is why GPUs matter — they're built to do this in bulk. The entire cost of inference is dominated by matrix multiplications.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">MatMul (Matrix-Matrix Multiply)</h3>
+            <p>MatVec multiplies a matrix by a single vector. MatMul multiplies a matrix by <em>another matrix</em> — which is equivalent to doing many MatVecs in parallel, one per column of the second matrix.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    C = A · B<br>
+                    <span style="color:var(--wf-muted);font-size:.82rem;">where A is [M × K], B is [K × N], C is [M × N]</span>
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">In attention:</strong> Q · K<sup>T</sup> is a MatMul — every query against every key, producing the [seq_len × seq_len] attention score matrix<br>
+                <strong style="color:var(--wf-cyan);">In batched inference:</strong> processing multiple tokens at once turns every MatVec into a MatMul — the batch dimension becomes columns<br>
+                <strong style="color:var(--wf-cyan);">In the FFN:</strong> the up and down projections are MatMuls when processing a full sequence
+            </p>
+
+            <p>MatMul is what GPUs are truly optimised for. Tensor Cores on NVIDIA GPUs, AMX on Intel, and the matrix engines on TPUs are all specialised MatMul accelerators. The arithmetic intensity of MatMul (O(N³) compute for O(N²) data) means the hardware can stay busy — the ratio of compute to memory access is high enough to saturate the silicon.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Dot Product</h3>
+            <p>The simplest form of similarity measurement. Take two vectors, multiply them element-by-element, and sum the results. If the vectors point in the same direction, the dot product is large. If they're orthogonal, it's zero. If opposite, it's negative.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:0;">
+                    a · b = Σ a<sub>i</sub> × b<sub>i</sub>
+                </p>
+            </div>
+
+            <p>In attention, Q · K<sup>T</sup> computes the dot product between every query and every key — this is how the model measures "how relevant is token A to token B?" Every attention score starts as a dot product.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Cosine Similarity</h3>
+            <p>The dot product measures similarity, but it's affected by vector magnitude — longer vectors give bigger dot products even if they point the same direction. Cosine similarity fixes this by normalising:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:0;">
+                    cos(a, b) = (a · b) / (‖a‖ × ‖b‖)
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">+1</strong> — vectors point in the same direction (identical meaning)<br>
+                <strong style="color:var(--wf-gold);">0</strong> — vectors are orthogonal (unrelated)<br>
+                <strong style="color:var(--wf-gold);">−1</strong> — vectors point in opposite directions (opposite meaning)
+            </p>
+
+            <p>Cosine similarity is the standard metric for comparing embeddings — sentence similarity, RAG retrieval, semantic search. It measures the <em>angle</em> between two vectors, ignoring their length. Two documents can have very different word counts but similar meaning — cosine catches that.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Softmax</h3>
+            <p>Takes a list of raw numbers and converts them into a probability distribution — all positive, all summing to 1. Large values get amplified; small values get crushed toward zero.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.88rem;line-height:2;margin:0;">
+                    softmax(z<sub>i</sub>) = e<sup>z<sub>i</sub></sup> / Σ e<sup>z<sub>j</sub></sup>
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">In attention</strong> — converts raw attention scores into weights that sum to 1<br>
+                <strong style="color:var(--wf-cyan);">At the output</strong> — converts logits into a probability distribution over the full vocabulary
+            </p>
+
+            <p>Softmax is the collapse mechanism. It takes a field of possibilities and forces a decision.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Logits</h3>
+            <p>Logits are the raw, unnormalised scores that a model outputs before softmax is applied. The final layer of a Transformer produces one number per vocabulary token — typically 32,000–128,000 numbers. These are the logits.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    logits = W<sub>output</sub> · h<sub>final</sub><br>
+                    <span style="color:var(--wf-muted);font-size:.82rem;">probabilities = softmax( logits / T )</span>
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Before softmax:</strong> logits can be any real number — positive, negative, large, small. They have no probabilistic meaning yet.<br>
+                <strong style="color:var(--wf-gold);">After softmax:</strong> they become a probability distribution — all positive, summing to 1. Now you can sample from them.
+            </p>
+
+            <p>Logits are the model's raw opinion. Temperature scales them. Softmax normalises them. Sampling picks from them. Every text generation pipeline works with logits as the intermediate currency between the model's final layer and the token it actually outputs.</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The name comes from "log-odds" — in logistic regression, the logit function is the inverse of the sigmoid. In modern usage, it just means "the pre-softmax output scores."</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Q, K, V — Query, Key, Value</h3>
+            <p>The three projections that make attention work. For each token, the model computes three different vectors from the same embedding:</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;"><strong style="color:var(--wf-cyan);">Q (Query)</strong><br>"What am I looking for?" — the question this token asks of others</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;"><strong style="color:var(--wf-gold);">K (Key)</strong><br>"What do I contain?" — how this token advertises itself to queries</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;"><strong style="color:var(--wf-accent);">V (Value)</strong><br>"What do I contribute?" — the actual information this token carries</p>
+                </div>
+            </div>
+
+            <p>Q · K<sup>T</sup> computes relevance. Softmax normalises it. The result weights the V vectors. Each token's output is a weighted blend of every other token's value, based on learned relevance.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Attention — The Full Mechanism</h3>
+            <p>Attention is the core operation that makes Transformers work. It's how the model decides which tokens are relevant to which other tokens — and blends their information accordingly.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    Attention(Q, K, V) = softmax( Q · K<sup>T</sup> / √d<sub>k</sub> ) · V
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
+                <strong style="color:var(--wf-cyan);">1.</strong> Compute Q · K<sup>T</sup> — a matrix of similarity scores between every pair of tokens<br>
+                <strong style="color:var(--wf-cyan);">2.</strong> Divide by √d<sub>k</sub> — prevents scores from growing too large, which would push softmax into near-one-hot outputs<br>
+                <strong style="color:var(--wf-cyan);">3.</strong> Apply softmax per row — each token now has a probability distribution over all other tokens<br>
+                <strong style="color:var(--wf-cyan);">4.</strong> Multiply by V — each token's output is a weighted sum of all value vectors, where the weights are the attention scores
+            </p>
+
+            <p>In practice, models use <strong style="color:var(--wf-gold);">multi-head attention</strong> — they run 32–128 independent attention operations in parallel, each with its own Q, K, V projections. One head might track syntax, another co-reference, another semantic similarity. The outputs are concatenated and projected back down.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">SDPA — Scaled Dot-Product Attention</h3>
+            <p>SDPA is the formal name for the attention formula above — "scaled dot-product attention." The "scaled" part is the division by √d<sub>k</sub>. In code, this is the function you actually call:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2;margin:0;">
+                    <span style="color:var(--wf-cyan);">torch.nn.functional.scaled_dot_product_attention(Q, K, V)</span>
+                </p>
+            </div>
+
+            <p>PyTorch's SDPA implementation automatically selects the fastest available kernel for your hardware:</p>
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2;">
+                <strong style="color:var(--wf-accent);">FlashAttention</strong> — fuses the entire attention computation into a single GPU kernel, avoiding materialising the full N×N attention matrix. Reduces memory from O(N²) to O(N). The reason modern models can handle 128K+ context.<br>
+                <strong style="color:var(--wf-accent);">Memory-efficient attention</strong> — similar tiling strategy for GPUs that don't support FlashAttention<br>
+                <strong style="color:var(--wf-accent);">Math fallback</strong> — the naive implementation when nothing better is available
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Before FlashAttention, a 32K context window needed ~4 GB just for the attention matrix of one layer. FlashAttention made long-context models practical by never storing that matrix at all — it computes attention in tiles, streaming the result.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Output Projection</h3>
+            <p>After multi-head attention concatenates the outputs from all heads, the result passes through one more linear layer — the output projection:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    MultiHead = Concat(head<sub>1</sub>, …, head<sub>h</sub>) · W<sub>O</sub>
+                </p>
+            </div>
+
+            <p>W<sub>O</sub> is a learned matrix that mixes the outputs from all attention heads back into a single representation of the original dimension. Without it, the heads would contribute independently — the output projection lets the model learn how to <em>combine</em> what different heads discovered.</p>
+
+            <p>There's also an output projection at the very end of the model — the <strong style="color:var(--wf-gold);">language model head</strong> — which maps the final hidden state into logits over the vocabulary. This is the last matrix multiply before softmax and sampling.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">RoPE — Rotary Position Embeddings</h3>
+            <p>Transformers process all tokens in parallel — they have no inherent sense of order. Positional encoding injects sequence position into the model. RoPE is the method most modern LLMs use (LLaMA, Mistral, Qwen, Gemma).</p>
+
+            <p>The idea: encode position by <em>rotating</em> the query and key vectors in pairs of dimensions. Token at position <em>m</em> gets its Q and K vectors rotated by an angle proportional to <em>m</em>:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    RoPE(x, m) = x · R(m·θ)<br>
+                    <span style="color:var(--wf-muted);font-size:.82rem;">where R is a rotation matrix and θ varies by dimension pair</span>
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Relative by construction:</strong> when Q and K are both rotated, the dot product Q·K<sup>T</sup> naturally depends on the <em>difference</em> between their positions — not the absolute position. The model learns relative distance for free.<br>
+                <strong style="color:var(--wf-cyan);">Extrapolation:</strong> because it's based on rotation angles, RoPE can extend to sequence lengths longer than training — the basis of most context-length extension techniques (NTK-aware scaling, YaRN).<br>
+                <strong style="color:var(--wf-cyan);">No learned parameters:</strong> the rotation frequencies are fixed (like sinusoidal encodings), so RoPE adds zero extra parameters to the model.
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The different dimension pairs rotate at different frequencies — low dimensions rotate slowly (capturing long-range position), high dimensions rotate fast (capturing local position). It's the same idea as Fourier features: encode position at multiple scales simultaneously.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Temperature</h3>
+            <p>A single number that controls how decisive the model is when sampling. It scales the logits before softmax:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.9rem;line-height:2;margin:0;">
+                    P(token) = softmax( logits / T )
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">T → 0</strong> — softmax becomes argmax. The model always picks the most likely token. Deterministic, repetitive.<br>
+                <strong style="color:var(--wf-gold);">T = 1</strong> — raw probabilities. The model samples naturally from its distribution.<br>
+                <strong style="color:var(--wf-gold);">T > 1</strong> — distribution flattens. Less likely tokens get a real chance. Creative, chaotic.
+            </p>
+
+            <p>Temperature doesn't change what the model "thinks." It changes how aggressively it commits to its strongest prediction. Low temperature = sharp collapse. High temperature = broad exploration.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Latent / Latent Space</h3>
+            <p>A latent is a hidden representation — a vector of numbers that the model uses internally but that doesn't correspond directly to anything a human would recognise. The "latent space" is the high-dimensional coordinate system these vectors live in.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">In a Transformer</strong><br>
+                    Every token's embedding is a latent — a point in a 4096-dimensional space. Tokens with similar meanings end up near each other. Each layer moves these points around, refining meaning through geometry.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-accent);">In a Diffusion Model</strong><br>
+                    The noisy image representation at each denoising step is a latent. Stable Diffusion works in a compressed "latent space" (64×64 instead of 512×512 pixels) — the VAE encoder maps images into it, and the decoder maps back out.</p>
+                </div>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Why it matters:</strong> The model never works with raw inputs. It projects everything into latent space first — a compressed, structured representation where the geometry encodes meaning. Nearby points mean similar things. Directions encode concepts. The model reasons in this space, and the output is decoded back into tokens, pixels, or audio.
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">When someone says "latent diffusion," they mean "diffusion that happens in a compressed representation space, not in raw pixel space." When someone says "the model's latent representations," they mean the internal vectors the model computes between input and output.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">Number Formats: Why Precision Matters</h3>
+            <p>Every weight, every activation, every intermediate result is a number. <em>How</em> you represent that number — how many bits, what format — changes everything about cost, speed, and quality.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">FP32 — 32-bit Floating Point</h3>
+            <p>The gold standard. 1 sign bit, 8 exponent bits, 23 mantissa bits. Can represent numbers from ≈10<sup>−38</sup> to ≈10<sup>38</sup> with ~7 decimal digits of precision.</p>
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Pro:</strong> Maximum precision, no numerical issues<br>
+                <strong style="color:var(--wf-cyan);">Con:</strong> 4 bytes per weight. A 70B model = 280 GB. Needs multiple high-end GPUs just to load.
+            </p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">BF16 — Brain Float 16</h3>
+            <p>Google's format. 1 sign bit, 8 exponent bits (same range as FP32), but only 7 mantissa bits (~2 decimal digits of precision). Half the memory of FP32, same dynamic range.</p>
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2;">
+                <strong style="color:var(--wf-accent);">Pro:</strong> Halves memory. Training-safe — the wide exponent range prevents overflow/underflow<br>
+                <strong style="color:var(--wf-accent);">Con:</strong> Less precise than FP16 in the mantissa. Fine for neural nets; terrible for scientific computing.
+            </p>
+            <p>Most modern models train in BF16. It's the default precision for LLaMA, Mistral, and most open-weight models.</p>
+
+            <div style="margin:1.5rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">FP32</strong> — [1 sign] [8 exponent] [23 mantissa] — 4 bytes — full precision<br>
+                    <strong style="color:var(--wf-gold);">FP16</strong> — [1 sign] [5 exponent] [10 mantissa] — 2 bytes — narrower range, more mantissa than BF16<br>
+                    <strong style="color:var(--wf-accent);">BF16</strong> — [1 sign] [8 exponent] [7 mantissa] — 2 bytes — same range as FP32, less mantissa
+                </p>
+            </div>
+
+            <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">Quantisation: Shrinking the Numbers</h3>
+            <p>Quantisation converts floating-point weights into lower-precision integers. Instead of storing each weight as a 16-bit or 32-bit float, you map the values into a smaller set of discrete levels. The idea: neural network weights are statistically well-behaved — most values cluster around zero, with tails that decay rapidly. You don't need 32 bits of precision to represent them.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">INT8 — 8-bit Integer</h3>
+            <p>Maps each weight to one of 256 levels. A scale factor and zero-point convert between the quantised integers and the original float values.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    w<sub>float</sub> ≈ scale × (w<sub>int8</sub> − zero_point)
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Memory:</strong> 1 byte per weight. 70B model = ~70 GB. Fits on a single large GPU.<br>
+                <strong style="color:var(--wf-cyan);">Quality:</strong> Negligible degradation for most models. The standard for production inference.
+            </p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">INT4 — 4-bit Integer</h3>
+            <p>Maps each weight to one of 16 levels. Half a byte per weight. This is where things get aggressive — you're representing the entirety of a weight's learned knowledge with just 4 bits.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Memory:</strong> 0.5 bytes per weight. 70B model = ~35 GB. Fits on consumer hardware.<br>
+                <strong style="color:var(--wf-gold);">Quality:</strong> Measurable but often acceptable degradation. GPTQ, AWQ, and GGUF all support this.<br>
+                <strong style="color:var(--wf-gold);">Technique:</strong> Group quantisation — quantise blocks of 32–128 weights together with a shared scale factor, preserving local distributions.
+            </p>
+
+            <p>INT4 is the sweet spot for running large models on consumer GPUs. Most "local LLM" setups use 4-bit quantised models.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">BitNet & Ternary Weights: {−1, 0, +1}</h3>
+            <p>The extreme end of quantisation. Microsoft's BitNet b1.58 constrains every weight to one of three values: −1, 0, or +1. That's 1.58 bits per weight (log₂(3)).</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Traditional MatVec:</strong> multiply and accumulate (MAC) — each operation is a float multiply + float add<br>
+                    <strong style="color:var(--wf-gold);">BitNet MatVec:</strong> add, subtract, or skip — no multiplications at all
+                </p>
+            </div>
+
+            <p>When every weight is −1, 0, or +1, the matrix-vector multiply becomes pure addition and subtraction. The hardware implications are massive:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2;">
+                <strong style="color:var(--wf-accent);">No multiplier circuits needed</strong> — adders are smaller, faster, and use less energy<br>
+                <strong style="color:var(--wf-accent);">~1.58 bits per weight</strong> — a 70B model fits in ~13 GB<br>
+                <strong style="color:var(--wf-accent);">Custom silicon</strong> — purpose-built chips can be radically simpler and more efficient<br>
+                <strong style="color:var(--wf-accent);">Microcontroller inference</strong> — models can potentially run on devices with no floating-point unit at all
+            </p>
+
+            <p>The catch: you can't just quantise a trained model to ternary after the fact. BitNet models must be <em>trained from scratch</em> with ternary constraints. The model learns to distribute its knowledge across three values instead of continuous floats. The research shows that at sufficient scale, ternary models match the quality of full-precision models.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Trits — The Ternary Digit</h3>
+            <p>A <strong>bit</strong> holds two states: 0 or 1. A <strong>trit</strong> holds three: −1, 0, or +1. It's the fundamental unit of ternary computing, and it's what BitNet weights are measured in.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">1 bit</strong> — 2 states — log₂(2) = 1.00 bits of information<br>
+                    <strong style="color:var(--wf-gold);">1 trit</strong> — 3 states — log₂(3) = 1.58 bits of information<br>
+                    <strong style="color:var(--wf-accent);">1 byte</strong> — 256 states — 8 bits — can pack 5 trits (3⁵ = 243 ≤ 256)
+                </p>
+            </div>
+
+            <p>Each trit encodes a simple instruction for the matrix multiply: <strong style="color:var(--wf-cyan);">+1</strong> means add this input, <strong style="color:var(--wf-accent);">−1</strong> means subtract it, <strong style="color:var(--wf-gold);">0</strong> means skip it entirely. No multiplication needed — just routing and addition.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Density:</strong> You can pack 5 trits into a single byte. A 70B-parameter ternary model stores its weights in ~17.5 billion bytes — about 16 GB including overhead.<br>
+                <strong style="color:var(--wf-gold);">Hardware:</strong> Ternary logic maps naturally to simple circuits — a trit can be encoded as two bits, or packed more efficiently. Custom silicon for trit-based models can skip the entire floating-point unit.<br>
+                <strong style="color:var(--wf-gold);">History:</strong> Ternary computing isn't new. The Soviet Setun computer (1958) was built on balanced ternary. BitNet brings the idea back, applied to neural network weights.
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">A ternary weight isn't a degraded float. It's a different primitive — one that trades precision for radical simplicity. When the model is trained to work in trits from the start, it learns to encode its knowledge in patterns of add, subtract, and skip.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">The Precision-Cost Tradeoff</h3>
+
+            <div style="margin:1.2rem 0;overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--wf-border);">
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Format</th>
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Bits/Weight</th>
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">70B Model Size</th>
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Compute</th>
+                            <th style="padding:.6rem .8rem;text-align:left;color:var(--wf-cyan);">Quality Loss</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom:1px solid var(--wf-border);">
+                            <td style="padding:.5rem .8rem;color:var(--wf-cyan);">FP32</td>
+                            <td style="padding:.5rem .8rem;">32</td>
+                            <td style="padding:.5rem .8rem;">280 GB</td>
+                            <td style="padding:.5rem .8rem;">Float MAC</td>
+                            <td style="padding:.5rem .8rem;color:var(--wf-cyan);">None (baseline)</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--wf-border);">
+                            <td style="padding:.5rem .8rem;color:var(--wf-accent);">BF16</td>
+                            <td style="padding:.5rem .8rem;">16</td>
+                            <td style="padding:.5rem .8rem;">140 GB</td>
+                            <td style="padding:.5rem .8rem;">Float MAC</td>
+                            <td style="padding:.5rem .8rem;color:var(--wf-accent);">Negligible</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--wf-border);">
+                            <td style="padding:.5rem .8rem;color:var(--wf-gold);">INT8</td>
+                            <td style="padding:.5rem .8rem;">8</td>
+                            <td style="padding:.5rem .8rem;">70 GB</td>
+                            <td style="padding:.5rem .8rem;">Int MAC</td>
+                            <td style="padding:.5rem .8rem;color:var(--wf-gold);">Minimal</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--wf-border);">
+                            <td style="padding:.5rem .8rem;color:var(--wf-gold);">INT4</td>
+                            <td style="padding:.5rem .8rem;">4</td>
+                            <td style="padding:.5rem .8rem;">35 GB</td>
+                            <td style="padding:.5rem .8rem;">Int MAC</td>
+                            <td style="padding:.5rem .8rem;color:var(--wf-gold);">Measurable</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:.5rem .8rem;color:var(--wf-accent);">BitNet 1.58b</td>
+                            <td style="padding:.5rem .8rem;">1.58</td>
+                            <td style="padding:.5rem .8rem;">~13 GB</td>
+                            <td style="padding:.5rem .8rem;">Add/Sub only</td>
+                            <td style="padding:.5rem .8rem;color:var(--wf-accent);">~None at scale*</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="color:var(--wf-muted);font-size:.72rem;margin-top:.4rem;">* BitNet requires training from scratch with ternary constraints. Post-training quantisation to 1.58b is lossy.</p>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Why This Matters</h3>
+            <p>The entire trajectory of making AI accessible is a story of precision reduction. FP32 models need a server room. BF16 models need a workstation. INT4 models run on a gaming laptop. BitNet models could run on a phone — or a microcontroller.</p>
+
+            <p>Every halving of precision roughly halves memory, doubles throughput, and halves energy consumption. The model quality barely changes until you push below 4 bits — and with BitNet, even that boundary is dissolving.</p>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2.5rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">Quantisation isn't degradation. It's compression. The same intelligence, in a smaller container. And at the extreme — ternary weights — the container becomes so simple that the hardware itself can be redesigned around it.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The future of AI isn't just better models. It's the same models, running everywhere, because the numbers got small enough.</p>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a onclick="route('ai/metaphor')" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 6: The Wavefunction Metaphor</a>
                 <a onclick="route('ai')" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
                 <span></span>
             </div>
@@ -4826,6 +5513,58 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
                 </div>
             </div>
 
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">CLIPSeg: Finding the Duck in the Scene</h3>
+            <p>CLIP tells you that an image contains a duck. But <em>where</em> is the duck? Which pixels are duck and which are pond? That's <strong>segmentation</strong> — assigning a label to every pixel in the image. CLIPSeg combines CLIP's text-image understanding with a segmentation decoder to do this with just a text prompt.</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.82rem;line-height:2.2;margin:0;">
+                    Input: image + "a duck"<br>
+                    Output: heatmap where every pixel gets a score for "duckness"<br>
+                    <br>
+                    High score pixels → the duck<br>
+                    Low score pixels → the background (water, reeds, sky)
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Classification</strong> — "there's a duck in this image" (whole-image label)<br>
+                <strong style="color:var(--wf-cyan);">Detection</strong> — "there's a duck at this bounding box" (rectangle around it)<br>
+                <strong style="color:var(--wf-cyan);">Segmentation</strong> — "these exact pixels are duck" (pixel-level mask)
+            </p>
+
+            <p>Each step is finer-grained than the last. Classification knows <em>what</em>. Detection knows <em>where, roughly</em>. Segmentation knows <em>exactly which pixels</em>.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">How CLIPSeg Works</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">The Architecture</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        Takes CLIP's frozen image encoder and adds a lightweight decoder on top. The text prompt is encoded by CLIP's text encoder into a conditioning vector. The decoder uses that vector to produce a per-pixel segmentation mask — guided by the text, grounded in the image features.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Why It Matters</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        Traditional segmentation needs training data with hand-drawn pixel masks — expensive and slow. CLIPSeg segments <em>anything you can describe in words</em>. Ask for "duck" and it finds ducks. Ask for "water near the duck" and it finds that too. Zero-shot, open-vocabulary segmentation — the text prompt <em>is</em> the class definition.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">SAM and the Segmentation Landscape</h3>
+            <p>CLIPSeg isn't alone. Meta's <strong style="color:var(--wf-accent);">SAM (Segment Anything Model)</strong> takes a different approach — give it a point, a box, or a text prompt and it segments any object. The field is converging on models that can isolate any concept in any image, guided by language:</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">CLIPSeg</strong> — text-prompted segmentation via CLIP features. Lightweight, fast.<br>
+                    <strong style="color:var(--wf-cyan);">SAM</strong> — point/box/text-prompted segmentation. Trained on 1B+ masks. Heavier but more precise.<br>
+                    <strong style="color:var(--wf-gold);">Grounding DINO + SAM</strong> — detect with language, then segment. "Find the duck" → bounding box → pixel-perfect mask.<br>
+                    <strong style="color:var(--wf-accent);">SEEM / X-Decoder</strong> — unified models that classify, detect, and segment in one pass.
+                </p>
+            </div>
+
+            <p>The pattern: structure recognition (knowing what a duck looks like) is now <em>directed by</em> symbolic recognition (the word "duck"). The channels aren't just aligned — they're <strong style="color:var(--wf-gold);">collaborating</strong>. Language tells vision what to look for. Vision tells language what's actually there.</p>
+
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">GPT-4V and Beyond: All Channels Active</h3>
             <p>Modern multimodal models combine everything. They can:</p>
 
@@ -4886,7 +5625,7 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
         </div>
     </div>
 
-        <div id="ducks/duck-typing-humans" class="wf-section wf-article">
+    <div id="ducks/duck-typing-humans" class="wf-section wf-article">
         <a class="wf-back" onclick="route('ducks')">← ducks</a>
         <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 7 OF 7</div>
         <h1 class="wf-section-hdr">Duck Typing for Humans</h1>
