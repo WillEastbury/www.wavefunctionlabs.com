@@ -1,6 +1,6 @@
 # Stage 1: Build picoweb from source
 FROM alpine:3.19 AS builder
-RUN apk add --no-cache gcc musl-dev make
+RUN apk add --no-cache gcc musl-dev make linux-headers
 WORKDIR /build
 COPY picoweb/src/ src/
 COPY picoweb/Makefile .
