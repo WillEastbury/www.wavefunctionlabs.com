@@ -1,0 +1,74 @@
+<footer class="wf-footer">Ψ · wavefunctionlabs · φ = 1.618… · collapse is execution</footer>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/WillEastbury/BareMetalJsTools@main/src/BareMetal.Bind.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/WillEastbury/BareMetalJsTools@main/src/BareMetal.Components.min.js"></script>
+<script>if(location.hash.startsWith('#/')){location.replace('/'+location.hash.slice(2).split('/')[0])}</script>
+<script>
+// ── Wave Canvas ──
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+let w, h, t = 0;
+const PHI = 1.618033988749;
+
+function resize() { w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+addEventListener('resize', resize);
+resize();
+
+function draw() {
+    ctx.clearRect(0, 0, w, h);
+
+    const waves = [
+        { a: 50, f: 0.003, s: 0.012, c: 'rgba(99,102,241,0.10)', y: 0.5 },
+        { a: 35, f: 0.005 * PHI, s: 0.018, c: 'rgba(168,85,247,0.06)', y: 0.55 },
+        { a: 25, f: 0.004, s: -0.01 * PHI, c: 'rgba(6,182,212,0.06)', y: 0.45 },
+        { a: 40, f: 0.002 * PHI, s: 0.007, c: 'rgba(240,192,64,0.03)', y: 0.62 },
+    ];
+
+    for (const wv of waves) {
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x += 3) {
+            const y = h * wv.y
+                + Math.sin(x * wv.f + t * wv.s) * wv.a
+                + Math.sin(x * wv.f * PHI + t * wv.s * 1.3) * wv.a * 0.35;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fillStyle = wv.c;
+        ctx.fill();
+    }
+
+    // Probability density bars
+    for (let x = 0; x < w; x += 4) {
+        const p = Math.pow(Math.cos(x * 0.008 + t * 0.015) * Math.sin(x * 0.006 * PHI - t * 0.012), 2);
+        ctx.fillStyle = `rgba(99,102,241,${p * 0.05})`;
+        ctx.fillRect(x, h * 0.47 - p * 35, 2, p * 70);
+    }
+
+    t++;
+    requestAnimationFrame(draw);
+}
+draw();
+
+// ── Floating symbols ──
+const syms = ['Ψ','φ','π','Σ','∫','∇','Δ','λ','Ω','ℏ','∞','∂','ζ','ε'];
+const colors = ['#6366f1','#a855f7','#06b6d4','#f0c040'];
+const field = document.getElementById('symField');
+
+function spawn() {
+    const el = document.createElement('span');
+    el.className = 'sym';
+    el.textContent = syms[Math.random() * syms.length | 0];
+    el.style.left = Math.random() * 100 + '%';
+    el.style.fontSize = (10 + Math.random() * 22) + 'px';
+    el.style.animationDuration = (14 + Math.random() * 22) + 's';
+    el.style.color = colors[Math.random() * colors.length | 0];
+    field.appendChild(el);
+    setTimeout(() => el.remove(), 38000);
+}
+setInterval(spawn, 2200);
+for (let i = 0; i < 6; i++) setTimeout(spawn, i * 350);
+</script>
+</body>
+</html>

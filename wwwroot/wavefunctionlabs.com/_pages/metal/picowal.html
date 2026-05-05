@@ -1,0 +1,28 @@
+<div class="wf-section">
+        <a href="/metal" class="wf-back">← metal</a>
+        <h1 class="wf-section-hdr">PicoWAL</h1>
+        <p class="wf-section-desc">Micro-database appliance. Runs on a $6 microcontroller.</p>
+        <a href="https://github.com/WillEastbury/picowal" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
+        <div class="wf-article-tags">C · RP2350 · Pico 2W · SD Card · WAL · SSR</div>
+        <div class="wf-article-body">
+            <p>A networked micro-database running on a <strong>Raspberry Pi Pico 2W</strong> with a 3.5" touchscreen and 16GB SD card. Full SSR web UI, user auth, schema management, a query language with joins and aggregates, batch writes, and OTA firmware updates.</p>
+
+            <p><strong>Architecture</strong></p>
+            <ul>
+                <li>RP2350 Cortex-M33, 520KB SRAM</li>
+                <li>Binary schema cards — packs (tables) containing cards (rows)</li>
+                <li>Pack 0-1 in 4MB flash (system data), Pack 2+ on SD (user data)</li>
+                <li>Query engine: <code>S:fields F:packs W:conditions</code> with joins</li>
+                <li>LCD dashboard showing SSID, IP, flash/SD usage</li>
+            </ul>
+
+            <p><strong>Data model</strong></p>
+            <p>Data is organised into <strong>packs</strong> (like tables) containing <strong>cards</strong> (like rows). Each card is a binary blob with a 4-byte magic header followed by ordinal-tagged fields. No ORM. No query planner committee meetings. Just structured bytes on an SD card.</p>
+
+            <div class="wf-insight">A database is just a transformation engine over byte streams.</div>
+
+            <p style="margin-top: 2rem;">
+                <a href="https://github.com/WillEastbury/picowal" target="_blank" class="wf-github-btn">View on GitHub →</a>
+            </p>
+        </div>
+    </div>

@@ -1,9 +1,16 @@
-FROM node:20-alpine
+# Stage 1: Build picoweb from source
+FROM alpine:3.19 AS builder
+RUN apk add --no-cache gcc musl-dev make
+WORKDIR /build
+COPY picoweb/src/ src/
+COPY picoweb/Makefile .
+RUN make
+
+# Stage 2: Runtime
+FROM alpine:3.19
+RUN apk add --no-cache libgcc
 WORKDIR /app
-COPY server.js .
-RUN mkdir -p public
-COPY index.html public/index.html
-COPY phi.html public/phi.html
-COPY wavefunction.html public/wavefunction.html
+COPY --from=builder /build/picoweb .
+COPY wwwroot/ wwwroot/
 EXPOSE 80
-CMD ["node", "server.js"]
+CMD ["./picoweb", "80", "wwwroot", "4"]

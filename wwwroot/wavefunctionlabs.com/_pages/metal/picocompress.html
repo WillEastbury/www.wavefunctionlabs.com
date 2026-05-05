@@ -1,0 +1,43 @@
+<div class="wf-section">
+        <a href="/metal" class="wf-back">← metal</a>
+        <h1 class="wf-section-hdr">PicoCompress</h1>
+        <p class="wf-section-desc">Decode at 540 MB/s. Encode at 47 MB/s. Using 4.6 KB RAM.</p>
+        <a href="https://github.com/WillEastbury/picocompress" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
+        <div class="wf-article-tags">C · Embedded · LZ · Compression · ARM · NEON</div>
+        <div class="wf-article-body">
+            <p>Tiny dependency-free C compression library. Runs on Arduino, ESP32, Pico W/2W, and Raspberry Pi — from <strong>2K SRAM</strong> to Linux SBCs. Beats brotli q1 on ratio. Decodes 2-5× faster. Uses 3,600× less memory.</p>
+
+            <p><strong>Encoder profiles</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>Micro</td><td>1.0 KB encode — fits on ATmega328P with 2K SRAM</td></tr>
+                <tr><td>Balanced</td><td>4.6 KB encode — Pico W, ESP32-C3, general embedded</td></tr>
+                <tr><td>Q3</td><td>7.7 KB encode — Pico 2W, ESP32, medium MCUs</td></tr>
+                <tr><td>Q4</td><td>13.8 KB encode — Pi 3/4/5, ESP32-S3, Linux SBCs</td></tr>
+            </table>
+            <p>All profiles produce decoder-compatible streams. Any encoder, any decoder, always interoperable.</p>
+
+            <p><strong>Features</strong></p>
+            <ul>
+                <li>Streaming and buffer-based APIs</li>
+                <li>Cross-block history up to 2048-byte sliding window</li>
+                <li>64-entry static dictionary (JSON, CSV, HTTP, English, binary)</li>
+                <li>3-entry LRU repeat-offset cache</li>
+                <li>Hardware acceleration: NEON 16B/cycle, CRC32 hash, CLZ match</li>
+                <li>Cortex-M0 safe — no unaligned loads</li>
+            </ul>
+
+            <p><strong>vs the competition</strong></p>
+            <table class="wf-spec-table">
+                <tr><td></td><td><strong>picocompress</strong></td><td>heatshrink</td><td>brotli q1</td></tr>
+                <tr><td>Encode RAM</td><td><strong>4.6 KB</strong></td><td>12.5 KB</td><td>16.7 KB</td></tr>
+                <tr><td>Decode RAM</td><td><strong>1.5 KB</strong></td><td>2.0 KB</td><td>31.5 KB</td></tr>
+                <tr><td>json-4K decode</td><td><strong>541 MB/s</strong></td><td>115 MB/s</td><td>106 MB/s</td></tr>
+            </table>
+
+            <div class="wf-insight">Runs on a Cortex-M0 with just 2K SRAM. No other compression library in its class can compress there.</div>
+
+            <p style="margin-top: 2rem;">
+                <a href="https://github.com/WillEastbury/picocompress" target="_blank" class="wf-github-btn">View on GitHub →</a>
+            </p>
+        </div>
+    </div>

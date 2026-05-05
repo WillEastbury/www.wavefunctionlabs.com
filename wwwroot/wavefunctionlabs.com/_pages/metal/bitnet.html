@@ -1,0 +1,36 @@
+<div class="wf-section">
+        <a href="/metal" class="wf-back">← metal</a>
+        <h1 class="wf-section-hdr">RP2350B_Bitnet</h1>
+        <p class="wf-section-desc">BitNet b1.58 inference on a Raspberry Pi Pico 2W.</p>
+        <a href="https://github.com/WillEastbury/RP2350B_Bitnet" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
+        <div class="wf-article-tags">C · RP2350 · BitNet · 1.58-bit · Ternary · Inference</div>
+        <div class="wf-article-body">
+            <p>A native C inference engine for <strong>BitNet b1.58</strong> targeting the RP2350 with SD card weight storage. The model — 24 layers, dim 1536, 16 heads, FFN 4096, vocab 32K — fits in a <strong>194 MB</strong> SD card image and runs end-to-end in pure C with no runtime dependencies.</p>
+
+            <p><strong>What works</strong></p>
+            <ul>
+                <li>SafeTensors reader + HF → binary converter</li>
+                <li>SentencePiece BPE tokenizer</li>
+                <li>1.58-bit ternary mat-vec (scalar + AVX2)</li>
+                <li>Full transformer forward pass — RoPE, GQA, gated FFN, RMSNorm</li>
+                <li>Argmax + top-K sampler</li>
+                <li>Raw SD card image packer — sector-aligned, DMA-friendly</li>
+            </ul>
+
+            <p><strong>SD card layout</strong></p>
+            <p>Sector 0 holds the header. Vocab at sector 16. Embeddings at sector 1732. 24 layers with stride 11,153 sectors each. Every matrix starts on a sector boundary — DMA-aligned reads never straddle. No filesystem. No indirection.</p>
+
+            <p><strong>Embedding quantization</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>fp32</td><td>319 MB — reference baseline</td></tr>
+                <tr><td>int8 + scale</td><td>194 MB — identical quality ✓</td></tr>
+                <tr><td>int4 + scale</td><td>177 MB — LM head collapses ✗</td></tr>
+            </table>
+
+            <div class="wf-insight">AI doesn't require powerful machines. It requires coordinated ones.</div>
+
+            <p style="margin-top: 2rem;">
+                <a href="https://github.com/WillEastbury/RP2350B_Bitnet" target="_blank" class="wf-github-btn">View on GitHub →</a>
+            </p>
+        </div>
+    </div>
