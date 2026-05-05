@@ -13,4 +13,4 @@ WORKDIR /app
 COPY --from=builder /build/picoweb .
 COPY wwwroot/ wwwroot/
 EXPOSE 80
-CMD ["./picoweb", "80", "wwwroot", "4"]
+CMD ["./picoweb", "80", "wwwroot", "1"]
