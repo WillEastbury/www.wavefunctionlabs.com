@@ -65,6 +65,17 @@ static int make_listen_socket(int port) {
         metal_die("bind :%d", port);
     if (listen(fd, LISTEN_BACKLOG) != 0)
         metal_die("listen");
+
+    /* TCP_DEFER_ACCEPT: kernel holds the accepted socket until data
+     * arrives (or timeout), eliminating an empty-accept wakeup. */
+    int defer_secs = 1;
+    setsockopt(fd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &defer_secs, sizeof(defer_secs));
+
+    /* TCP_FASTOPEN: allow data in the SYN, saving one RTT on new
+     * connections from TFO-capable clients. Queue length = 128. */
+    int tfo_qlen = 128;
+    setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &tfo_qlen, sizeof(tfo_qlen));
+
     return fd;
 }
 
