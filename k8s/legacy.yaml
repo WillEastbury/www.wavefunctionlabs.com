@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wfl-www-legacy
+  namespace: wfl-www
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wfl-www-legacy
+  template:
+    metadata:
+      labels:
+        app: wfl-www-legacy
+    spec:
+      containers:
+      - name: wfl-www-legacy
+        image: tileforgeacr.azurecr.io/wfl-www:v1arm
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 200m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wfl-www-legacy
+  namespace: wfl-www
+spec:
+  selector:
+    app: wfl-www-legacy
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wfl-www-legacy
+  namespace: wfl-www
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - legacy.wavefunctionlabs.com
+    secretName: wfl-www-legacy-tls
+  rules:
+  - host: legacy.wavefunctionlabs.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wfl-www-legacy
+            port:
+              number: 80

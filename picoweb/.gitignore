@@ -1,0 +1,8 @@
+/picoweb
+/picoweb_uring
+/bench
+src/*.o
+*.o
+*.dSYM
+*.log
+/tmp/
