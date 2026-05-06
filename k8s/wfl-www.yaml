@@ -15,18 +15,28 @@ spec:
       labels:
         app: wfl-www
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:v1arm
+          image: tileforgeacr.azurecr.io/wfl-www:v2local
           ports:
-            - containerPort: 80
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: scores-data
               mountPath: /data
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
               httpHeaders:
                 - name: Host
                   value: wavefunctionlabs.com
@@ -35,7 +45,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
               httpHeaders:
                 - name: Host
                   value: wavefunctionlabs.com
@@ -63,7 +73,7 @@ spec:
     app: wfl-www
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080
       protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1

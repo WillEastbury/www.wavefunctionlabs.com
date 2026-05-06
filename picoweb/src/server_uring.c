@@ -443,13 +443,23 @@ static bool dispatch_one(conn_t* c, const jumptable_t* jt, uint32_t max_req) {
     else if (req.accept_pc && r->compressed != NULL)
         variant = r->compressed;
 
-    c->active_variant = variant;
-    if (variant) {
-        c->head_ptr = close_after ? variant->head_close      : variant->head_keepalive;
-        c->head_len = close_after ? variant->head_close_len  : variant->head_keepalive_len;
+    /* Conditional GET: 304 Not Modified */
+    if (r->etag && req.if_none_match &&
+        http_etag_matches(req.if_none_match, req.if_none_match_len,
+                          r->etag, r->etag_len)) {
+        c->active_variant = NULL;
+        c->head_ptr = close_after ? r->head_304_close      : r->head_304_keepalive;
+        c->head_len = close_after ? r->head_304_close_len  : r->head_304_keepalive_len;
+        head_only = true;
     } else {
-        c->head_ptr = close_after ? r->head_close : r->head_keepalive;
-        c->head_len = close_after ? r->head_close_len : r->head_keepalive_len;
+        c->active_variant = variant;
+        if (variant) {
+            c->head_ptr = close_after ? variant->head_close      : variant->head_keepalive;
+            c->head_len = close_after ? variant->head_close_len  : variant->head_keepalive_len;
+        } else {
+            c->head_ptr = close_after ? r->head_close : r->head_keepalive;
+            c->head_len = close_after ? r->head_close_len : r->head_keepalive_len;
+        }
     }
     c->send_body  = !head_only;
     c->bytes_sent = 0;
