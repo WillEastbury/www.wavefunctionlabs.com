@@ -1,31 +1,115 @@
 <div class="wf-section">
         <a href="/metal" class="wf-back">← metal</a>
         <h1 class="wf-section-hdr">BareMetalJsTools</h1>
-        <p class="wf-section-desc">122 KB minified. Complete reactive UI framework.</p>
+        <p class="wf-section-desc">62 modules. 638 KB total minified. Zero dependencies.</p>
         <a href="https://github.com/WillEastbury/BareMetalJsTools" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
-        <div class="wf-article-tags">JavaScript · Vanilla · Zero Dependencies · CSS · Reactive</div>
+        <div class="wf-article-tags">JavaScript · Vanilla · Zero Dependencies · CSS · Reactive · Fonts</div>
         <div class="wf-article-body">
-            <p>Most people pull in more than 122 KB just for a toast notification library. This toolkit gives you reactive UI, REST transport, SPA routing, charts, graph visualisation, binary serialisation, compression, and a full CSS framework — all as plain <code>&lt;script&gt;</code> tags.</p>
+            <p>Most people pull in more than 638 KB just for a toast notification library and a date picker. This toolkit gives you reactive UI, REST transport, SPA routing, charts, graph visualisation, binary serialisation, compression, a full CSS framework, bundled fonts, a scripting language, forms, auth, crypto, and 50+ more modules — all as plain <code>&lt;script&gt;</code> tags.</p>
 
             <p>No build step. No compile phase. No <code>node_modules</code> black hole. Save your file, refresh your browser, get on with your life.</p>
 
-            <p><strong>What's in the box</strong></p>
+            <p><strong>Core UI</strong></p>
             <table class="wf-spec-table">
-                <tr><td>BareMetal.Styles</td><td>Grid, flex, buttons, forms, cards, modals — 38 KB min</td></tr>
-                <tr><td>BareMetal.Bind</td><td>Reactive Proxy state + m-* directives — 6 KB min</td></tr>
-                <tr><td>BareMetal.Components</td><td>Chatbot, calendar, Gantt, tree views — 13 KB min</td></tr>
-                <tr><td>BareMetal.Communications</td><td>REST + WebSocket, CSRF, multiplexing — 8 KB min</td></tr>
-                <tr><td>BareMetal.Binary</td><td>BSO1 wire format, HMAC-SHA256 — 14 KB min</td></tr>
-                <tr><td>BareMetal.Compress</td><td>LZ compression, byte-identical to C reference — 8 KB min</td></tr>
-                <tr><td>BareMetal.Charts</td><td>SVG bar, line, sparkline, donut, gauge — 8 KB min</td></tr>
-                <tr><td>BareMetal.Graph</td><td>Force-directed visualiser — 9 KB min</td></tr>
-                <tr><td>BareMetal.Routing</td><td>History-API SPA router — 2 KB min</td></tr>
+                <tr><td>Styles (CSS)</td><td>Grid, flex, buttons, forms, cards, modals, nav, footer, sidebar — 42 KB</td></tr>
+                <tr><td>Styles.BootstrapShim</td><td>Drop-in Bootstrap 5 class compatibility layer — 24 KB</td></tr>
+                <tr><td>Bind</td><td>Reactive Proxy state + m-* directives — 6.6 KB</td></tr>
+                <tr><td>Components</td><td>Chat, calendar, Gantt, tree, table views — 13 KB</td></tr>
+                <tr><td>ComponentFactories</td><td>Dynamic component instantiation — 1.5 KB</td></tr>
+                <tr><td>Rendering</td><td>Virtual DOM-like render pipeline — 1.9 KB</td></tr>
+                <tr><td>Template</td><td>HTML template engine — 4.8 KB</td></tr>
+                <tr><td>Forms</td><td>Validation, multi-step, conditional fields — 20 KB</td></tr>
+                <tr><td>DragDrop</td><td>Drag and drop with sortable lists — 6.3 KB</td></tr>
+                <tr><td>Charts</td><td>SVG bar, line, sparkline, donut, gauge — 8.5 KB</td></tr>
+                <tr><td>Graph</td><td>Force-directed network visualiser — 9.6 KB</td></tr>
+                <tr><td>Animate</td><td>Keyframe and transition helpers — 3.6 KB</td></tr>
+                <tr><td>Markdown</td><td>Markdown to HTML renderer — 10.6 KB</td></tr>
+                <tr><td>Notify</td><td>Toast notifications and alerts — 10.7 KB</td></tr>
             </table>
 
-            <p><strong>Comparison</strong></p>
-            <p>The full toolkit: <strong>122 KB</strong>. Picking the <em>smallest</em> mainstream equivalent for each module: <strong>1,565 KB</strong>. That's 12.8× the weight for the same functionality.</p>
+            <p><strong>Fonts</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>BareMetalMono</td><td>JetBrains Mono subset — 17 KB woff2</td></tr>
+                <tr><td>BareMetalSans</td><td>Inter subset — 14 KB woff2</td></tr>
+                <tr><td>BareMetalPixel</td><td>Silkscreen subset — 2.7 KB woff2</td></tr>
+                <tr><td>Wavefunction-Sans</td><td>Source Sans 3 subset — 27 KB woff2</td></tr>
+                <tr><td>Wavefunction-Serif</td><td>Source Serif 4 subset — 28 KB woff2</td></tr>
+                <tr><td>Wavefunction-Curly</td><td>Dancing Script subset — 28 KB woff2</td></tr>
+            </table>
 
-            <div class="wf-insight">The hard part isn't the JavaScript. The hard part is serving your files well.</div>
+            <p><strong>Data &amp; Transport</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>Communications</td><td>REST + WebSocket, CSRF, multiplexing — 8.3 KB</td></tr>
+                <tr><td>Transport</td><td>Fetch wrapper, retry, interceptors — 11.4 KB</td></tr>
+                <tr><td>Binary</td><td>BSO1 wire format, HMAC-SHA256 — 14 KB</td></tr>
+                <tr><td>Compress</td><td>LZ compression, byte-identical to C reference — 8.3 KB</td></tr>
+                <tr><td>Sync</td><td>Offline sync, conflict resolution — 11.5 KB</td></tr>
+                <tr><td>PubSub</td><td>Event bus, topic subscriptions — 3.9 KB</td></tr>
+                <tr><td>Observe</td><td>Object observation and change tracking — 7.8 KB</td></tr>
+                <tr><td>Pipeline</td><td>Data transformation pipelines — 9.1 KB</td></tr>
+                <tr><td>IDB</td><td>IndexedDB wrapper — 6.9 KB</td></tr>
+                <tr><td>LocalKVStore</td><td>Key-value persistence layer — 6.9 KB</td></tr>
+                <tr><td>Cache</td><td>Multi-tier caching (memory, storage, network) — 10.3 KB</td></tr>
+            </table>
+
+            <p><strong>Security &amp; Auth</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>Auth</td><td>OAuth2, JWT, session management — 16 KB</td></tr>
+                <tr><td>Crypto</td><td>Hashing, encryption helpers — 2.8 KB</td></tr>
+                <tr><td>RBAC</td><td>Role-based access control — 8.9 KB</td></tr>
+                <tr><td>Tokens</td><td>Token lifecycle, refresh, revocation — 9.6 KB</td></tr>
+                <tr><td>Session</td><td>Session management and persistence — 8.5 KB</td></tr>
+            </table>
+
+            <p><strong>Navigation &amp; Routing</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>Routing</td><td>History-API SPA router — 2.3 KB</td></tr>
+                <tr><td>URL</td><td>URL parsing, query string handling — 8.5 KB</td></tr>
+                <tr><td>Progressive</td><td>PWA, service worker registration — 5.7 KB</td></tr>
+                <tr><td>ServiceWorker</td><td>SW lifecycle management — 4.1 KB</td></tr>
+            </table>
+
+            <p><strong>Scripting &amp; Logic</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>PicoScript</td><td>Embedded scripting language — 50 KB</td></tr>
+                <tr><td>PicoScript.Editor</td><td>Syntax-highlighted code editor — 30 KB</td></tr>
+                <tr><td>Expressions</td><td>Expression parser and evaluator — 16.5 KB</td></tr>
+                <tr><td>StateMachine</td><td>Finite state machines — 1.4 KB</td></tr>
+                <tr><td>Workflow</td><td>Multi-step workflow engine — 11.5 KB</td></tr>
+                <tr><td>Schema</td><td>JSON Schema validation — 12.6 KB</td></tr>
+                <tr><td>Validate</td><td>Input validation rules — 2.6 KB</td></tr>
+                <tr><td>Types</td><td>Runtime type checking — 17.2 KB</td></tr>
+            </table>
+
+            <p><strong>Platform &amp; Device</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>Capabilities</td><td>Feature detection and polyfill loading — 11.8 KB</td></tr>
+                <tr><td>Gamepad</td><td>Gamepad API wrapper — 7.8 KB</td></tr>
+                <tr><td>Geo</td><td>Geolocation and mapping — 6.1 KB</td></tr>
+                <tr><td>Media</td><td>Audio/video capture and playback — 7.8 KB</td></tr>
+                <tr><td>Speech</td><td>Speech synthesis and recognition — 5.7 KB</td></tr>
+                <tr><td>Clipboard</td><td>Clipboard read/write — 6.5 KB</td></tr>
+                <tr><td>FileIO</td><td>File reading, drag-to-upload — 8.5 KB</td></tr>
+                <tr><td>Pay</td><td>Payment Request API — 7.4 KB</td></tr>
+                <tr><td>A11y</td><td>Accessibility helpers, ARIA — 4.8 KB</td></tr>
+                <tr><td>I18n</td><td>Internationalisation — 2.5 KB</td></tr>
+            </table>
+
+            <p><strong>Dev &amp; Diagnostics</strong></p>
+            <table class="wf-spec-table">
+                <tr><td>Diagnostics</td><td>Performance profiling, memory tracking — 10.6 KB</td></tr>
+                <tr><td>TestRunner</td><td>Unit test framework — 12.8 KB</td></tr>
+                <tr><td>Logger</td><td>Structured logging — 2.5 KB</td></tr>
+                <tr><td>Errors</td><td>Error boundary and reporting — 9.9 KB</td></tr>
+                <tr><td>Config</td><td>Environment config management — 10.5 KB</td></tr>
+                <tr><td>Metadata</td><td>Module metadata and versioning — 4.1 KB</td></tr>
+                <tr><td>Time</td><td>Date/time utilities, relative time — 6.9 KB</td></tr>
+                <tr><td>UndoRedo</td><td>Undo/redo command stack — 4.5 KB</td></tr>
+                <tr><td>Workers</td><td>Web Worker management — 8.9 KB</td></tr>
+                <tr><td>Codes</td><td>QR, barcode generation — 28.8 KB</td></tr>
+            </table>
+
+            <div class="wf-insight">62 modules. 638 KB minified. One CDN path or vendor locally. No npm install. No webpack. No framework lock-in.</div>
 
             <p style="margin-top: 2rem;">
                 <a href="https://github.com/WillEastbury/BareMetalJsTools" target="_blank" class="wf-github-btn">View on GitHub →</a>
