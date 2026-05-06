@@ -1,0 +1,196 @@
+<div class="wf-section">
+<a class="wf-back" href="/ai">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 5 OF 7</div>
+        <h1 class="wf-section-hdr">Finetuning, LoRA & PEFT</h1>
+        <p class="wf-section-desc">How you adapt a model without training from scratch.</p>
+
+        <div class="wf-article-body">
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Why Finetune?</h3>
+            <p>Training a foundation model from scratch costs millions of dollars and months of compute. But you can take an existing model and <strong style="color:var(--wf-cyan);">adapt</strong> it to your domain — your data, your tone, your task — for a fraction of the cost. This is finetuning. You start with a model that already understands language (or images, or audio), and you <em>nudge</em> its weights toward your specific use case.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Full Finetuning</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Update <strong>every weight</strong> in the model using your dataset. The model sees your examples and adjusts all parameters via backpropagation, exactly like pre-training but with a smaller learning rate and far fewer steps.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong style="color:var(--wf-gold);">Pros:</strong> Maximum expressiveness. The model can learn completely new behaviours.<br>
+                        <strong style="color:var(--wf-accent);">Cons:</strong> You need the full model in GPU memory (a 70B model needs ~140GB in fp16). Risk of <strong style="color:var(--wf-accent);">catastrophic forgetting</strong> — the model becomes great at your task but forgets its general knowledge. You also produce a full-size copy of every weight.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Memory Problem</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">A 7B parameter model in fp16 needs ~14GB just to hold the weights. But training also needs:</p>
+                    <div style="margin:.5rem 0;padding:.6rem .8rem;border:1px solid var(--wf-border);border-radius:4px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                        <p style="color:var(--wf-gold);font-size:.78rem;line-height:2;margin:0;">
+                            Weights:     14 GB (fp16)<br>
+                            Gradients:   14 GB (same shape as weights)<br>
+                            Optimiser:   28 GB (Adam stores 2× states)<br>
+                            Activations: variable (depends on batch/seq)<br>
+                            ─────────────────────<br>
+                            Total:       ~56 GB minimum for a 7B model
+                        </p>
+                    </div>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;margin-top:.6rem;">For a 70B model: ~560GB. That's 7× A100-80GB GPUs just for the training state. This is why parameter-efficient methods exist.</p>
+                </div>
+            </div>
+
+            <!-- LoRA -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">LoRA — Low-Rank Adaptation</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Instead of updating all 7 billion weights, freeze the original model entirely and inject <strong style="color:var(--wf-accent);">tiny trainable side-matrices</strong> into each attention layer. These matrices learn the <em>difference</em> between the base model and what you want. At inference, merge them back in — zero extra latency.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">The key insight: the weight changes during finetuning are <strong style="color:var(--wf-gold);">low-rank</strong>. You don't need to adjust all dimensions of a weight matrix — most of the change can be captured by a much smaller matrix decomposition.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Maths</h4>
+                    <div style="margin:.5rem 0;padding:.8rem 1rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                        <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                            Original: h = W · x &nbsp;&nbsp; (W is d×d, e.g. 4096×4096)<br>
+                            <br>
+                            LoRA: h = W · x + (B · A) · x<br>
+                            <br>
+                            Where: A is d×r, B is r×d &nbsp; (r ≪ d, e.g. r=16)<br>
+                            <br>
+                            Merged: W' = W + B · A &nbsp; (no extra cost at inference)
+                        </p>
+                    </div>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">W</strong> — frozen original weight matrix (4096 × 4096 = 16.7M params)<br>
+                        <strong style="color:var(--wf-accent);">A</strong> — down-projection (4096 × 16 = 65K params)<br>
+                        <strong style="color:var(--wf-accent);">B</strong> — up-projection (16 × 4096 = 65K params)<br>
+                        <strong style="color:var(--wf-gold);">Total trainable:</strong> 130K params instead of 16.7M — a <strong>128× reduction</strong> per layer
+                    </p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">LoRA In Practice</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Rank (r)</strong> — controls capacity. r=4 for simple style changes. r=16–64 for domain adaptation. r=256 for complex tasks. Higher rank = more params = closer to full finetune.<br>
+                    <strong style="color:var(--wf-cyan);">Alpha (α)</strong> — scaling factor. The LoRA output is scaled by α/r. Higher alpha = stronger adaptation. Typical: α = 2×r.<br>
+                    <strong style="color:var(--wf-cyan);">Target modules</strong> — which layers get LoRA adapters. Usually Q, K, V projection matrices in attention. Some approaches add them to feed-forward layers too.<br>
+                    <strong style="color:var(--wf-cyan);">Merging</strong> — after training, compute W' = W + (α/r)·B·A and replace the original weights. The adapter disappears — same model size, different behaviour.<br>
+                    <strong style="color:var(--wf-cyan);">Stacking</strong> — you can train multiple LoRA adapters for different tasks and swap them at inference without retraining. One base model, many specialisations.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">A LoRA adapter for a 7B model is typically 10–100MB. The full model is 14GB. You can share the base model across 100 customers, each with their own adapter — the economics change completely.</p>
+
+            <!-- QLoRA -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">QLoRA — Quantised LoRA</h3>
+
+            <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;margin:1rem 0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">LoRA freezes the base model but still loads it in fp16. QLoRA goes further: <strong style="color:var(--wf-cyan);">quantise the base model to 4-bit</strong> (NF4 format), then train LoRA adapters in fp16 on top. The adapters train at full precision, but the frozen base takes 4× less memory.</p>
+                <div style="margin:.8rem 0;padding:.6rem .8rem;border:1px solid var(--wf-border);border-radius:4px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                    <p style="color:var(--wf-gold);font-size:.78rem;line-height:2;margin:0;">
+                        Full finetune 7B:  ~56 GB (multiple GPUs)<br>
+                        LoRA 7B (fp16):    ~16 GB (one good GPU)<br>
+                        QLoRA 7B (4-bit):  ~6 GB  (consumer GPU)
+                    </p>
+                </div>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;margin-top:.6rem;">QLoRA made it possible to finetune a 65B parameter model on a single 48GB GPU. It finetunes a 7B model on a gaming GPU with 8GB VRAM. The quality loss from quantisation is surprisingly small — within 1% of full-precision LoRA on most benchmarks.</p>
+            </div>
+
+            <!-- PEFT overview -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">PEFT — Parameter-Efficient Fine-Tuning</h3>
+
+            <p>LoRA is the most popular PEFT method, but it's not the only one. PEFT is the <strong style="color:var(--wf-gold);">family of techniques</strong> that adapt a model by training only a small fraction of its parameters. They all share the same goal: don't touch most of the weights.</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">LoRA</strong> — low-rank side-matrices in attention layers. Merge at inference. The winner for most use cases.<br>
+                    <strong style="color:var(--wf-accent);">Prefix Tuning</strong> — prepend trainable "virtual tokens" to the input at each layer. The model learns to condition on these soft prefixes. No weight modification at all — just extra context.<br>
+                    <strong style="color:var(--wf-accent);">Prompt Tuning</strong> — simpler version: trainable embeddings prepended to the input only at the first layer. Even cheaper than prefix tuning. Works surprisingly well on large models.<br>
+                    <strong style="color:var(--wf-accent);">Adapters</strong> — small bottleneck layers inserted between existing layers. Input → down-project → nonlinearity → up-project → add back. Similar idea to LoRA but as separate modules rather than side-matrices.<br>
+                    <strong style="color:var(--wf-accent);">IA³ (Infused Adapter by Inhibiting and Amplifying Inner Activations)</strong> — learn <em>scaling vectors</em> that multiply the keys, values, and FFN outputs. Even fewer parameters than LoRA — just one vector per layer instead of two matrices.<br>
+                    <strong style="color:var(--wf-accent);">DoRA (Weight-Decomposed Low-Rank Adaptation)</strong> — decomposes weight into magnitude and direction, applies LoRA only to the direction component. Better training dynamics, closer to full finetune quality.
+                </p>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">When to Use What</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Choose LoRA / QLoRA When</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        You have domain-specific data (legal, medical, code, your company's tone)<br>
+                        You want to merge back into the base model for zero-overhead inference<br>
+                        You need multiple task-specific adapters on one base model<br>
+                        You're working with limited GPU budget (QLoRA on consumer hardware)<br>
+                        You want to avoid catastrophic forgetting of general knowledge
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Choose Full Finetune When</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        You have massive domain-specific data (millions of examples)<br>
+                        The task requires fundamentally new capabilities, not just style/tone<br>
+                        You have the compute budget (multi-GPU cluster)<br>
+                        You're building a foundation model variant for a specific domain<br>
+                        LoRA at maximum rank still underperforms
+                    </p>
+                </div>
+            </div>
+
+            <!-- RLHF / DPO -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Alignment Finetuning: RLHF &amp; DPO</h3>
+
+            <p>Finetuning isn't just about domain knowledge. The reason ChatGPT sounds helpful instead of just completing text is <strong style="color:var(--wf-accent);">alignment finetuning</strong> — teaching the model <em>how</em> to respond, not just <em>what</em> to say.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">RLHF (Reinforcement Learning from Human Feedback)</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Step 1 — SFT:</strong> Supervised finetuning on human-written examples of good responses. Teaches format and helpfulness.<br><br>
+                        <strong>Step 2 — Reward model:</strong> Humans rank multiple outputs. Train a model to predict which response humans prefer.<br><br>
+                        <strong>Step 3 — PPO:</strong> Use the reward model as a signal to further finetune the language model via reinforcement learning. The model learns to maximise human preference scores while staying close to the SFT model (KL penalty).
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">DPO (Direct Preference Optimisation)</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        Skip the reward model entirely. Given pairs of (preferred, rejected) responses, directly optimise the language model to increase the probability of preferred outputs and decrease rejected ones.<br><br>
+                        <strong style="color:var(--wf-gold);">The insight:</strong> the optimal RLHF policy has a closed-form solution that only depends on the preference data and the reference model. You can train it with a simple binary cross-entropy loss — no RL, no reward model, no PPO instability.<br><br>
+                        Simpler, cheaper, more stable. Increasingly preferred over RLHF for alignment.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Diffusion finetuning -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Finetuning Diffusion Models</h3>
+
+            <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;margin:1rem 0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Everything above applies to image/video models too. You can LoRA a Stable Diffusion model to learn a specific style, face, or object with just 5–20 images and 15 minutes of training on a consumer GPU.</p>
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;font-weight:300;margin-top:.6rem;">
+                    <strong style="color:var(--wf-accent);">DreamBooth</strong> — finetune the entire model on a few images of a subject, binding it to a unique token (e.g. "sks person"). The model learns to generate that specific subject in any context.<br>
+                    <strong style="color:var(--wf-accent);">Textual Inversion</strong> — freeze the model, learn only a new embedding vector for a concept. The cheapest approach — a single vector. Limited expressiveness but zero risk to base model.<br>
+                    <strong style="color:var(--wf-accent);">LoRA for Diffusion</strong> — inject low-rank adapters into the U-Net's cross-attention layers. Style transfer, character consistency, aesthetic control. Adapters are ~10–100MB vs 2GB+ for the full model. Composable: mix multiple LoRAs at inference with weighted merging.
+                </p>
+            </div>
+
+            <!-- The training pipeline -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Full Training Pipeline</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.82rem;line-height:2.2;margin:0;">
+                    1. Pre-training &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ learn language/vision from massive data &nbsp;(billions of tokens, months, millions of $)<br>
+                    2. SFT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ supervised finetuning on curated examples &nbsp;(thousands of examples, hours)<br>
+                    3. RLHF / DPO &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ align to human preferences &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(preference pairs, hours-days)<br>
+                    4. Domain LoRA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ adapt to specific use case &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(your data, minutes-hours)<br>
+                    <br>
+                    Each stage is cheaper and faster than the last.<br>
+                    Each stage changes less of the model.<br>
+                    The expensive work is done once. The cheap work is done per customer.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The economics of AI deployment are defined by this pipeline. Pre-training is a fixed cost amortised across all users. Finetuning is the marginal cost per use case. LoRA made that marginal cost collapse by 100×. QLoRA collapsed it again. The trend is clear: adaptation is getting cheaper faster than pre-training is getting cheaper.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ai/architectures" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 4: Beyond Transformers & Diffusion</a>
+                <a href="/ai" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ai/metaphor" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 6: The Wavefunction Metaphor →</a>
+            </div>
+        </div>
+</div>

@@ -1,0 +1,93 @@
+<div class="wf-section">
+<a class="wf-back" href="/ducks">← ducks</a>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 3 OF 7</div>
+        <h1 class="wf-section-hdr">Quacks Like a Duck</h1>
+        <p class="wf-section-desc">Identity through behaviour — duck typing, prediction, and knowing by doing.</p>
+
+        <div class="wf-article-body">
+
+            <p>You're blindfolded. Something quacks. You say "duck." You didn't see it. You didn't read the word. You identified it purely by what it <em>did</em>. This is behavioural recognition — and it's the foundation of an entire philosophy of computation.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Duck Typing: The Programming Metaphor</h3>
+            <p>In dynamically typed languages, you don't check what something <em>is</em>. You check what it <em>can do</em>:</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.82rem;line-height:2;margin:0;">
+                    <span style="color:var(--wf-muted);"># Python doesn't care what 'bird' is.</span><br>
+                    <span style="color:var(--wf-muted);"># It cares what 'bird' can do.</span><br>
+                    bird.quack() &nbsp;&nbsp;<span style="color:var(--wf-muted);"># If this works, it's duck enough.</span><br>
+                    bird.swim()  &nbsp;&nbsp;<span style="color:var(--wf-muted);"># If this works too, even more duck.</span><br>
+                    bird.fly()   &nbsp;&nbsp;<span style="color:var(--wf-muted);"># Hmm. Some ducks can't fly. Behaviour is complicated.</span>
+                </p>
+            </div>
+
+            <p>"If it quacks like a duck and swims like a duck, I call it a duck." Identity isn't declared by type — it's inferred by <strong style="color:var(--wf-cyan);">interface</strong>. What it does defines what it is. This isn't just a programming trick. It's a deep epistemological claim.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">How Transformers Learn Behaviour</h3>
+            <p>A language model never sees a duck. It reads billions of sentences where the word "duck" appears. It learns what ducks <em>do</em> in text:</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    "The duck <strong style="color:var(--wf-cyan);">swam</strong> across the pond."<br>
+                    "She fed the <strong style="color:var(--wf-cyan);">ducks</strong> at the park."<br>
+                    "A duck <strong style="color:var(--wf-cyan);">quacked</strong> loudly."<br>
+                    "The mother duck <strong style="color:var(--wf-cyan);">led</strong> her ducklings to the water."<br>
+                    "Duck <strong style="color:var(--wf-cyan);">hunting</strong> season opens in September."<br>
+                    "He had to <strong style="color:var(--wf-cyan);">duck</strong> to avoid the low beam."
+                </p>
+            </div>
+
+            <p>The model builds a <strong style="color:var(--wf-gold);">behavioural profile</strong> from statistical co-occurrence. It knows ducks swim, quack, waddle, fly, nest, migrate, get fed bread (unfortunately), and have ducklings. It knows this because those are the verbs that appear near "duck" in the training data. It knows "duck" as a behaviour pattern long before it could ever know "duck" as a visual entity.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Prediction as Behaviour Modelling</h3>
+            <p>When a Transformer predicts the next token, it's doing duck typing on language. Given the context "The duck swam across the ___", the model assigns high probability to tokens like "pond", "lake", "river" — because those are where ducks swim. It's predicting behaviour from behavioural patterns.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">What the Model Learns</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Statistical behaviour:</strong> ducks appear in contexts with water, parks, bread, ponds, feathers, eggs, hunting.<br><br>
+                        <strong>Relational behaviour:</strong> ducks are-a-type-of bird, smaller-than geese, have ducklings, are related to "mallard" and "drake."<br><br>
+                        <strong>Linguistic behaviour:</strong> "duck" as noun vs verb, "duck!" as imperative, "sitting duck" as idiom. The model learns every behavioural context the word has ever appeared in.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">What This Means</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        The model's "duck" is a <strong style="color:var(--wf-gold);">cloud of behavioural associations</strong>. It doesn't have a picture of a duck. It has a high-dimensional vector that encodes: "the kind of entity that does these things, appears in these contexts, relates to these other things." Duckness-as-behaviour. The interface, not the implementation.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Interfaces All the Way Down</h3>
+            <p>Duck typing isn't just a metaphor. It's how most recognition works in practice:</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">API design</strong> — you call an endpoint. If it returns the right shape of data, you don't care what's behind it. Duck typing over HTTP.<br>
+                    <strong style="color:var(--wf-cyan);">Job interviews</strong> — "can you do X, Y, Z?" You're duck-typing a human. If they demonstrate the behaviours, they get the job. What they "are" (their degree, background) matters less.<br>
+                    <strong style="color:var(--wf-cyan);">Medical diagnosis</strong> — symptoms are behaviours. If it presents like flu, respond like flu. The underlying cause matters eventually, but the initial response is behavioural pattern matching.<br>
+                    <strong style="color:var(--wf-cyan);">Scientific models</strong> — if a model predicts the right outcomes, it's useful. Whether it captures "true" underlying reality is a separate (possibly unanswerable) question. Physics is duck-typed.
+                </p>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Where Behaviour Breaks</h3>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">The parrot problem</strong> — a parrot can quack. Is it a duck? Behavioural mimicry breaks duck typing. The interface matches but the implementation is completely different.<br>
+                    <strong style="color:var(--wf-cyan);">Goodhart's Law</strong> — "when a measure becomes a target, it ceases to be a good measure." If you define duck by behaviour, things will optimise to match the behaviour without being a duck. See: SEO, teaching to the test, gaming metrics.<br>
+                    <strong style="color:var(--wf-cyan);">Hallucination</strong> — an LLM can generate perfectly plausible text about ducks that is factually wrong. The <em>behaviour</em> looks right — the sentences read naturally — but the content is fabricated. Duck-shaped output from a non-duck process.<br>
+                    <strong style="color:var(--wf-cyan);">Edge cases</strong> — a penguin swims. Is it a duck? No, because "swims" isn't enough of the interface. How many behaviours do you need to match before something qualifies? The boundary is fuzzy.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-cyan);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Behaviour is the most pragmatic channel. It answers "what does it do?" rather than "what is it?" — and in most real systems, what it does is all that matters. But behaviour can be mimicked, gamed, and faked. The quack is not the duck.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ducks/looks-like-a-duck" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 2: Looks Like a Duck</a>
+                <a href="/ducks" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ducks/the-word-duck" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 4: The Word "Duck" →</a>
+            </div>
+        </div>
+</div>

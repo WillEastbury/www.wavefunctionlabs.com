@@ -1,0 +1,178 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Why Computers Aren't Deterministic</h1>
+        <p class="wf-section-desc">You were told: same input → same output. That's true for one instruction. It's a lie for everything else.</p>
+
+        <div class="wf-article-body">
+            <p>The idea that computers are deterministic is one of the most persistent and dangerous myths in engineering. A single CPU executing a single integer instruction is deterministic. Everything built on top of that — is not.</p>
+
+            <!-- Floating Point -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Floating Point: The Numbers Lie</h3>
+            <p>Floating-point numbers approximate real numbers using a fixed number of bits. Most real numbers can't be represented exactly — they get rounded to the nearest representable value.</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.85rem;line-height:2;margin:0;">
+                    0.1 + 0.2 = 0.30000000000000004 &nbsp;&nbsp;<span style="color:var(--wf-muted);">// in IEEE 754 float64</span>
+                </p>
+            </div>
+
+            <p>This is not a bug. This is the <em>specification</em>. But it means:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+                <strong style="color:var(--wf-gold);">(a + b) + c ≠ a + (b + c)</strong> — addition is not associative. Rearranging the order of operations changes the result.<br>
+                <strong style="color:var(--wf-gold);">Different compilers</strong> — may reorder FP operations for performance. -ffast-math in GCC explicitly permits this. Same source code, different binary, different results.<br>
+                <strong style="color:var(--wf-gold);">Different hardware</strong> — x87 uses 80-bit internal precision. SSE uses 64-bit. ARM uses 64-bit with different rounding modes. Same algorithm, different CPU, different answer.<br>
+                <strong style="color:var(--wf-gold);">FMA (fused multiply-add)</strong> — a*b+c computed with one rounding step instead of two. Whether the compiler uses FMA changes the result at the last bit.
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Every neural network, every physics simulation, every financial calculation is built on floating point. None of them are bit-for-bit reproducible across hardware without extreme care.</p>
+
+            <!-- Thread Scheduling -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Thread Scheduling: The OS Decides</h3>
+            <p>Your program has four threads. The OS decides which one runs on which core, for how long, and when to interrupt it. This decision depends on:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2;">
+                What else is running on the machine<br>
+                Thermal throttling state<br>
+                Power management decisions<br>
+                Interrupt arrival timing<br>
+                Memory pressure and page fault handling
+            </p>
+
+            <p>Two threads writing to the same variable without a lock: the result depends on which thread's write lands last. This changes every run. Every microsecond of timing difference in the OS scheduler produces a different interleaving of instructions, and a potentially different outcome.</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-muted);font-size:.82rem;line-height:2;margin:0;">
+                    <span style="color:var(--wf-cyan);">Thread A:</span> read counter (5) → increment → write (6)<br>
+                    <span style="color:var(--wf-accent);">Thread B:</span> read counter (5) → increment → write (6)<br>
+                    <span style="color:var(--wf-gold);">Expected:</span> 7 &nbsp;&nbsp; <span style="color:#ff4757;">Actual:</span> 6 &nbsp;&nbsp; <span style="color:var(--wf-muted);">// sometimes</span>
+                </p>
+            </div>
+
+            <p>The word "sometimes" is the signature of non-determinism. The bug only appears under specific timing. It passes every test, then fails in production. This is a <strong style="color:var(--wf-accent);">heisenbug</strong> — observing it (adding logging, running a debugger) changes the timing and makes it disappear.</p>
+
+            <!-- Clocks and Time -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Clocks: Time Is a Lie</h3>
+            <p>Every call to "get current time" returns a different value. Any logic that depends on it is non-deterministic by definition.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Wall Clock</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Can jump backwards (NTP sync — the daemon can <em>slew</em> time gradually or <em>step</em> it instantly, depending on how far off you are). Can leap forward (daylight saving, leap seconds). Two machines disagree on "now" by milliseconds to seconds. Timestamps from different machines are not comparable without a synchronisation protocol.
+                    </p>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">NTP adjustments</strong> — ntpd/chrony periodically discipline the clock. A large correction can shift wall time by hundreds of milliseconds in a single adjustment. Any code measuring elapsed time via wall clock (<code style="color:var(--wf-cyan);font-size:.78rem;">Date.now()</code>, <code style="color:var(--wf-cyan);font-size:.78rem;">gettimeofday()</code>) will see phantom durations — intervals that appear negative or impossibly long.
+                    </p>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">Process pre-emption</strong> — the OS scheduler can suspend your process at any point to run another. Your code sees this as time vanishing. A function that "takes 2ms" might measure as 50ms because the kernel gave the CPU to someone else in the middle. On a busy system, pre-emption is frequent and unpredictable. Priority inversion, CPU throttling, and other runnable processes all affect when your thread gets time.
+                    </p>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">Hypervisor pauses</strong> — in virtualised environments (EC2, Azure VMs, VMware), the hypervisor can <em>steal</em> entire vCPUs to serve other tenants. Your guest OS doesn't know this happened — it just sees time jump forward when it gets scheduled back. These "steal time" pauses can be tens to hundreds of milliseconds. In extreme cases (live migration, noisy neighbours), seconds. Every timing assumption your code makes is invalidated — health checks fire, locks expire, leader elections trigger, all because the hypervisor took your CPU away and your wall clock jumped.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Monotonic Clock</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Never goes backwards. Good for measuring durations. But different on every machine. And the resolution varies — some systems give you nanoseconds, some give you milliseconds. Two measurements of the "same" duration will differ.
+                    </p>
+                </div>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:1.8;">
+                Timeouts are non-deterministic — they depend on system load.<br>
+                Cache TTLs are non-deterministic — expiry timing varies.<br>
+                Rate limiters are non-deterministic — request timing varies.<br>
+                Pre-emption pauses are non-deterministic — OS scheduler decides, not you.<br>
+                Hypervisor steal time is non-deterministic — you can't even detect it from inside the VM without checking <code style="color:var(--wf-cyan);font-size:.82rem;">/proc/stat</code>.<br>
+                NTP corrections are non-deterministic — clock discipline happens when the daemon decides.<br>
+                Any test that uses <code style="color:var(--wf-cyan);font-size:.82rem;">sleep()</code> or <code style="color:var(--wf-cyan);font-size:.82rem;">Date.now()</code> is a non-deterministic test.
+            </p>
+
+            <!-- Memory and Caches -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Memory: The Invisible State</h3>
+            <p>The program sees virtual addresses. The CPU sees physical pages, cache lines, TLB entries, and prefetch queues. None of this is visible to your code, but it affects behaviour:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
+                <strong style="color:var(--wf-cyan);">Cache hits vs misses</strong> — same algorithm, 100× speed difference depending on what was accessed recently<br>
+                <strong style="color:var(--wf-cyan);">ASLR</strong> — Address Space Layout Randomization. Memory addresses differ every execution. Pointer values differ. Any code that depends on pointer ordering is non-deterministic<br>
+                <strong style="color:var(--wf-cyan);">Page faults</strong> — first access to a memory page triggers a kernel trap. When this happens depends on access patterns and OS paging decisions<br>
+                <strong style="color:var(--wf-cyan);">NUMA topology</strong> — which CPU socket owns which memory bank. Cross-socket access is slower. Thread placement affects performance non-deterministically
+            </p>
+
+            <!-- GPUs -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">GPUs: Massively Parallel Non-Determinism</h3>
+            <p>A GPU runs thousands of threads simultaneously. The order in which they complete is non-deterministic. For integer work, this doesn't matter — addition is commutative and associative. For floating point, it does:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2;">
+                1024 threads each compute a partial sum. The reduction tree adds them in pairs. Which pairs complete first varies → addition order varies → rounding varies → result varies.<br><br>
+                <strong style="color:var(--wf-accent);">atomicAdd on float</strong> — the order of accumulation is hardware-dependent. Same kernel, same data, different result each launch.
+            </p>
+
+            <p>This is why the same neural network, with the same weights, same input, and same seed, can produce different outputs on different GPUs — or even on the same GPU on different runs. The model's forward pass involves millions of floating-point reductions, each with non-deterministic accumulation order.</p>
+
+            <!-- I/O and the Outside World -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">I/O: The Outside World</h3>
+            <p>The moment your program reads from disk, network, stdin, a sensor, or anything external, determinism is gone.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+                <strong style="color:var(--wf-gold);">Disk reads</strong> — latency varies with physical head position (HDD), wear levelling (SSD), OS caching, and concurrent I/O from other processes<br>
+                <strong style="color:var(--wf-gold);">Network</strong> — latency, packet loss, reordering, retransmission. Two identical requests take different times. Responses arrive in different orders<br>
+                <strong style="color:var(--wf-gold);">User input</strong> — a human is the ultimate non-deterministic system. Keystroke timing, mouse position, decision-making<br>
+                <strong style="color:var(--wf-gold);">Sensors</strong> — temperature, accelerometer, GPS. Physical world measurements have noise, drift, and sampling jitter
+            </p>
+
+            <!-- Language and Runtime -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Languages and Runtimes</h3>
+            <p>Many non-determinism sources are baked into the tools you use:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Python dict</strong> — insertion-ordered since 3.7, but <code style="font-size:.82rem;">set</code> iteration order is non-deterministic across runs (hash randomisation, enabled by default)<br>
+                    <strong style="color:var(--wf-cyan);">Go map</strong> — iteration order is intentionally randomised to prevent developers depending on it<br>
+                    <strong style="color:var(--wf-cyan);">Java HashMap</strong> — no guaranteed order. Hash seed randomised since Java 8 (string hashing)<br>
+                    <strong style="color:var(--wf-cyan);">Garbage collection</strong> — when GC runs, how long it pauses, which objects it collects. All non-deterministic. Finalizer order is unspecified<br>
+                    <strong style="color:var(--wf-cyan);">JIT compilation</strong> — which methods get compiled, when, and how aggressively depends on runtime profiling. Same code, different optimisation, different performance characteristics
+                </p>
+            </div>
+
+            <!-- What You Can Do -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What You Can Actually Do About It</h3>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+                <strong style="color:var(--wf-gold);">Fix the seed</strong> — control PRNG state. Necessary but not sufficient.<br>
+                <strong style="color:var(--wf-gold);">Use deterministic kernels</strong> — CUDA has <code style="font-size:.82rem;">torch.use_deterministic_algorithms(True)</code>. Slower, but reproducible. Mostly.<br>
+                <strong style="color:var(--wf-gold);">Avoid FP accumulation order dependency</strong> — use Kahan summation, or sort before reducing<br>
+                <strong style="color:var(--wf-gold);">Lock everything</strong> — serialise concurrent access. Kills performance, guarantees ordering<br>
+                <strong style="color:var(--wf-gold);">Use logical clocks</strong> — Lamport timestamps, vector clocks. Don't depend on wall time<br>
+                <strong style="color:var(--wf-gold);">Make I/O a seam</strong> — inject deterministic test doubles for disk, network, time, and randomness<br>
+                <strong style="color:var(--wf-gold);">Accept it</strong> — design for non-determinism. Idempotent operations, CRDTs, eventual consistency, property-based tests instead of exact equality
+            </p>
+
+            <!-- The Truth -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Truth</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">One instruction on one core</strong> — deterministic<br>
+                    <strong style="color:var(--wf-cyan);">One thread, integer only, no I/O</strong> — deterministic<br>
+                    <strong style="color:var(--wf-gold);">One thread, floating point</strong> — deterministic on same hardware + same compiler. Not across platforms.<br>
+                    <strong style="color:var(--wf-gold);">Multiple threads</strong> — non-deterministic unless fully synchronised<br>
+                    <strong style="color:var(--wf-accent);">Multiple machines</strong> — non-deterministic. Always.<br>
+                    <strong style="color:var(--wf-accent);">GPU</strong> — non-deterministic by default. Deterministic mode available at a performance cost.<br>
+                    <strong style="color:#ff4757;">The real world</strong> — non-deterministic. No exceptions.
+                </p>
+            </div>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">A computer is a deterministic machine the same way a billiard table is frictionless — true in the textbook, never true in practice. Every real system is a deterministic core wrapped in layers of non-determinism. The skill is knowing where the boundaries are.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Determinism is the collapsed state. Non-determinism is the superposition. Most systems exist in superposition most of the time — we just pretend they've collapsed because the output <em>usually</em> looks the same.</p>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- DUCKS SERIES SECTION                                -->
+    <!-- ═══════════════════════════════════════════════════ -->
+</div>

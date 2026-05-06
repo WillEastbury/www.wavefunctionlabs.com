@@ -1,0 +1,193 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Big O: How Fast Things Actually Scale</h1>
+        <p class="wf-section-desc">Big O doesn't tell you how fast something is. It tells you how fast it gets worse.</p>
+
+        <div class="wf-article-body">
+            <p>When you see O(log n) on an index lookup, it's not a performance number. It's a <strong style="color:var(--wf-gold);">growth rate</strong>. It tells you what happens to the cost when the dataset doubles, triples, or hits a billion rows.</p>
+            <p>The constant factors — CPU speed, cache lines, disk latency — those matter in practice. But Big O tells you whether your approach <em>survives</em> at scale.</p>
+
+            <!-- O(1) -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(1) — Constant</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>The cost doesn't change no matter how big the dataset gets. 10 rows or 10 billion — same work.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>Hash table lookups. Array access by index. Stack push/pop. Getting an element when you already know exactly where it is.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The dream. But "constant" can still be slow if the constant is large — O(1) with a 5ms disk seek is still 5ms.</p>
+
+            <!-- O(log n) -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(log n) — Logarithmic</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>Every time the dataset doubles, you do one more step. 1,000 rows ≈ 10 steps. 1,000,000 rows ≈ 20 steps. 1,000,000,000 rows ≈ 30 steps. It barely grows.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>B-Tree / B+Tree lookups. Binary search. Any algorithm that halves the problem at each step.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The reason databases work. Going from 1 million to 1 billion rows adds maybe 10 extra comparisons. This is why <a href="#/cognition/index-types" onclick="event.preventDefault();route('cognition/index-types')" style="color:var(--wf-cyan);text-decoration:none;border-bottom:1px solid var(--wf-cyan);">B+Trees</a> dominate.</p>
+
+            <!-- O(n) -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(n) — Linear</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>Double the data, double the work. The cost grows in direct proportion to the input size. You touch every element once.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>Full table scans. Counting items. Iterating a list. Any query on a heap without an index. "Check every row."</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Acceptable for small datasets. Painful at scale. A full scan of 1 billion rows is 1 billion rows of work — no shortcut.</p>
+
+            <!-- O(n log n) -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(n log n) — Linearithmic</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>Slightly worse than linear. You touch every element, but at each element you do a log-n operation. Grows gently — 10× data means roughly 13× work.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>Sorting (mergesort, heapsort, timsort). Building an index. The cost of organising data so future lookups are O(log n).</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The price of order. You pay O(n log n) once at build/sort time so you can pay O(log n) on every future query.</p>
+
+            <!-- O(n²) -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(n²) — Quadratic</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>Double the data, 4× the work. Triple it, 9× the work. Every element compared against every other element. Grows explosively.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>Nested loops without indexes. Naive join algorithms. Bubble sort. "For each row, scan every other row."</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">1,000 rows = 1 million operations. 1 million rows = 1 trillion. This is where bad query plans go to die.</p>
+
+            <!-- O(2ⁿ) -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(2ⁿ) — Exponential</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>Every additional element doubles the total work. 20 elements = ~1 million operations. 40 elements = ~1 trillion. Grows so fast it hits physical limits almost immediately.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>Brute-force subset problems. Recursive Fibonacci without memoisation. Trying every combination of on/off for n items.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">If your algorithm is O(2ⁿ), it's not slow — it's impossible beyond trivial input sizes. Redesign, don't optimise.</p>
+
+            <!-- The Scale Chart -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Scale Chart</h3>
+            <p>What these actually look like at real data sizes:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:.8rem;color:#cbd5e1;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--wf-border);color:var(--wf-cyan);">
+                            <th style="text-align:left;padding:.5rem .8rem;">n</th>
+                            <th style="text-align:right;padding:.5rem .8rem;">O(1)</th>
+                            <th style="text-align:right;padding:.5rem .8rem;">O(log n)</th>
+                            <th style="text-align:right;padding:.5rem .8rem;">O(n)</th>
+                            <th style="text-align:right;padding:.5rem .8rem;">O(n log n)</th>
+                            <th style="text-align:right;padding:.5rem .8rem;">O(n²)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+                            <td style="padding:.4rem .8rem;color:var(--wf-gold);">10</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">3</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">10</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">33</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">100</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+                            <td style="padding:.4rem .8rem;color:var(--wf-gold);">1,000</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">10</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1,000</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">10,000</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1,000,000</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+                            <td style="padding:.4rem .8rem;color:var(--wf-gold);">1,000,000</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">20</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1M</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">20M</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1T</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:.4rem .8rem;color:var(--wf-gold);">1,000,000,000</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">30</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">1B</td>
+                            <td style="text-align:right;padding:.4rem .8rem;">30B</td>
+                            <td style="text-align:right;padding:.4rem .8rem;color:#ff4757;">10<sup>18</sup></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-top:.8rem;">Look at the O(log n) column. From 10 to 1 billion, it goes from 3 to 30. That's why B+Trees work at planetary scale.</p>
+
+            <!-- Amortised -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Amortised Complexity</h3>
+            <p>Some operations are expensive occasionally but cheap on average. A hash table resize is O(n) — but it only happens every n inserts, so the cost per insert <em>amortises</em> to O(1).</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:1.8;">
+                ArrayList/vector append: O(1) amortised (occasional O(n) resize)<br>
+                Hash table insert: O(1) amortised (occasional O(n) rehash)<br>
+                Splay tree access: O(log n) amortised (individual ops can be O(n))
+            </p>
+            <p>Big O gives you the worst case. Amortised gives you the average over many operations. Both matter.</p>
+
+            <!-- Best / Average / Worst -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Best, Average, Worst</h3>
+            <p>Big O is usually quoted as the <strong>worst case</strong>. But some algorithms have very different best and worst cases:</p>
+
+            <div style="margin:1rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Hash table lookup</strong> — best O(1), worst O(n) if every key collides<br>
+                    <strong style="color:var(--wf-cyan);">Quicksort</strong> — best O(n log n), worst O(n²) on already-sorted input<br>
+                    <strong style="color:var(--wf-cyan);">Binary search</strong> — best O(1) if the middle element matches, worst O(log n)<br>
+                    <strong style="color:var(--wf-cyan);">B-Tree lookup</strong> — always O(log n), best and worst are the same. Predictable.
+                </p>
+            </div>
+
+            <!-- When Big O Lies -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">When Big O Lies</h3>
+            <p>Big O ignores constants and lower-order terms. That's the point — it shows asymptotic behaviour. But it means:</p>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                An O(n) algorithm with tiny constants can beat an O(log n) algorithm with huge constants — at small n<br>
+                Cache locality matters more than Big O at small scales — sequential O(n) can beat random O(log n)<br>
+                Disk vs memory changes everything — O(log n) with disk seeks ≠ O(log n) in L1 cache<br>
+                Big O says nothing about memory usage — an O(1) lookup that uses 64 GB of RAM isn't free
+            </p>
+
+            <p style="color:var(--wf-gold);font-weight:400;margin-top:1rem;">Big O tells you what survives at scale. It doesn't tell you what's fastest right now.</p>
+
+            <!-- Connecting back to indexes -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Why This Matters for <a href="#/cognition/index-types" onclick="event.preventDefault();route('cognition/index-types')" style="color:var(--wf-gold);text-decoration:none;border-bottom:1px solid var(--wf-gold);">Indexes</a></h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Hash table</strong> — O(1) lookup. Doesn't scale badly. Scales perfectly.<br>
+                    <strong style="color:var(--wf-cyan);">B-Tree / B+Tree</strong> — O(log n) lookup. 1 billion rows = 30 steps. That's why databases exist.<br>
+                    <strong style="color:var(--wf-cyan);">Full table scan (heap)</strong> — O(n). 1 billion rows = 1 billion rows of I/O. That's why indexes exist.<br>
+                    <strong style="color:var(--wf-cyan);">Nested loop join (no index)</strong> — O(n²). Two tables of 1M rows = 1 trillion comparisons. That's why query optimisers exist.<br>
+                    <strong style="color:var(--wf-cyan);">Bloom filter</strong> — O(k) where k = number of hash functions. Effectively O(1). Tells you not to bother with the O(log n) lookup.
+                </p>
+            </div>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">An index converts an O(n) problem into an O(log n) problem. That's not an optimisation. That's the difference between a system that works and one that doesn't.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Big O is the constraint on the wavefunction of possible implementations. It tells you which approaches survive contact with reality — and which collapse under their own weight.</p>
+        </div>
+    </div>
+</div>

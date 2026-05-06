@@ -1,0 +1,268 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Index Types: The Lookup Landscape</h1>
+        <p class="wf-section-desc">Every index is a bet on how you'll ask the question. Choose wrong, and you pay on every query.</p>
+
+        <div class="wf-article-body">
+            <p>An index is not a feature. It's a <strong style="color:var(--wf-gold);">precomputed answer to a class of question</strong>. The structure you choose determines which questions are cheap and which are catastrophic.</p>
+            <p>There is no universal index. There are only trade-offs.</p>
+
+            <!-- Hash Table -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Hash Table</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Key → hash function → bucket → value. O(1) average lookup. No ordering. Just a direct mapping from input to slot.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Exact-match lookups. Session stores, caches, deduplication, symbol tables. When you know the key and just need the value. Fast, simple, brutal.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Cannot answer: "give me everything between A and M." No ordering, no range, no neighbours.</p>
+
+            <!-- B-Tree -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">B-Tree</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Self-balancing tree. Keys sorted across wide, shallow nodes optimised for disk pages. O(log n) search, insert, delete. Every node holds multiple keys — minimises disk seeks.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>General-purpose database indexes. Point lookups and range queries. The default choice when you don't yet know your access pattern. Mature, predictable, well understood.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Data lives in both internal and leaf nodes. Good all-rounder, but B+Tree often wins for pure scan workloads.</p>
+
+            <!-- B+Tree -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">B+Tree</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Like a B-Tree, but all data lives in the leaves. Internal nodes are pure routing. Leaves are linked together in a doubly-linked list — you can walk the entire dataset in order without touching the tree.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Range scans, ordered iteration, pagination. The backbone of most relational databases (InnoDB, Postgres). When you need both point lookups <em>and</em> efficient sequential access.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The linked leaf chain is the key insight — range queries become sequential I/O instead of tree traversals.</p>
+
+            <!-- LSM Tree -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">LSM Tree (Log-Structured Merge Tree)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Writes go to an in-memory buffer (memtable). When full, it flushes to sorted, immutable files on disk (SSTables). Background compaction merges levels. Reads check memtable first, then each level.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Write-heavy workloads. Time-series data, event logs, metrics. RocksDB, LevelDB, Cassandra, ScyllaDB. When writes must be fast and reads can tolerate some amplification.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Trades read amplification for write throughput. Bloom filters on each level help avoid pointless disk reads.</p>
+
+            <!-- Inverted Index -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Inverted Index</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Flips the relationship: instead of document → words, it maps word → list of documents containing it. Each term points to a posting list of document IDs, positions, and frequencies.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Full-text search. "Find every document containing these words." Elasticsearch, Lucene, Solr. Also used in search engines, log analysis, and anywhere you query by content rather than key.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Expensive to build, cheap to query. The cost is paid at write time so reads are near-instant.</p>
+
+            <!-- Bloom Filter -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Bloom Filter</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>A probabilistic bit array. Hash the key k times, set those bits. To check membership, hash again — if all bits are set, "probably yes". If any bit is unset, "definitely no". No false negatives. Controllable false positive rate.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Avoiding expensive lookups. "Is this key definitely <em>not</em> here?" Used in LSM trees, CDNs, network routers, spell checkers. Tiny memory footprint for massive keyspaces.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Not an index in the retrieval sense — it's a filter. It tells you when <em>not</em> to bother looking.</p>
+
+            <!-- Range Index / Skip List -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Skip List</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>A sorted linked list with express lanes. Multiple layers of forward pointers let you skip ahead, giving O(log n) search on a structure that's simpler than a balanced tree. Probabilistic balancing — no rotations needed.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>In-memory sorted structures where concurrency matters. Redis sorted sets. Memtable internals in LSM trees. When you want ordered access without the complexity of tree rebalancing.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Elegant because it replaces structural complexity with randomness. Lock-free variants make it ideal for concurrent access.</p>
+
+            <!-- R-Tree / Spatial Index -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">R-Tree (Spatial Index)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Organises multi-dimensional data into nested bounding rectangles. Each node contains a minimum bounding box that encloses its children. Queries test overlap with the target region and prune entire subtrees.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Geospatial queries. "Find all restaurants within 2km." PostGIS, mapping systems, collision detection. Any domain where data lives in 2D/3D space and you query by proximity or containment.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Extends the B-Tree idea to multiple dimensions. Degrades with high-dimensional data — that's where vector indexes take over.</p>
+
+            <!-- Bitmap Index -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Bitmap Index</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>One bit per row, per distinct value. "Status = active" becomes a bit vector across all rows. Queries combine bitmaps with AND/OR/NOT — hardware-level bitwise operations on entire columns at once.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Low-cardinality columns in analytics. Gender, status, region, boolean flags. OLAP warehouses, column stores. When the number of distinct values is small relative to row count.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Compresses beautifully with run-length encoding. Falls apart on high-cardinality columns — don't bitmap a UUID.</p>
+
+            <!-- Trie -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Trie (Prefix Tree)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Each node represents a character. Paths from root to leaf spell out keys. Shared prefixes share nodes. Lookup time is O(key length), independent of dataset size.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Autocomplete, IP routing tables, dictionary lookups, prefix matching. When queries are "everything starting with X". Variants like radix trees (PATRICIA) compress sparse paths.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Memory-hungry in the naive form. Radix compression and adaptive node sizing (ART) make it practical at scale.</p>
+
+            <!-- Vector Index -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Vector Index (ANN)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Maps high-dimensional vectors into a structure that supports approximate nearest-neighbour search. Approaches include HNSW (hierarchical navigable small-world graphs), IVF (inverted file with clustering), and quantisation (PQ/SQ) to compress vectors. Trade exactness for speed.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Semantic search, RAG, image similarity, recommendation engines. "Find the 10 things most <em>like</em> this." The query isn't a key — it's a point in meaning-space. This is what we built into <a href="#/forge" onclick="event.preventDefault();route('forge')" style="color:var(--wf-cyan);text-decoration:none;border-bottom:1px solid var(--wf-cyan);">PicoWAL</a>.</p>
+                </div>
+            </div>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The only index type where the question is fuzzy. Not "find this" but "find things near this." The shape of AI-era retrieval.</p>
+
+            <!-- The Pattern -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Pattern</h3>
+            <p>Every index encodes an assumption:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Hash Table</strong> — "I know the exact key"<br>
+                    <strong style="color:var(--wf-cyan);">B-Tree</strong> — "I need point + range on disk"<br>
+                    <strong style="color:var(--wf-cyan);">B+Tree</strong> — "I need to scan in order"<br>
+                    <strong style="color:var(--wf-cyan);">LSM Tree</strong> — "I write far more than I read"<br>
+                    <strong style="color:var(--wf-cyan);">Inverted Index</strong> — "I'm searching by content"<br>
+                    <strong style="color:var(--wf-cyan);">Bloom Filter</strong> — "I need to avoid wasted reads"<br>
+                    <strong style="color:var(--wf-cyan);">Skip List</strong> — "I want sorted + concurrent + simple"<br>
+                    <strong style="color:var(--wf-cyan);">R-Tree</strong> — "My data lives in space"<br>
+                    <strong style="color:var(--wf-cyan);">Bitmap</strong> — "I'm filtering low-cardinality columns"<br>
+                    <strong style="color:var(--wf-cyan);">Trie</strong> — "I'm matching prefixes"<br>
+                    <strong style="color:var(--wf-gold);">Vector Index</strong> — "I'm searching by meaning"
+                </p>
+            </div>
+
+            <p>The wrong index doesn't just slow things down. It changes what questions your system can answer.</p>
+
+            <!-- Clustered vs Heap Storage -->
+            <h2 style="color:var(--wf-gold);font-size:1.1rem;margin-top:3.5rem;margin-bottom:.4rem;letter-spacing:.05em;">HOW DATA IS ACTUALLY STORED</h2>
+            <p style="color:var(--wf-muted);font-size:.82rem;margin-bottom:1.5rem;">Forget "primary keys" and "foreign keys" as relational theory. Think about what's physically happening on disk.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Heap: The Junk Drawer</h3>
+            <p>A heap is unsorted storage. Rows go wherever there's space. Insert is fast — just append. But finding anything means scanning the entire thing, because there's no physical order.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-muted);line-height:1.8;">
+                No structure. No sort. No promise about where anything lives.<br>
+                Every query without an index = full table scan.
+            </p>
+            <p>A heap with no indexes is a flat file. You're paying disk I/O to read every row every time. The only thing making heaps usable is the indexes you put on top.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Clustered Index: The Data <em>Is</em> the Index</h3>
+            <p>A clustered index doesn't sit alongside the data. It <strong style="color:var(--wf-gold);">is</strong> the data. The rows are physically sorted on disk in the order of the clustered key. The leaf nodes of the B+Tree <em>contain the actual rows</em>.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Heap + Index</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Index says: "row 47 is at page 312, slot 5"<br>
+                        Then you go to page 312 and read it.<br>
+                        <strong>Two lookups.</strong> Index → pointer → data.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Clustered Index</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Index says: "row 47 is <em>right here</em>"<br>
+                        The leaf node <em>is</em> the data page.<br>
+                        <strong>One lookup.</strong> Index = data.
+                    </p>
+                </div>
+            </div>
+
+            <p>You can only have <strong>one</strong> clustered index per table, because data can only be physically sorted one way. Choose it carefully — it determines the physical layout of everything.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:1.8;margin-top:1rem;">
+                <strong style="color:var(--wf-gold);">SQL Server default behaviour:</strong> When you add a primary key with a unique constraint, SQL Server automatically creates a clustered index on that column. If you don't add a primary key, the table is stored as a heap. Most people don't realise they're making a physical storage decision when they type <code style="color:var(--wf-cyan);font-size:.82rem;">PRIMARY KEY</code> — but they are. No primary key = no clustered index = heap = full scan on every query without a non-clustered index.
+            </p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Non-Clustered Index: A Separate Lookup Structure</h3>
+            <p>A non-clustered index is a <em>separate</em> B+Tree that stores a copy of the indexed columns plus a pointer back to the actual row. If the table has a clustered index, the pointer is the clustered key. If it's a heap, the pointer is a physical row ID (page + slot).</p>
+
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:1.8;">
+                Non-clustered on a <strong style="color:var(--wf-accent);">clustered table</strong>: stores the clustered key as the bookmark → then uses the clustered index to find the row. Two B+Tree traversals.<br>
+                Non-clustered on a <strong style="color:var(--wf-accent);">heap</strong>: stores the physical RID (file:page:slot) → goes straight there. One traversal + one seek.
+            </p>
+
+            <p>You can have many non-clustered indexes on one table. Each is an extra structure to maintain on writes, but a fast path for reads that match its key pattern.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Primary Key vs Secondary Key: What It Actually Means</h3>
+            <p>Strip away the relational theory. A key is just a column (or columns) you use to find rows.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Primary Key</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        The <em>identity</em> of the row. Unique, not null.<br>
+                        In most engines, the primary key <strong>becomes the clustered index</strong> by default. The data is physically sorted by this key.<br><br>
+                        It's not special because of theory. It's special because <strong>it determines how the bytes are laid out on disk</strong>.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Secondary Key</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Any other column you index. Always a non-clustered index.<br>
+                        Contains a copy of the indexed columns + a pointer back to the primary key (or RID on a heap).<br><br>
+                        It's a <strong>separate data structure</strong> optimised for a different access pattern. More secondary indexes = faster reads on those columns, slower writes everywhere.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Covering Index Trick</h3>
+            <p>If a non-clustered index contains <em>all</em> the columns your query needs, the engine never touches the base table. It answers the query entirely from the index. This is a <strong style="color:var(--wf-gold);">covering index</strong> — the query is "covered" by the index alone.</p>
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">This is why you sometimes see indexes with INCLUDE columns — they're not part of the sort key, but they're carried along so the index can cover more queries without going back to the table.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Physical Reality</h3>
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Heap</strong> — unsorted pages. append-only. scan everything to find anything.<br>
+                    <strong style="color:var(--wf-cyan);">Clustered index</strong> — the data <em>is</em> the B+Tree. one per table. defines physical order.<br>
+                    <strong style="color:var(--wf-cyan);">Non-clustered index</strong> — separate B+Tree. points back to clustered key or RID.<br>
+                    <strong style="color:var(--wf-gold);">Primary key</strong> — usually the clustered key. the identity that everything else points at.<br>
+                    <strong style="color:var(--wf-gold);">Secondary key</strong> — non-clustered index on other columns. a separate access path.<br>
+                    <strong style="color:var(--wf-gold);">Covering index</strong> — carries enough columns to answer the query without touching the table.
+                </p>
+            </div>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">The primary key isn't important because of relational theory. It's important because it determines the physical shape of your data on disk. Everything else — every secondary index, every join, every foreign key — is just a pointer back to that shape.</p>
+            </div>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">Choose the index before you choose the database. The index <em>is</em> the database.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">An index is a precomputed constraint on the wavefunction of possible queries. It collapses lookup from "search everything" to "go here."</p>
+        </div>
+    </div>
+
+    <!-- Forge -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- AI SERIES SECTION                                   -->
+    <!-- ═══════════════════════════════════════════════════ -->
+</div>

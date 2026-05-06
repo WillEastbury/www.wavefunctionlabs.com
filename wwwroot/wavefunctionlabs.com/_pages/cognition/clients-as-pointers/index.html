@@ -1,0 +1,87 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Clients as Pointers</h1>
+        <p class="wf-section-desc">From APIs to Addressable Systems</p>
+
+        <div class="wf-article-body">
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Shift</h3>
+            <p>Traditional systems treat clients as request senders. The client says what it wants. The server interprets, parses, routes, deserialises, queries, serialises, and responds.</p>
+            <p>This model is different.</p>
+            <p>Clients are pointer generators into a structured data space. They don't ask "what do you want?" They say <span style="color:var(--wf-gold);font-weight:400;">"where is it?"</span></p>
+            <p>That single shift changes everything downstream.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Core Model</h3>
+            <p>The system is built from simple primitives:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);"><strong style="color:var(--wf-cyan);">WAL</strong> — append-only log (the truth)<br><strong style="color:var(--wf-cyan);">idmap</strong> — key → offset (the index)<br><strong style="color:var(--wf-cyan);">schema</strong> — field ordinals (the type system)<br><strong style="color:var(--wf-cyan);">jump table</strong> — ordinal → handler (the dispatch)<br><strong style="color:var(--wf-cyan);">span&lt;byte&gt;</strong> — the universal representation</p>
+            <p>Compile-time access and metadata-driven access are equivalent if dispatch is a jump table. Runtime metadata is just delayed compile-time.</p>
+            <p>There is no fundamental difference between a compiled field accessor and a runtime ordinal lookup. One was resolved early. The other was resolved late. The mechanism is identical.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Protocol Collapse</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-muted);padding-left:1rem;">
+                    <h4 style="color:var(--wf-muted);font-size:.82rem;margin-bottom:.4rem;">REST / JSON</h4>
+                    <p style="color:var(--wf-muted);font-size:.85rem;">String parsing<br>Object materialisation<br>Route matching<br>Serialization overhead<br>Allocations everywhere</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.82rem;margin-bottom:.4rem;">Ordinal Protocol</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;font-family:monospace;">[route][id][field]</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;margin-top:.4rem;">No parsing<br>No routing<br>No serialization<br>Just pointer → bytes → stream</p>
+                </div>
+            </div>
+            <p>The entire HTTP/JSON stack collapses into three integers and a span read.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Clients Become Pointers</h3>
+            <p>Clients hold route ordinals, field ordinals, and keys. They generate compact requests that effectively address data directly.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-muted);padding-left:1rem;">
+                    <h4 style="color:var(--wf-muted);font-size:.82rem;margin-bottom:.4rem;">Traditional</h4>
+                    <p style="color:var(--wf-muted);font-size:.85rem;font-family:monospace;">GET /users/123?fields=name</p>
+                    <p style="color:var(--wf-muted);font-size:.78rem;margin-top:.3rem;">Parse URL. Match route. Parse query string. Deserialise. Filter. Serialise. Respond.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.82rem;margin-bottom:.4rem;">Ordinal</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;font-family:monospace;">[route=2][id=123][field=1]</p>
+                    <p style="color:#cbd5e1;font-size:.78rem;margin-top:.3rem;">Jump table[2]. Idmap[123]. Read span at field offset 1. Return bytes. Done.</p>
+                </div>
+            </div>
+            <p>The client isn't asking a question. It's dereferencing a pointer.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Real World Parallels</h3>
+            <p>This pattern isn't invented. It's how fast systems already work:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;"><strong style="color:#cbd5e1;">Memory-mapped files</strong> — direct addressing, no parsing<br><strong style="color:#cbd5e1;">CPU page tables</strong> — virtual → physical mapping via idmap<br><strong style="color:#cbd5e1;">GPU buffers</strong> — structured data, no object layer<br><strong style="color:#cbd5e1;">NIC descriptor rings</strong> — precomputed buffers sent directly to hardware<br><strong style="color:#cbd5e1;">Kafka / log systems</strong> — append-only truth, replayable state<br><strong style="color:#cbd5e1;">Filesystems</strong> — inode → block mapping<br><strong style="color:#cbd5e1;">Database execution engines</strong> — query plan as execution, not interpretation</p>
+            <p style="color:var(--wf-gold);font-weight:400;">This is not new. It's how fast systems already work. We're just applying it end-to-end.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Performance Characteristics</h3>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">O(1) lookup + sequential read<br>Zero-copy via <a href="#/cognition/everything-is-a-span" onclick="event.preventDefault();route('cognition/everything-is-a-span')" style="color:var(--wf-cyan);text-decoration:none;">spans</a><br>No <a href="#/cognition/allocate-once" onclick="event.preventDefault();route('cognition/allocate-once')" style="color:var(--wf-cyan);text-decoration:none;">allocations</a> in hot path<br>Branch predictability via jump tables<br>Compaction as the only heavy operation</p>
+            <p style="color:var(--wf-gold);font-weight:400;">Performance comes from removing work, not adding optimisation.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Schema as Instruction Set</h3>
+            <p>Field ordinals act like opcodes. The jump table is the execution engine. Data + schema = program.</p>
+            <p>This is a virtual machine where:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">The query is the execution plan<br>The schema is the instruction set<br>The handlers are compiled behaviour<br>The data is the operand</p>
+            <p>You're not "querying a database." You're executing a program against a structured memory space.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Distributed Memory Model</h3>
+            <p>Frame the whole system:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;"><strong style="color:#cbd5e1;">WAL</strong> = physical memory<br><strong style="color:#cbd5e1;">idmap</strong> = page table<br><strong style="color:#cbd5e1;">schema</strong> = type system<br><strong style="color:#cbd5e1;">client</strong> = pointer generator</p>
+            <p style="color:var(--wf-gold);font-weight:400;">This behaves like a distributed, permissioned memory space backed by a log.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Trade-offs and Constraints</h3>
+            <p>Be honest about what this costs:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-muted);">Ordinals must be stable — renumbering breaks clients<br>Schema versioning is critical — evolution must be managed<br>Debugging is lower-level — no friendly JSON to inspect<br>Less forgiving than traditional APIs — precision is required</p>
+            <p>This is not easier. It's faster. Those are different things.</p>
+        </div>
+
+        <p style="color:var(--wf-accent);font-size:.92rem;font-weight:400;margin-top:2rem;line-height:1.8;">APIs describe what you want.<br>This system tells you where it is.<br><span style="font-weight:500;">Where is always faster than what.</span></p>
+
+        <div style="margin-top:2rem;padding:1.4rem 1.6rem;border:1px solid rgba(240,192,64,.25);border-radius:6px;background:rgba(240,192,64,.04);">
+            <p style="color:#cbd5e1;font-size:.9rem;line-height:1.85;font-weight:300;margin:0 0 .8rem;">When you ask <em>what</em>, the system has to think.<br>When you specify <em>where</em>, it just moves bytes.</p>
+            <p style="color:var(--wf-gold);font-size:.92rem;font-weight:400;margin:0 0 1rem;">And moving bytes is the only thing computers are actually good at.</p>
+            <p style="color:#cbd5e1;font-size:.88rem;font-weight:300;margin:0 0 .4rem;">Why ask at runtime, when the shape is already known?</p>
+            <p style="color:var(--wf-accent);font-size:.88rem;font-weight:400;font-style:italic;margin:0;">Schema is agreement. Everything else is overhead.</p>
+        </div>
+    </div>
+
+    <!-- Cognition: Career as System -->
+</div>

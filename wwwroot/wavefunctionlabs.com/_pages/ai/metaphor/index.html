@@ -1,0 +1,84 @@
+<div class="wf-section">
+<a class="wf-back" href="/ai">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 6 OF 7</div>
+        <h1 class="wf-section-hdr">The Wavefunction Metaphor</h1>
+        <p class="wf-section-desc">They're all the same idea. Here's why.</p>
+
+        <div class="wf-article-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">Transformer</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Superposition:</strong> Every position holds a distribution over the full vocabulary — all possible continuations exist simultaneously.<br><br>
+                        <strong>Observation:</strong> Attention selectively observes the context, collapsing relevance weights from uniform to sharply peaked.<br><br>
+                        <strong>Collapse:</strong> Softmax + sampling forces one token to be chosen. The wavefunction collapses. A single reality is selected from the probability field.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.88rem;margin-bottom:.6rem;">Diffusion</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong>Superposition:</strong> Pure Gaussian noise is the maximum entropy state — every possible image exists as a superposition in the noise.<br><br>
+                        <strong>Observation:</strong> The text condition acts as the observer, constraining which images are consistent with the prompt.<br><br>
+                        <strong>Collapse:</strong> Each denoising step reduces entropy. The noise field collapses toward a single coherent image. T steps of gradual wavefunction collapse.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Shared Pattern</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Transformer</strong> — field of possible tokens → attention constrains → one token collapses out<br>
+                    <strong style="color:var(--wf-accent);">Diffusion</strong> — field of possible images → conditioning constrains → one image collapses out<br>
+                    <strong style="color:var(--wf-gold);">Wavefunction</strong> — field of possible states → observation constrains → one reality collapses out
+                </p>
+            </div>
+
+            <p>Both start in a high-entropy state (all possibilities). Both apply constraints (attention/conditioning). Both collapse to a single output (token/image). The mechanism differs. The structure is identical.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Transformer Collapse</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Discrete. One token at a time.<br>
+                        Autoregressive: each collapse feeds the next.<br>
+                        Fast collapse — one forward pass per token.<br>
+                        The constraint is <em>context</em>.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Diffusion Collapse</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Continuous. The entire image at once.<br>
+                        Iterative: each step refines the whole field.<br>
+                        Slow collapse — 20-50 denoising steps.<br>
+                        The constraint is <em>the prompt</em>.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Why This Matters</h3>
+            <p>If you see AI models as "clever prediction machines," you'll use them like tools. If you see them as <strong style="color:var(--wf-gold);">constrained collapse systems</strong>, you'll understand:</p>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+                Why prompt engineering works — you're shaping the constraint field<br>
+                Why temperature matters — it controls collapse sharpness<br>
+                Why hallucinations happen — underconstrained regions collapse to plausible-but-wrong states<br>
+                Why guidance scale works — it amplifies the observer's influence<br>
+                Why longer context helps — more constraints, tighter collapse<br>
+                Why these models feel creative — they explore the possibility space before collapsing
+            </p>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2.5rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">A Transformer is a discrete sequential collapse engine.<br>A Diffusion model is a continuous parallel collapse engine.<br>Both are wavefunctions. The prompt is the observer.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The architecture is different. The computation is different. The maths is different. But the shape is the same: a field of possibilities, constrained by observation, collapsing into reality.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ai/finetuning" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 5: Finetuning, LoRA & PEFT</a>
+                <a href="/ai" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ai/inference" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 7: Inference Vocabulary →</a>
+            </div>
+        </div>
+</div>

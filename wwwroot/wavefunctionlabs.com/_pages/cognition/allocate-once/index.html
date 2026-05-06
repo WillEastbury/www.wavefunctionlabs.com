@@ -1,0 +1,83 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Allocate Once. Pool Everywhere.</h1>
+        <p class="wf-section-desc">Memory allocation is not free. It's one of the most expensive habits modern systems hide.</p>
+
+        <div class="wf-article-body">
+            <p>Most systems don't notice. They allocate constantly, clean up later, and call it normal.</p>
+            <p style="color:var(--wf-gold);font-weight:400;">It isn't.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Default Mistake</h3>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-muted);">allocate → use → discard → repeat</p>
+            <p>Over and over. Each allocation touches the heap, pressures the GC, fragments memory, introduces latency you don't control.</p>
+            <p>The system works harder managing memory than doing useful work.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Hidden Cost</h3>
+            <p>Allocations don't just cost time. They create unpredictability.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">GC pauses (stop-the-world)<br>Allocator contention (malloc / heap locks)<br>Cache churn<br>Memory fragmentation</p>
+            <p>Everything looks fine… until it doesn't. Then you get random latency spikes, throughput collapse under load, behaviour that can't be reproduced locally.</p>
+            <p style="color:var(--wf-gold);font-weight:400;">You didn't remove the cost. You deferred it.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Stop-The-World Reality</h3>
+            <p>Garbage collection is not magic. At some point, it stops everything.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">Threads pause<br>Work halts<br>Latency spikes</p>
+            <p>You don't control when it happens. You only control how much you trigger it.</p>
+            <p>More allocation → more pressure → more pauses.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">malloc Isn't Free Either</h3>
+            <p>Even without GC, allocation still hurts.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">Heap locks<br>Syscalls<br>Page faults<br>NUMA effects</p>
+            <p><span style="font-family:monospace;color:var(--wf-gold);">malloc</span> looks cheap in isolation. Under load, it becomes a bottleneck.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Hidden Leaks</h3>
+            <p>The worst part isn't obvious leaks. It's the subtle ones.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-muted);">Forgotten returns to pool<br>Long-lived references<br>"Temporary" buffers that become permanent<br>Allocation patterns that slowly grow over time</p>
+            <p>No crash. Just gradual degradation. The system rots quietly.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Inversion</h3>
+            <p style="color:var(--wf-gold);font-weight:400;font-size:.95rem;">Allocate once. Reuse everywhere.</p>
+            <p>Buffers. Objects. Working memory. All pooled. All reused. Nothing new on the hot path unless absolutely necessary.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Memory as Infrastructure</h3>
+            <p>Memory stops being disposable. It becomes infrastructure.</p>
+            <p>You don't create it. You provision it.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">Take from pool → use → return</p>
+            <p>No churn. No surprises.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Stability Over Time</h3>
+            <p>Pooling gives you:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">Consistent latency<br>Minimal GC pressure<br>Stable memory footprint</p>
+            <p>The system stops spiking. It just runs.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Spans Make It Work</h3>
+            <p>This only works because of the underlying model: everything is <span style="font-family:monospace;color:var(--wf-gold);">(ptr, len)</span>.</p>
+            <p>You don't need new objects. You need new views.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">Slice. Reuse. Reinterpret.<br>No copies. No allocations.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Pattern</h3>
+            <p>Allocation is a failure to plan ahead.</p>
+            <p>If you understand your system — sizes are predictable, concurrency is bounded, pressure points are known — then you allocate once. And reuse.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Frame</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-muted);padding-left:1rem;">
+                    <h4 style="color:var(--wf-muted);font-size:.82rem;margin-bottom:.4rem;">Bad System</h4>
+                    <p style="color:var(--wf-muted);font-size:.85rem;">Builds a new tool every time.<br>Throws it away.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.82rem;margin-bottom:.4rem;">Good System</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;">Has a rack of tools.<br>Reuses them endlessly.</p>
+                </div>
+            </div>
+            <p>Same work. Different universe.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Why This Matters</h3>
+            <p>This isn't micro-optimisation. It's the difference between smooth systems and spiky ones. Predictable vs chaotic. Scalable vs fragile.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);"><a href="#/cognition/everything-is-a-span" onclick="event.preventDefault();route('cognition/everything-is-a-span')" style="color:var(--wf-cyan);text-decoration:none;">Spans</a> → no copies<br><a href="#/cognition/inevitable-computation" onclick="event.preventDefault();route('cognition/inevitable-computation')" style="color:var(--wf-cyan);text-decoration:none;">Constraints</a> → less work<br><a href="#/cognition/alignment-as-clock" onclick="event.preventDefault();route('cognition/alignment-as-clock')" style="color:var(--wf-cyan);text-decoration:none;">Alignment</a> → fewer executions<br>Pooling → no churn</p>
+        </div>
+
+        <p style="color:var(--wf-accent);font-size:.88rem;font-weight:400;font-style:italic;margin-top:2rem;">If you're allocating on the hot path, you're trading performance for entropy.</p>
+    </div>
+
+    <!-- Cognition: Copies Are Bugs -->
+</div>

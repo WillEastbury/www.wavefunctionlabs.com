@@ -1,0 +1,57 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Everything is a Span</h1>
+        <p class="wf-section-desc">At the lowest level, nothing is objects. Nothing is JSON. Nothing is "models." It's just memory. A pointer. A length. That's it.</p>
+
+        <div class="wf-article-body">
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Illusion of Structure</h3>
+            <p>What we call structure is interpretation layered on top of bytes.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">A string is bytes with an encoding<br>An object is bytes with a schema<br>A message is bytes with a boundary</p>
+            <p>Remove the interpretation, and they all collapse to the same thing:</p>
+            <p style="color:var(--wf-gold);font-weight:400;font-size:1.05rem;font-family:monospace;">(ptr, len)</p>
+            <p>Everything else is agreement.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Zero Transformation</h3>
+            <p>Most systems spend their time converting between shapes:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-muted);">bytes → objects<br>objects → other objects<br>objects → bytes again</p>
+            <p>This is waste. The data never changed. Only the interpretation did.</p>
+            <p style="color:var(--wf-gold);font-weight:400;">The fastest transformation is the one you don't do.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Late Binding of Meaning</h3>
+            <p>If everything is <span style="font-family:monospace;color:var(--wf-gold);">(ptr, len)</span>, then meaning becomes optional until the last possible moment.</p>
+            <p>You don't need to "deserialize" to operate. You can:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">Route based on offsets<br>Filter based on known positions<br>Project fields without materialising the whole structure</p>
+            <p>Schema becomes a lens, not a requirement.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Streams, Not Copies</h3>
+            <p>When data moves, it shouldn't be rebuilt. It should be referenced. Sliced. Forwarded.</p>
+            <p>A stream of spans, not a series of allocations.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">Every copy is a tax.<br>Every allocation is latency.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Metadata as Map</h3>
+            <p>If bytes are the territory, metadata is the map.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">Field offsets<br>Lengths<br>Indexes</p>
+            <p>These are enough to interpret and operate without reshaping the data. You don't need to understand everything. You just need to know where to look.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Pattern</h3>
+            <p>Once you accept this, everything simplifies:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">storage = spans on disk<br>network = spans over wire<br>compute = transforms over spans</p>
+            <p>No translation layers. No impedance mismatch. Just movement and interpretation of bytes.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Frame</h3>
+            <p>All systems eventually collapse to this:</p>
+            <p>A region of memory. A view over that region.</p>
+            <p>Everything else is abstraction. Useful, sometimes necessary, but never fundamental.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Why This Matters</h3>
+            <p>This ties directly into everything else:</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);"><a href="#/cognition/alignment-as-clock" onclick="event.preventDefault();route('cognition/alignment-as-clock')" style="color:var(--wf-cyan);text-decoration:none;">Alignment</a> → when spans are allowed to flow<br><a href="#/cognition/inevitable-computation" onclick="event.preventDefault();route('cognition/inevitable-computation')" style="color:var(--wf-cyan);text-decoration:none;">Constraint</a> → which spans are valid<br><a href="#/cognition/turing-crib" onclick="event.preventDefault();route('cognition/turing-crib')" style="color:var(--wf-cyan);text-decoration:none;">Compression</a> → how spans are reduced<br><a href="#/cognition/streaming-over-owning" onclick="event.preventDefault();route('cognition/streaming-over-owning')" style="color:var(--wf-cyan);text-decoration:none;">Streaming</a> → how spans move</p>
+            <p>It's the same model, just viewed at the lowest resolution.</p>
+        </div>
+
+        <p style="color:var(--wf-accent);font-size:.88rem;font-weight:400;font-style:italic;margin-top:2rem;">If you control (ptr, len), you control the system.</p>
+    </div>
+
+    <!-- Cognition: Allocate Once. Pool Everywhere. -->
+</div>

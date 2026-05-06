@@ -1,0 +1,164 @@
+<div class="wf-section">
+<a class="wf-back" href="/ai">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 4 OF 7</div>
+        <h1 class="wf-section-hdr">Beyond Transformers & Diffusion</h1>
+        <p class="wf-section-desc">GANs, video models, audio models — the rest of the landscape.</p>
+
+        <div class="wf-article-body">
+            <!-- GAN -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Generative Adversarial Networks (GANs)</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Two neural networks play a game. The <strong style="color:var(--wf-accent);">Generator</strong> tries to create fake data that looks real. The <strong style="color:var(--wf-cyan);">Discriminator</strong> tries to spot the fakes. They train against each other — the generator gets better at faking, the discriminator gets better at detecting — until the fakes are indistinguishable from real data.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Think of it as a forger vs an art inspector. The forger keeps improving until the inspector can't tell the difference. At that point, the forger <em>is</em> a generative model.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Maths</h4>
+                    <div style="margin:.5rem 0;padding:.8rem 1rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                        <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                            min<sub>G</sub> max<sub>D</sub> V(D, G) =<br>
+                            &nbsp;&nbsp;𝔼<sub>x~p<sub>data</sub></sub>[log D(x)] + 𝔼<sub>z~p<sub>z</sub></sub>[log(1 − D(G(z)))]
+                        </p>
+                    </div>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;margin-top:.6rem;">
+                        <strong style="color:var(--wf-cyan);">D(x)</strong> — discriminator's confidence that x is real (0→1)<br>
+                        <strong style="color:var(--wf-accent);">G(z)</strong> — generator's output from random noise z<br>
+                        <strong style="color:var(--wf-gold);">The game:</strong> D wants to maximise (correctly classify real vs fake). G wants to minimise (fool D). At Nash equilibrium, D outputs 0.5 for everything — it can't tell.
+                    </p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">GAN Architecture Variants</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">DCGAN</strong> — convolutional generator/discriminator. Replaced fully-connected layers with conv layers. Made training stable enough to actually work.<br>
+                    <strong style="color:var(--wf-accent);">StyleGAN</strong> — injects style at each resolution layer. Produces photorealistic faces. Introduced the "mapping network" that converts z to a style space w before generation.<br>
+                    <strong style="color:var(--wf-accent);">CycleGAN</strong> — unpaired image-to-image translation (horses→zebras). Two generators, two discriminators, cycle-consistency loss.<br>
+                    <strong style="color:var(--wf-accent);">Pix2Pix</strong> — paired image-to-image (sketch→photo). Conditional GAN with L1 reconstruction loss.<br>
+                    <strong style="color:var(--wf-accent);">WGAN</strong> — uses Wasserstein distance instead of JS divergence. Smoother gradients, more stable training. Solved the "mode collapse" problem where the generator only produces a few outputs.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">GANs dominated image generation from 2014–2021. Diffusion models largely replaced them for quality, but GANs remain faster at inference — a single forward pass vs 20–50 denoising steps. Some modern systems combine both: use diffusion for quality, then distil into a GAN for speed.</p>
+
+            <!-- VIDEO MODELS -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Video Generative Models</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Video is images + time. The fundamental challenge is <strong style="color:var(--wf-cyan);">temporal coherence</strong> — making sure frame 47 looks like it belongs after frame 46. A video model doesn't generate frames independently; it has to understand motion, physics, and continuity.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Most video models extend image architectures into the time dimension. The same attention mechanisms that let a Transformer look across tokens, or a diffusion model denoise pixels, are extended to look across <em>frames</em>.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Core Problem</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">An image is a 2D grid of pixels: H × W × 3 (height, width, RGB). A video is a 3D grid: T × H × W × 3 — where T is time (frames). For a 5-second 1080p clip at 24fps, that's 120 × 1080 × 1920 × 3 ≈ <strong style="color:var(--wf-gold);">746 million values</strong>.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">You can't just do attention over 746M tokens. So video models use <strong style="color:var(--wf-cyan);">compressed latent spaces</strong> — encode the video into a much smaller representation, generate in that space, then decode back.</p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-accent);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Video Architecture Approaches</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Temporal Diffusion (Sora, Runway)</strong> — extend a 2D diffusion model to 3D. Add temporal attention layers between spatial attention layers. The U-Net (or DiT) denoises across space <em>and</em> time simultaneously. The noise schedule applies to all frames at once.<br>
+                    <strong style="color:var(--wf-cyan);">DiT (Diffusion Transformer)</strong> — replace the U-Net with a Transformer operating on video patches. Chop each frame into patches, flatten across time, apply full attention. Sora uses this. The patch-based approach lets you handle variable resolutions and durations.<br>
+                    <strong style="color:var(--wf-cyan);">Autoregressive Video</strong> — generate frame-by-frame, conditioning each frame on the previous ones. Like a text Transformer but for images. Slower but naturally handles arbitrarily long sequences.<br>
+                    <strong style="color:var(--wf-cyan);">Latent Video Diffusion</strong> — encode each frame with a VAE into a small latent, run diffusion in latent space across time, decode back. The latent compresses 8×–16× spatially. This is how most practical systems work — raw pixel diffusion is too expensive.
+                </p>
+            </div>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                    Spatial attention: attend across pixels within one frame<br>
+                    Temporal attention: attend across the same spatial position across frames<br>
+                    Full 3D attention: attend across everything (expensive, accurate)<br>
+                    <br>
+                    Video = Spatial structure × Temporal coherence × Prompt conditioning
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The biggest challenge isn't architecture — it's data and compute. Training video models requires orders of magnitude more data than images (each training example is hundreds of frames) and the 3D attention is O(T² × H² × W²) without tricks. Practical systems use factored attention: spatial-then-temporal rather than full 3D.</p>
+
+            <!-- AUDIO MODELS -->
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Audio Generative Models</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Audio is a 1D signal — amplitude over time — typically sampled at 16–48kHz. That's 16,000–48,000 values per second. A 10-second clip is 480,000 samples. Raw audio generation needs to produce coherent structure at <em>multiple timescales</em>: individual waveform cycles (microseconds), phonemes (milliseconds), words (hundreds of ms), sentences (seconds), and musical phrases (many seconds).</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Most models don't work on raw waveforms directly. They work on compressed representations — spectrograms, learned codecs, or discrete audio tokens.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Representations</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        <strong style="color:var(--wf-gold);">Mel spectrogram</strong> — a 2D image of frequency vs time. Convert audio to this, generate it like an image, then invert it back to audio with a vocoder.<br><br>
+                        <strong style="color:var(--wf-gold);">Neural audio codec (EnCodec, SoundStream)</strong> — compress audio into discrete tokens using a learned encoder. Now audio generation becomes a <em>language modelling problem</em> — predict the next audio token.<br><br>
+                        <strong style="color:var(--wf-gold);">Raw waveform</strong> — generate samples directly. Highest quality, highest cost. WaveNet pioneered this with autoregressive generation at 16kHz — 16,000 predictions per second.
+                    </p>
+                </div>
+            </div>
+
+            <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Audio Architecture Approaches</h4>
+            <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">WaveNet</strong> — autoregressive CNN. Generates one sample at a time, conditioned on all previous samples. Dilated causal convolutions give exponentially growing receptive field. Extremely high quality, extremely slow at inference.<br>
+                    <strong style="color:var(--wf-accent);">Transformer TTS (Tacotron → VALL-E → Bark)</strong> — text → mel spectrogram via attention, then a vocoder (HiFi-GAN, WaveGlow) converts to audio. VALL-E tokenises audio with a codec, then does language-model-style next-token prediction on audio tokens. Voice cloning in 3 seconds of reference audio.<br>
+                    <strong style="color:var(--wf-accent);">AudioLM / MusicLM</strong> — hierarchical token generation. Coarse tokens capture structure and rhythm. Fine tokens capture acoustic detail. A Transformer generates coarse tokens first, then another generates fine tokens conditioned on them.<br>
+                    <strong style="color:var(--wf-accent);">Audio Diffusion (Riffusion, Stable Audio)</strong> — generate mel spectrograms using image diffusion. The spectrogram is literally a 2D image — frequency on one axis, time on the other. Text-conditioned diffusion produces the spectrogram, a vocoder converts to waveform.<br>
+                    <strong style="color:var(--wf-accent);">Flow Matching (Voicebox, E2 TTS)</strong> — learns a continuous flow from noise to speech. Like diffusion but with straight-line paths in latent space instead of the forward/reverse noise schedule. Faster inference, comparable quality.
+                </p>
+            </div>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.82rem;line-height:2;margin:0;">
+                    Speech = text → phonemes → mel spectrogram → waveform<br>
+                    Music = prompt → coarse audio tokens → fine audio tokens → waveform<br>
+                    Sound effects = text → spectrogram via diffusion → waveform<br>
+                    <br>
+                    Every approach eventually needs a decoder back to raw samples.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The trend across all audio models is the same as vision: compress into a latent space, generate there, decode back. The codec-based approach (turning audio into tokens) is winning because it lets you reuse all the Transformer infrastructure that already works for text.</p>
+
+            <!-- HOW THEY ALL CONNECT -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Unifying Pattern</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Text (Transformers)</strong> — tokens are words. Predict next token autoregressively.<br>
+                    <strong style="color:var(--wf-accent);">Images (Diffusion)</strong> — tokens are pixel patches. Denoise all patches simultaneously.<br>
+                    <strong style="color:var(--wf-accent);">Video (Temporal Diffusion/DiT)</strong> — tokens are spatiotemporal patches. Denoise across space and time.<br>
+                    <strong style="color:var(--wf-accent);">Audio (Codec + Transformer)</strong> — tokens are audio codec frames. Predict next audio token.<br>
+                    <strong style="color:var(--wf-gold);">GANs</strong> — no tokens. Direct mapping from noise → output. Generator and discriminator in adversarial equilibrium.
+                </p>
+            </div>
+
+            <p>Every modality converges on the same two ideas: <strong style="color:var(--wf-cyan);">compress the signal into tokens or latents</strong>, then either <strong style="color:var(--wf-accent);">predict the next one</strong> (autoregressive) or <strong style="color:var(--wf-accent);">denoise them all at once</strong> (diffusion). The architecture differences are engineering — the underlying mechanism is always constrained collapse of a possibility space.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.82rem;margin-bottom:.4rem;">GAN Collapse</h4>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;font-weight:300;">Single-shot. Noise → output in one pass. The adversarial training <em>was</em> the collapse — it happened during training, not inference. The generator learned the collapsed distribution.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1rem;">
+                    <h4 style="color:var(--wf-cyan);font-size:.82rem;margin-bottom:.4rem;">Video Collapse</h4>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;font-weight:300;">3D collapse. The possibility space includes all possible videos. The prompt + temporal coherence constrains it. Denoising collapses space and time simultaneously.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.82rem;margin-bottom:.4rem;">Audio Collapse</h4>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.7;font-weight:300;">Hierarchical collapse. Coarse structure collapses first (rhythm, melody). Fine detail collapses second (timbre, articulation). Like zooming in — macro to micro.</p>
+                </div>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The reason every modality is converging on Transformers + diffusion isn't because those are the "right" architectures. It's because they're the most general-purpose collapse engines. GANs are faster but harder to train and less flexible. Autoregressive models are simpler but sequential. Diffusion is parallel but slow. The field is still searching for the architecture that is fast, parallel, stable, <em>and</em> general.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ai/determinism-seeds" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 3: Determinism, Seeds & Sampling</a>
+                <a href="/ai" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ai/finetuning" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 5: Finetuning, LoRA & PEFT →</a>
+            </div>
+        </div>
+</div>

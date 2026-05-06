@@ -1,0 +1,26 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">The Turing Crib</h1>
+        <p class="wf-section-desc">Compression and cryptanalysis share a common ancestor: exploiting what you already know.</p>
+
+        <p style="color:#cbd5e1;font-size:.92rem;line-height:1.85;font-weight:300;">When building <a href="#/forge" onclick="event.preventDefault();route('forge')" style="color:var(--wf-cyan);text-decoration:none;border-bottom:1px solid var(--wf-cyan);">picocompress</a>, one of the key thoughts was to borrow from Turing's team at Bletchley Park.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:2rem 0;">
+            <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">The Turing Crib Idea</h3>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Instead of searching all 96 dictionary entries at every position, the encoder knows where it is — start of block, after a delimiter, or mid-body — and searches the most likely 8 entries first.</p>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Strong match? Accept immediately, skip the other 88.<br>Miss? Fall through to the full scan.</p>
+            </div>
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                <h3 style="color:var(--wf-gold);font-size:.88rem;margin-bottom:.6rem;">The Bletchley Parallel</h3>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Turing's bombes used known plaintext (cribs) to narrow the Enigma search from billions of possibilities to thousands.</p>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Same principle here — <span style="color:var(--wf-gold);font-weight:400;">context is the crib</span> that tells you which dictionary entries are worth trying first.</p>
+            </div>
+        </div>
+
+        <p style="color:var(--wf-muted);font-size:.85rem;line-height:1.8;font-weight:300;font-style:italic;margin-top:1.5rem;">Compression and cryptanalysis share more than a passing resemblance. Both are fundamentally about reducing entropy by exploiting structure you already know is there.</p>
+        <p style="color:var(--wf-accent);font-size:.82rem;font-weight:300;font-style:italic;margin-top:.8rem;opacity:.85;">The 'Crib' was just another constraint on the stream's wavefunction.</p>
+    </div>
+
+    <!-- Cognition: Alignment as Clock -->
+</div>

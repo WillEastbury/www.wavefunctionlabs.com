@@ -1,0 +1,74 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Inevitable Computation</h1>
+        <p class="wf-section-desc">Intelligence isn't about exploring everything. It's about applying the right constraints early enough that the answer becomes inevitable.</p>
+
+        <div class="wf-article-body">
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Failure of Brute Force</h3>
+            <p>Traditional systems are exhaustive. Reactive. Wasteful.</p>
+            <p>Fixed clocks tick whether there's work to do or not. Full evaluation runs whether the input matters or not. Filtering happens at the end, after the damage is done.</p>
+            <p style="color:var(--wf-gold);font-weight:400;">Most computation should never happen.</p>
+            <p>The fact that it does is not a feature of the system. It's a failure of its design.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Constraint as First-Class Primitive</h3>
+            <p>Constraints are not validation layers bolted on after the fact. They are not error handlers. They are not guards.</p>
+            <p>Constraints define what is allowed to exist. What is allowed to execute.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">A well-constrained system eliminates invalid states before they are ever evaluated.<br>Not after. Before.</p>
+            <p>This is not optimisation. This is architecture.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Early Collapse vs Late Filtering</h3>
+            <p>Two models. One works. One pretends to.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-muted);padding-left:1rem;">
+                    <h4 style="color:var(--wf-muted);font-size:.82rem;margin-bottom:.4rem;">Traditional</h4>
+                    <p style="color:var(--wf-muted);font-size:.85rem;">Generate → evaluate → filter<br><br>Late filtering is wasted work. You've already spent the cycles. The memory. The time. Filtering is just admitting you computed things that didn't matter.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.82rem;margin-bottom:.4rem;">Constraint-Driven</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;">Constrain → align → collapse<br><br>Early constraint is avoided work. The invalid paths never form. The impossible states never allocate. The answer emerges because nothing else was permitted.</p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Selective Evaluation</h3>
+            <p>Systems should not "process input." That framing is already wrong.</p>
+            <p>Systems should wait for alignment. Only evaluate high-probability paths. Only permit structurally valid candidates.</p>
+            <p style="color:var(--wf-gold);font-weight:400;">If a path is unlikely or invalid, it should never execute.</p>
+            <p>Not "execute and discard." Not "evaluate and reject." Never execute. The distinction matters. One costs cycles. The other costs nothing.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Alignment as Execution Gate</h3>
+            <p>Replace clock-driven compute with alignment-driven execution.</p>
+            <p>Computation happens only when structure matches. Only when constraints permit flow. Everything else is potential that hasn't earned the right to become real.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">The clock is a brute-force mechanism.<br>Alignment is a precision mechanism.<br>One forces. The other permits.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Streams, Not Objects</h3>
+            <p>Everything is flowing data, transformed in motion.</p>
+            <p>No heavy object graphs. No unnecessary materialisation. No stopping to reify state that only needed to pass through.</p>
+            <p>Systems should operate on data in motion, not data at rest. The moment you stop a stream to inspect it, you've already lost the efficiency the stream was giving you.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Metadata as Control Surface</h3>
+            <p>Behaviour is driven by schemas. Routing tables. Indexes. Jump tables.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">Metadata is not descriptive.<br>Metadata is executable structure.</p>
+            <p>The schema doesn't describe the system. The schema <em>is</em> the system. Change the metadata, change the behaviour. No recompilation. No redeployment. The control surface is the architecture.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Concurrency as Default</h3>
+            <p>Parallelism is not an optimisation. It is the natural state.</p>
+            <p>Many potential paths exist simultaneously. Most never align. Most never collapse. The ones that do produce output. Everything else was just possibility that never found a reason to become real.</p>
+            <p>Sequential execution is the special case. Not the default.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Inevitability</h3>
+            <p>The goal is not to "compute the answer."</p>
+            <p>The goal is to shape the system such that only one outcome can emerge.</p>
+            <p style="color:var(--wf-gold);font-weight:400;font-size:.95rem;">The best systems don't search. They make the correct answer unavoidable.</p>
+            <p>When the constraints are tight enough and the structure is right, the answer doesn't need to be found. It's the only thing left.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Resulting System</h3>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">Minimal allocation<br>Streaming-first<br>Constant-time routing where possible<br>Avoidance of unnecessary abstraction<br>Predictable performance under load<br>High mechanical sympathy with hardware</p>
+            <p>No framework gives you this. No library hands it over. This is what happens when constraint is treated as architecture, not afterthought.</p>
+        </div>
+
+        <p style="color:var(--wf-accent);font-size:.88rem;font-weight:400;font-style:italic;margin-top:2rem;">When constraints are applied correctly, computation stops being a search problem and becomes a consequence.</p>
+    </div>
+
+    <!-- Cognition: Everything is a Span -->
+</div>

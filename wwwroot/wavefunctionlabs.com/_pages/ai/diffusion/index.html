@@ -1,0 +1,129 @@
+<div class="wf-section">
+<a class="wf-back" href="/ai">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 2 OF 7</div>
+        <h1 class="wf-section-hdr">Diffusion Models</h1>
+        <p class="wf-section-desc">Stable Diffusion, DALL-E, Midjourney — the other architecture.</p>
+
+        <div class="wf-article-body">
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Plain English</h3>
+            <p>Start with pure noise. Gradually remove the noise, step by step, guided by a text prompt, until a coherent image emerges. The model doesn't "draw" — it <em>denoises</em>. It's been trained on millions of image–caption pairs and learned what "looks right" for a given description at every noise level.</p>
+            <p>The image was always there, buried in the noise. The model just learned how to find it.</p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Architecture</h3>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">1. Text encoder</strong> — prompt → embedding vectors (CLIP / T5)<br>
+                <strong style="color:var(--wf-accent);">2. Noise schedule</strong> — define T timesteps of increasing noise<br>
+                <strong style="color:var(--wf-accent);">3. Forward process</strong> — gradually add Gaussian noise to training images<br>
+                <strong style="color:var(--wf-accent);">4. U-Net / DiT</strong> — neural network that predicts the noise to remove<br>
+                <strong style="color:var(--wf-accent);">5. Reverse process</strong> — iteratively denoise from pure noise → image<br>
+                <strong style="color:var(--wf-accent);">6. Latent space (optional)</strong> — operate in compressed space via VAE<br>
+                <strong style="color:var(--wf-accent);">7. Classifier-free guidance</strong> — amplify the effect of the text condition
+            </p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Maths: Forward Process</h3>
+            <p>Take a clean image x₀. At each timestep t, add Gaussian noise according to a schedule β<sub>t</sub>:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-accent);font-size:.9rem;line-height:2;margin:0;">
+                    q(x<sub>t</sub> | x<sub>t−1</sub>) = 𝒩(x<sub>t</sub>; √(1 − β<sub>t</sub>) · x<sub>t−1</sub>, β<sub>t</sub> · I)
+                </p>
+                <p style="color:var(--wf-muted);font-size:.82rem;line-height:1.8;margin:.6rem 0 0;">
+                    With α<sub>t</sub> = 1 − β<sub>t</sub> and ᾱ<sub>t</sub> = ∏ α<sub>s</sub>, we can jump to any timestep directly:
+                </p>
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:.4rem 0 0;">
+                    q(x<sub>t</sub> | x<sub>0</sub>) = 𝒩(x<sub>t</sub>; √ᾱ<sub>t</sub> · x<sub>0</sub>, (1 − ᾱ<sub>t</sub>) · I)
+                </p>
+            </div>
+
+            <p>At t = 0, you have the original image. At t = T, you have pure Gaussian noise. The schedule ᾱ<sub>t</sub> controls how fast information is destroyed.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Maths: Reverse Process</h3>
+            <p>The model learns to reverse this: given a noisy image at timestep t, predict what the slightly-less-noisy version looks like:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-accent);font-size:.9rem;line-height:2;margin:0;">
+                    p<sub>θ</sub>(x<sub>t−1</sub> | x<sub>t</sub>) = 𝒩(x<sub>t−1</sub>; μ<sub>θ</sub>(x<sub>t</sub>, t), Σ<sub>θ</sub>(x<sub>t</sub>, t))
+                </p>
+                <p style="color:var(--wf-muted);font-size:.82rem;line-height:1.8;margin:.6rem 0 0;">
+                    In practice, the network predicts the noise ε<sub>θ</sub> that was added, and μ is derived from it:
+                </p>
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:.4rem 0 0;">
+                    μ<sub>θ</sub>(x<sub>t</sub>, t) = (1/√α<sub>t</sub>) · (x<sub>t</sub> − (β<sub>t</sub>/√(1 − ᾱ<sub>t</sub>)) · ε<sub>θ</sub>(x<sub>t</sub>, t))
+                </p>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Training Objective</h3>
+            <p>Beautifully simple. Sample a random timestep, add noise, and train the network to predict what noise was added:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:0;">
+                    ℒ = 𝔼<sub>t, x₀, ε</sub> [ ‖ε − ε<sub>θ</sub>(√ᾱ<sub>t</sub> · x₀ + √(1−ᾱ<sub>t</sub>) · ε, t)‖² ]
+                </p>
+            </div>
+
+            <p>The model learns: "given this noisy mess at this noise level, what does the noise look like?" That's it. Do this well enough across millions of images and every noise level, and the model can reverse-engineer any image from static.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Conditioning: Text → Image</h3>
+            <p>The text prompt enters via <strong>cross-attention</strong>. The U-Net's attention layers receive text embeddings as keys and values, while the noisy image features are the queries:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    CrossAttention(Q<sub>image</sub>, K<sub>text</sub>, V<sub>text</sub>) = softmax(Q · K<sup>T</sup> / √d) · V
+                </p>
+            </div>
+
+            <p>Same attention mechanism as the Transformer, but <em>cross-modal</em>: the image queries text for guidance on what to denoise towards. The text doesn't tell the model what to draw — it constrains what the noise can collapse into.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What the U-Net Actually Computes</h3>
+            <p>The U-Net is a convolutional neural network. Convolutions are similar to the matrix multiplications in a Transformer, but instead of operating on sequences, they operate on grids of pixels.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-accent);">What a convolution does</strong><br>
+                    Take a small grid of weights (e.g. 3×3 — called a kernel). Slide it across the image. At each position, multiply the kernel weights by the pixel values underneath, add them up → one output number. Repeat for every position. The result is a new grid — a <em>feature map</em> — that responds to a particular pattern (edges, textures, shapes).</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Why it works for images</strong><br>
+                    Convolutions exploit the fact that images have <em>local structure</em> — nearby pixels are related. A 3×3 kernel can detect an edge. Stack layers and deeper kernels detect eyes, faces, objects. Same principle as attention (weighted combination of inputs) but spatially local instead of global.</p>
+                </div>
+            </div>
+
+            <p>The "U" shape: the network <strong>downsamples</strong> (compresses the image to smaller and smaller feature maps — capturing what, losing where) then <strong>upsamples</strong> (expands back to full resolution — recovering where, guided by what). Skip connections link matching resolution levels so detail isn't lost.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What One Denoising Step Actually Does</h3>
+            <p>Each step is concrete:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">1.</strong> Take the current noisy image x<sub>t</sub> (a grid of numbers — pixel values with noise)<br>
+                <strong style="color:var(--wf-accent);">2.</strong> Tell the U-Net what timestep t we're at (embedded as a vector, injected into every layer)<br>
+                <strong style="color:var(--wf-accent);">3.</strong> Feed the text prompt via cross-attention — the image features query the text: "what should I look like?"<br>
+                <strong style="color:var(--wf-accent);">4.</strong> The U-Net outputs ε<sub>θ</sub> — its prediction of the noise in the current image<br>
+                <strong style="color:var(--wf-accent);">5.</strong> Subtract a scaled version of that predicted noise from x<sub>t</sub><br>
+                <strong style="color:var(--wf-accent);">6.</strong> Add a small amount of fresh random noise (keeps the process stochastic)<br>
+                <strong style="color:var(--wf-accent);">7.</strong> The result is x<sub>t−1</sub> — slightly less noisy, slightly more coherent
+            </p>
+
+            <p>Repeat 20–50 times. Each step the image gets a little clearer. The first few steps establish the broad composition (sky at top, ground at bottom). The middle steps add structure (buildings, trees). The final steps add fine detail (textures, edges, lighting).</p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The U-Net isn't drawing. It's looking at static and answering: "what part of this is noise and what part is signal?" At each step, it peels away a layer of noise. What remains is the image that was always there — the text just told the model which image to find in the noise.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Classifier-Free Guidance</h3>
+            <p>To strengthen the text's influence, the model runs two predictions — one conditioned on the prompt, one unconditional — and amplifies the difference:</p>
+
+            <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-accent);font-size:.88rem;line-height:2;margin:0;">
+                    ε̃ = ε<sub>uncond</sub> + w · (ε<sub>cond</sub> − ε<sub>uncond</sub>)
+                </p>
+                <p style="color:var(--wf-muted);font-size:.82rem;margin:.4rem 0 0;">w > 1 pushes the output further toward the prompt (typical: 7–15)</p>
+            </div>
+
+            <p>Higher guidance = more prompt adherence, less diversity. It's a knob that controls how tightly the constraint is applied.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ai/transformers" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 1: The Transformer</a>
+                <a href="/ai" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ai/determinism-seeds" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 3: Determinism, Seeds & Sampling →</a>
+            </div>
+        </div>
+</div>

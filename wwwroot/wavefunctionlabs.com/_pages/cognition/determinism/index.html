@@ -1,0 +1,126 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Determinism vs Non-Determinism</h1>
+        <p class="wf-section-desc">Same input, same output. That's the promise. Here's where it holds — and where it doesn't.</p>
+
+        <div class="wf-article-body">
+            <p>A system is <strong style="color:var(--wf-gold);">deterministic</strong> if, given the same input and the same starting state, it always produces the same output. A system is <strong style="color:var(--wf-accent);">non-deterministic</strong> if it doesn't — either by design or by accident.</p>
+            <p>Most engineers think everything they build is deterministic. Most of it isn't.</p>
+
+            <!-- Pure Determinism -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Pure Determinism</h3>
+            <p>A pure function: f(x) = y. Always. No exceptions. No side effects, no external state, no timing dependency.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">Integer arithmetic</strong> — 3 + 5 = 8. On every machine. Every time.<br>
+                <strong style="color:var(--wf-cyan);">Hash function</strong> — SHA-256 of "hello" is the same on every CPU on earth<br>
+                <strong style="color:var(--wf-cyan);">Sorting a list with a stable sort</strong> — same input order → same output order<br>
+                <strong style="color:var(--wf-cyan);">State machines</strong> — given state S and input I, the next state is always S'
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Determinism is the foundation of testing, debugging, and reasoning about software. When it breaks, everything gets harder.</p>
+
+            <!-- Designed Non-Determinism -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Designed Non-Determinism: On Purpose</h3>
+            <p>Sometimes you <em>want</em> different outputs. The randomness is a feature.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Random Number Generation</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Pseudo-random (PRNG) — deterministic given a seed, but appears random. Reproducible if you save the seed.<br><br>
+                        True random (TRNG/CSPRNG) — sourced from hardware entropy (thermal noise, timing jitter). Genuinely unpredictable. Used in cryptography.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">AI Model Sampling</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        The model outputs probabilities. Sampling picks one outcome. Temperature controls how much the model explores vs exploits.<br><br>
+                        Intentional variation — you <em>want</em> different responses to the same prompt. Creativity requires non-determinism. See <a href="#/ai/determinism-seeds" onclick="event.preventDefault();route('ai/determinism-seeds')" style="color:var(--wf-cyan);text-decoration:none;border-bottom:1px solid var(--wf-cyan);">how AI works</a>.
+                    </p>
+                </div>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;margin-top:1rem;">
+                <strong style="color:var(--wf-gold);">Load balancers</strong> — distribute requests randomly or round-robin. Which server handles your request is non-deterministic by design.<br>
+                <strong style="color:var(--wf-gold);">Monte Carlo simulations</strong> — use randomness to explore probability spaces. The answer is statistical, not exact.<br>
+                <strong style="color:var(--wf-gold);">Randomised algorithms</strong> — quicksort with random pivot, randomised consensus protocols. Randomness improves average-case performance or breaks symmetry.
+            </p>
+
+            <!-- Accidental Non-Determinism -->
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Accidental Non-Determinism: The Bugs You Can't See</h3>
+            <p>This is where systems that <em>should</em> be deterministic aren't. Not because you chose randomness — because the universe leaked in.</p>
+
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">Floating-point arithmetic</strong> — different hardware, different rounding, different results<br>
+                <strong style="color:var(--wf-accent);">Thread scheduling</strong> — which thread runs first depends on OS state. Race conditions produce different outcomes on each run<br>
+                <strong style="color:var(--wf-accent);">Network ordering</strong> — packets arrive in different orders. Distributed systems see different event sequences<br>
+                <strong style="color:var(--wf-accent);">Wall-clock time</strong> — anything depending on timestamps, timeouts, or "now" is non-deterministic<br>
+                <strong style="color:var(--wf-accent);">Hash map iteration order</strong> — many languages don't guarantee order. Same data, different iteration sequence<br>
+                <strong style="color:var(--wf-accent);">Memory allocation</strong> — addresses vary between runs (ASLR, heap state). Pointer-based ordering changes<br>
+                <strong style="color:var(--wf-accent);">GPU parallelism</strong> — thread execution order varies. FP accumulation order varies. Results vary.
+            </p>
+
+            <!-- Concurrency -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Concurrency: The Biggest Source</h3>
+            <p>The moment you have two threads, two processes, or two machines, determinism is gone unless you explicitly enforce it.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Race Condition</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Two threads read a counter, both see 5, both write 6. The counter should be 7. This is non-deterministic — the outcome depends on which thread runs first, which changes every execution.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Message Ordering</h3>
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                        Service A sends messages to B and C. B processes faster and replies before C. Next time, C is faster. The system's behaviour depends on arrival order — which is determined by network latency, CPU load, GC pauses, and cosmic rays.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Distributed Systems -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Distributed Systems: Non-Determinism as Physics</h3>
+            <p>In distributed systems, non-determinism isn't a bug. It's the fundamental operating condition.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
+                <strong style="color:var(--wf-cyan);">No global clock</strong> — "what happened first?" has no universal answer<br>
+                <strong style="color:var(--wf-cyan);">Partial failure</strong> — some nodes crash, others don't. The system is in a state that no single node can fully observe<br>
+                <strong style="color:var(--wf-cyan);">Network partitions</strong> — two halves of the system evolve independently, then must reconcile<br>
+                <strong style="color:var(--wf-cyan);">Eventual consistency</strong> — different nodes see different values for the same data. Temporarily. Maybe.
+            </p>
+
+            <p>The entire field of distributed consensus (Paxos, Raft, PBFT) exists because the physical world is non-deterministic and you need to synthesise agreement from chaos.</p>
+
+            <!-- Quantum -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Quantum: Fundamental Non-Determinism</h3>
+            <p>At the bottom of the stack, physics itself is non-deterministic. Quantum measurement is genuinely random — not "we don't know the hidden variable" random, but "there is no hidden variable" random.</p>
+
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:1.8;">
+                A quantum bit exists in superposition until measured. The outcome is probabilistic. No seed. No hidden state. This is the only true source of non-determinism in the universe — everything else is just complexity we can't track.
+            </p>
+
+            <!-- The Spectrum -->
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Spectrum</h3>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Fully deterministic</strong> — pure functions, integer maths, state machines<br>
+                    <strong style="color:var(--wf-cyan);">Deterministic with seed</strong> — PRNGs, AI with fixed seed + greedy sampling<br>
+                    <strong style="color:var(--wf-gold);">Deterministic in theory, not in practice</strong> — FP arithmetic, GPU computation<br>
+                    <strong style="color:var(--wf-gold);">Non-deterministic by environment</strong> — threads, network, time, OS scheduling<br>
+                    <strong style="color:var(--wf-accent);">Non-deterministic by design</strong> — sampling, randomised algorithms, load balancers<br>
+                    <strong style="color:var(--wf-accent);">Fundamentally non-deterministic</strong> — quantum measurement
+                </p>
+            </div>
+
+            <p>Most real systems live in the middle — deterministic at the instruction level, non-deterministic at the system level. The gap between those two is where bugs live.</p>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">Determinism is not a property of computers. It's a property of <em>specific computations running under specific conditions</em>. The moment you add concurrency, networks, or floating point, you've left the deterministic world. Most software lives outside it and pretends otherwise.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Determinism is a constraint on the wavefunction. Remove it, and the system explores. Enforce it, and the system collapses to a single path. Most interesting systems need both — deterministic components composed into non-deterministic wholes.</p>
+        </div>
+</div>

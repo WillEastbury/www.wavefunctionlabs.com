@@ -1,0 +1,90 @@
+<div class="wf-section">
+<a class="wf-back" href="/ducks">← ducks</a>
+        <div style="font-size:.75rem;color:var(--wf-accent);letter-spacing:.06em;margin-bottom:.4rem;">PART 2 OF 7</div>
+        <h1 class="wf-section-hdr">Looks Like a Duck</h1>
+        <p class="wf-section-desc">How structure becomes recognition — from pixels to features to "duckness."</p>
+
+        <div class="wf-article-body">
+
+            <p>You can recognise a duck from a silhouette. From a sketch. From a photo at an angle you've never seen before. From a cartoon that shares almost no pixel-level similarity with a real duck. Your visual system doesn't match pixels — it matches <strong style="color:var(--wf-accent);">structure</strong>.</p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What Is Structure?</h3>
+            <p>Structure is spatial relationship between features. A duck has a round head, a flat bill extending forward, a roughly oval body, short legs set far back. These relationships hold across poses, lighting, colours, and art styles. Structure is <em>invariant</em> — it survives transformation.</p>
+
+            <p>This is exactly what convolutional neural networks learn. Not pixels. Not colours. <strong style="color:var(--wf-accent);">Spatial feature hierarchies.</strong></p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Feature Ladder</h3>
+            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">Layer 1</strong> — edges. Horizontal, vertical, diagonal. Every image, every object.<br>
+                <strong style="color:var(--wf-accent);">Layer 2</strong> — textures. Feather patterns, water ripples, smooth surfaces.<br>
+                <strong style="color:var(--wf-accent);">Layer 3</strong> — parts. Bill shapes, eye patterns, wing curves.<br>
+                <strong style="color:var(--wf-accent);">Layer 4</strong> — objects. "This combination of parts, in this spatial arrangement, is a duck."<br>
+                <strong style="color:var(--wf-accent);">Layer 5</strong> — scenes. "A duck on water." "Ducks in a park." Context.
+            </p>
+
+            <p>Each layer compresses: millions of pixels → thousands of edges → hundreds of textures → dozens of parts → a handful of objects. Recognition is <em>compression with structure preservation</em>.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Embeddings: Duckness as a Point in Space</h3>
+            <p>After the feature ladder, a model doesn't output "duck" directly. It produces a <strong style="color:var(--wf-gold);">vector</strong> — a point in a high-dimensional space. A 512-dimensional embedding. And in that space, something remarkable happens:</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">Mallards</strong> cluster together.<br>
+                    <strong style="color:var(--wf-accent);">Rubber ducks</strong> are nearby but offset — structurally similar, different texture.<br>
+                    <strong style="color:var(--wf-accent);">Geese</strong> are close — similar body plan, different proportions.<br>
+                    <strong style="color:var(--wf-accent);">Swans</strong> are further — elongated neck shifts the structural signature.<br>
+                    <strong style="color:var(--wf-accent);">Penguins</strong> are distant — different posture, proportions, everything.<br>
+                    <strong style="color:var(--wf-accent);">Cars</strong> are in a completely different region.
+                </p>
+            </div>
+
+            <p>The distance between points <em>is</em> structural similarity. "Looks like a duck" has a precise mathematical meaning: <strong style="color:var(--wf-gold);">close to the duck region in embedding space</strong>.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">How Diffusion Models Use Structure</h3>
+            <p>A diffusion model generates images by denoising. At each step, the U-Net asks: "given this partially-noisy image and the prompt 'duck,' what noise should I remove?" The answer depends entirely on structural priors — the model has learned what spatial arrangements of features are consistent with "duck."</p>
+
+            <p>Early denoising steps establish <strong style="color:var(--wf-accent);">global structure</strong> — rough shape, pose, composition. Late steps add <strong style="color:var(--wf-accent);">local detail</strong> — feather texture, eye highlights, water reflections. The model generates structure top-down, from the abstract to the specific.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">What It Knows</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        Ducks have bills (not beaks like songbirds).<br>
+                        They float (waterline cuts the body roughly in half).<br>
+                        Mallard males have green heads.<br>
+                        Ducklings are yellow and fluffy.<br>
+                        They appear in ponds, parks, rivers.
+                    </p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">What It Doesn't Know</h4>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                        What "wet" feels like.<br>
+                        That ducks migrate.<br>
+                        That the quack is produced by a syrinx.<br>
+                        That "duck" is also a verb.<br>
+                        Anything that isn't spatial structure.
+                    </p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Where Structure Breaks</h3>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">Adversarial examples</strong> — change a few pixels imperceptibly and the model sees "truck" instead of "duck." The feature space has regions where small perturbations cross decision boundaries that don't align with human perception.<br>
+                    <strong style="color:var(--wf-accent);">Decoys</strong> — a wooden duck decoy has perfect duck structure. A vision model correctly identifies it as a duck. Is that a success or a failure? It <em>looks</em> like a duck. It isn't one.<br>
+                    <strong style="color:var(--wf-accent);">Unusual poses</strong> — a duck diving underwater, upside down, mid-flight from behind. The structural template doesn't match. Recognition degrades when structure breaks expected patterns.<br>
+                    <strong style="color:var(--wf-accent);">Cross-domain transfer</strong> — a duck emoji, a duck hieroglyph, the letter "b" that kinda looks like a duck. Structure recognition generalises further than you'd expect — and sometimes further than you'd want.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Structure is the most intuitive channel. It's what we mean when we say "I know it when I see it." But seeing is just pattern matching on spatial features. The duck you see is a compressed representation — a lossy projection of reality through learned feature detectors. What you see isn't the duck. It's your model of the duck.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ducks/the-duck-problem" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 1: The Duck Problem</a>
+                <a href="/ducks" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ducks/quacks-like-a-duck" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 3: Quacks Like a Duck →</a>
+            </div>
+        </div>
+</div>

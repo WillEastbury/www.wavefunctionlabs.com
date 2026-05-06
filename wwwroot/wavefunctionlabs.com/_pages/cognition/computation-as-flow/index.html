@@ -1,0 +1,108 @@
+<div class="wf-section">
+<a class="wf-back" href="/cognition">← cognition</a>
+        <h1 class="wf-section-hdr">Computation as Flow — φ, ψ, Δ, ε, V, L</h1>
+        <div class="wf-article-tags">computation · flow · constraint · parallelism · AI · systems · metaphor</div>
+        <div class="wf-article-body">
+
+            <p>A system is a river flowing through a channel over distance.</p>
+            <p>Six variables define everything about how it behaves.</p>
+
+            <h3 style="color:var(--wf-cyan);margin-top:2rem;">The variables</h3>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin:1.5rem 0;">
+                <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-cyan);">
+                    <div style="font-family:'Courier New',monospace;color:var(--wf-cyan);font-size:1.3rem;margin-bottom:.4rem;">ε <span style="font-size:.8rem;opacity:.5;">epsilon</span></div>
+                    <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Channel width · Resolution</div>
+                    <p style="font-size:.9rem;">Granularity of flow. How finely change can be expressed. The precision of the pipe.</p>
+                </div>
+                <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-gold);">
+                    <div style="font-family:'Courier New',monospace;color:var(--wf-gold);font-size:1.3rem;margin-bottom:.4rem;">Δ <span style="font-size:.8rem;opacity:.5;">delta</span></div>
+                    <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Flow rate · Transformation</div>
+                    <p style="font-size:.9rem;">The amount of state moving. Δ defines both throughput and the transformation applied at each step.</p>
+                </div>
+                <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-gold);">
+                    <div style="font-family:'Courier New',monospace;color:var(--wf-gold);font-size:1.3rem;margin-bottom:.4rem;">φ <span style="font-size:.8rem;opacity:.5;">phi</span></div>
+                    <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Inflow · Expansion</div>
+                    <p style="font-size:.9rem;">New possibilities entering the system. Tributaries feeding the river. The source of growth.</p>
+                </div>
+                <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-accent);">
+                    <div style="font-family:'Courier New',monospace;color:var(--wf-accent);font-size:1.3rem;margin-bottom:.4rem;">ψ <span style="font-size:.8rem;opacity:.5;">psi</span></div>
+                    <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Outflow · Constraint</div>
+                    <p style="font-size:.9rem;">Stabilisation. Dissipation. The river mouth regulating the system. What leaves and what survives.</p>
+                </div>
+                <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid #e2e8f0;">
+                    <div style="font-family:'Courier New',monospace;color:#e2e8f0;font-size:1.3rem;margin-bottom:.4rem;">V <span style="font-size:.8rem;opacity:.5;">volume</span></div>
+                    <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Concurrent capacity</div>
+                    <p style="font-size:.9rem;">Total water in the system at once. How much can flow concurrently. High V → parallelism. Low V → serial execution.</p>
+                </div>
+                <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid #e2e8f0;">
+                    <div style="font-family:'Courier New',monospace;color:#e2e8f0;font-size:1.3rem;margin-bottom:.4rem;">L <span style="font-size:.8rem;opacity:.5;">length</span></div>
+                    <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Pipeline depth</div>
+                    <p style="font-size:.9rem;">Distance the river travels. Number of transformation stages. High L → deeper refinement. Low L → shallow, immediate output.</p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);margin-top:2rem;">System behaviour</h3>
+            <div style="font-family:'Courier New',monospace;color:#c8d0dc;line-height:2.2;padding-left:1rem;margin:1rem 0;font-size:.95rem;">
+                ε defines the channel<br>
+                Δ moves the flow<br>
+                φ feeds the system<br>
+                ψ stabilises it<br>
+                V determines how much runs in parallel<br>
+                L determines how far transformation proceeds
+            </div>
+
+            <h3 style="color:var(--wf-accent);margin-top:2rem;">Failure modes</h3>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;margin:1rem 0;">
+                <div style="padding:.8rem 1rem;border-left:2px solid #e74c3c;background:rgba(231,76,60,.05);border-radius:0 4px 4px 0;">
+                    <div style="font-family:'Courier New',monospace;font-size:.85rem;color:#e74c3c;">high φ + low ψ</div>
+                    <div style="font-size:.9rem;margin-top:.3rem;">Flooding — runaway expansion</div>
+                </div>
+                <div style="padding:.8rem 1rem;border-left:2px solid #e74c3c;background:rgba(231,76,60,.05);border-radius:0 4px 4px 0;">
+                    <div style="font-family:'Courier New',monospace;font-size:.85rem;color:#e74c3c;">high Δ + low ε</div>
+                    <div style="font-size:.9rem;margin-top:.3rem;">Turbulence — loss of fidelity</div>
+                </div>
+                <div style="padding:.8rem 1rem;border-left:2px solid #e74c3c;background:rgba(231,76,60,.05);border-radius:0 4px 4px 0;">
+                    <div style="font-family:'Courier New',monospace;font-size:.85rem;color:#e74c3c;">low V</div>
+                    <div style="font-size:.9rem;margin-top:.3rem;">Starvation — underutilised system</div>
+                </div>
+                <div style="padding:.8rem 1rem;border-left:2px solid #e74c3c;background:rgba(231,76,60,.05);border-radius:0 4px 4px 0;">
+                    <div style="font-family:'Courier New',monospace;font-size:.85rem;color:#e74c3c;">high V + low ε</div>
+                    <div style="font-size:.9rem;margin-top:.3rem;">Congestion — contention</div>
+                </div>
+                <div style="padding:.8rem 1rem;border-left:2px solid #e74c3c;background:rgba(231,76,60,.05);border-radius:0 4px 4px 0;">
+                    <div style="font-family:'Courier New',monospace;font-size:.85rem;color:#e74c3c;">high L + low ψ</div>
+                    <div style="font-size:.9rem;margin-top:.3rem;">Drift — error accumulation</div>
+                </div>
+                <div style="padding:.8rem 1rem;border-left:2px solid #e74c3c;background:rgba(231,76,60,.05);border-radius:0 4px 4px 0;">
+                    <div style="font-family:'Courier New',monospace;font-size:.85rem;color:#e74c3c;">low L</div>
+                    <div style="font-size:.9rem;margin-top:.3rem;">Shallow reasoning</div>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-cyan);margin-top:2rem;">AI mapping</h3>
+
+            <div style="font-family:'Courier New',monospace;color:#c8d0dc;line-height:2.2;padding-left:1rem;margin:1rem 0;font-size:.95rem;">
+                φ → token expansion (candidate space)<br>
+                ψ → model constraints (weights)<br>
+                Δ → token transitions (inference steps)<br>
+                ε → sampling resolution (temperature / top-k)<br>
+                V → context window + parallel tokens<br>
+                L → layers / depth of reasoning / chain length
+            </div>
+
+            <!-- River flow visualisation -->
+            <div style="margin:2.5rem 0;position:relative;">
+                <canvas id="riverCanvas" style="width:100%;height:220px;border-radius:6px;display:block;"></canvas>
+            </div>
+
+            <div class="wf-narrative-edge" style="margin-top:1rem;">
+                <p>Every system you've ever built is a river.</p>
+                <p>The question was never "what does it do?"</p>
+                <p>The question is: how wide is the channel, how fast is the flow, how deep does it go, and what keeps it from flooding?</p>
+            </div>
+
+            <p class="wf-insight">Computation is flow through constraint, at scale and depth.</p>
+        </div>
+</div>

@@ -1,0 +1,69 @@
+<div class="wf-section">
+<a class="wf-back" href="/ducks">← ducks</a>
+        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 1 OF 7</div>
+        <h1 class="wf-section-hdr">The Duck Problem</h1>
+        <p class="wf-section-desc">What does it mean to "know" what something is?</p>
+
+        <div class="wf-article-body">
+
+            <p>You see something in a pond. It has feathers, a flat bill, webbed feet. It floats. It quacks. Someone next to you says "duck."</p>
+
+            <p>Three things just happened. Three completely different ways of recognising what that thing is:</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin:2rem 0;">
+                <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-accent);font-size:.88rem;margin-bottom:.6rem;">Looks Like a Duck</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-accent);">Structural recognition.</strong> You matched visual features — shape, colour, texture, proportions — against a learned template. You didn't need it to move or make a sound. The <em>form</em> was enough.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">Quacks Like a Duck</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Behavioural recognition.</strong> You heard a sound and matched it to an expected behaviour. You didn't need to see it. The <em>action</em> was enough. This is duck typing — identity through interface.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <h3 style="color:var(--wf-gold);font-size:.88rem;margin-bottom:.6rem;">The Word "Duck"</h3>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Symbolic recognition.</strong> Someone used a token — a sound, a word, four letters — that maps to the concept. You didn't need to see it or hear it. The <em>symbol</em> was enough.</p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Three Channels, One Concept</h3>
+            <p>These are three entirely different computational processes. Structure operates on spatial patterns. Behaviour operates on temporal patterns. Symbol operates on agreed conventions. They converge on the same concept from completely different directions.</p>
+
+            <p>Every system that "knows" things — biological, computational, artificial — uses some combination of these three. And the failures are different for each:</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">Structure fails</strong> when things look alike but aren't — a decoy duck, a photo of a duck, a cloud shaped like a duck.<br>
+                    <strong style="color:var(--wf-cyan);">Behaviour fails</strong> when things act alike but aren't — a parrot quacking, a speaker playing duck sounds, a rubber duck squeaking.<br>
+                    <strong style="color:var(--wf-gold);">Symbol fails</strong> when the mapping breaks — "duck" means a waterbird, a cricket stroke, dodging something, a type of fabric, and a term of endearment. The word is overloaded. The concept is not.
+                </p>
+            </div>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Why This Matters for AI</h3>
+            <p>Every AI architecture is fundamentally a bet on which channel matters most:</p>
+
+            <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-accent);">Vision models (CNNs, ViT, diffusion)</strong> — bet on structure. They learn spatial feature hierarchies. They know what ducks <em>look like</em>.<br>
+                    <strong style="color:var(--wf-cyan);">Language models (Transformers)</strong> — bet on behaviour and co-occurrence. They learn what words appear near "duck." They know what ducks <em>do</em>, what's said about them, what contexts they appear in.<br>
+                    <strong style="color:var(--wf-gold);">Multimodal models (CLIP, GPT-4V)</strong> — bridge the channels. They learn that the image of a duck, the word "duck," and descriptions of duck behaviour all point to the same region in a shared representation space.
+                </p>
+            </div>
+
+            <p>This series explores each channel — how it works, how it's computed, where it breaks, and what happens when you combine them.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Deep Question</h3>
+            <p>Does any system — biological or artificial — actually know what a duck <em>is</em>? Or do they all just have different approximations of duckness, built from whichever channel they have access to?</p>
+
+            <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
+                <p style="color:var(--wf-gold);font-weight:400;">Structure says: it has the shape of a duck.<br>Behaviour says: it acts like a duck.<br>Symbol says: we agreed to call it a duck.<br><br>None of them say what a duck <em>is</em>. They say what a duck <em>is like</em>. That might be all that knowing ever was.</p>
+            </div>
+
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The concept of "duck" is a wavefunction. Structure, behaviour, and symbol are three measurement bases. Each collapses the concept differently. None captures it completely.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <span></span>
+                <a href="/ducks" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ducks/looks-like-a-duck" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 2: Looks Like a Duck →</a>
+            </div>
+        </div>
+</div>
