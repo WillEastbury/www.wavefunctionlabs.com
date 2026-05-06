@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+/* Fonts loaded via /fonts/fonts.min.css (BareMetalMono = JetBrains Mono subset) */
 
 :root {
     --bs-body-bg: #07070c;
@@ -19,7 +19,7 @@
 html { overflow-x: hidden; }
 
 body {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'BareMetalMono', SFMono-Regular, Menlo, monospace;
     background: var(--bs-body-bg);
     color: var(--bs-body-color);
     overflow-x: hidden;
@@ -378,7 +378,7 @@ body::after {
     font-size: 0.75rem;
     color: var(--text-dim);
     text-decoration: none;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'BareMetalMono', SFMono-Regular, Menlo, monospace;
     opacity: 0.5;
     transition: opacity 0.2s;
 }
@@ -393,7 +393,7 @@ body::after {
     border: 1px solid var(--accent);
     color: var(--accent);
     text-decoration: none;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'BareMetalMono', SFMono-Regular, Menlo, monospace;
     font-size: 0.85rem;
     transition: all 0.2s;
 }
@@ -465,7 +465,7 @@ body::after {
 .wf-spec-table tr td:first-child {
     color: var(--accent);
     white-space: nowrap;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'BareMetalMono', SFMono-Regular, Menlo, monospace;
 }
 
 /* ── Floating Symbols ── */
