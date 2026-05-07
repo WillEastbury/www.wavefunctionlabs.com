@@ -29,6 +29,14 @@ typedef struct {
     const char* head_keepalive;  size_t head_keepalive_len;
     const char* head_close;      size_t head_close_len;
     const char* body;            size_t body_len;     /* compressed bytes */
+    /* Flat wire buffers: head || body pre-concatenated at startup.
+     * Eliminates iovec construction and sendmsg overhead on the hot path. */
+    const char* wire_keepalive;  size_t wire_keepalive_len;
+    const char* wire_close;      size_t wire_close_len;
+    /* ETag + 304 Not Modified support. */
+    char        etag[32];        /* W/"<len>-<fnv64>" */
+    const char* wire_304_keepalive;  size_t wire_304_keepalive_len;
+    const char* wire_304_close;      size_t wire_304_close_len;
 } __attribute__((aligned(64))) resource_compress_t;
 
 /* A pre-built HTTP response: head (status + headers, ending in \r\n\r\n)
@@ -61,13 +69,15 @@ typedef struct {
     const chrome_t* chrome;      /* NULL if no chrome is applied */
     const resource_compress_t* compressed; /* NULL if no compressed variant */
     const resource_compress_t* brotli;     /* NULL if no Brotli variant */
-    /* Conditional GET: weak ETag computed at startup from body hash.
-     * etag points into arena (e.g. W/"0a1b2c3d4e5f6789").
-     * head_304_* are prebuilt 304 Not Modified response heads.
-     * NULL for dynamic resources (/stats, /health) and errors. */
-    const char* etag;            size_t etag_len;
-    const char* head_304_keepalive; size_t head_304_keepalive_len;
-    const char* head_304_close;     size_t head_304_close_len;
+    /* Flat wire buffers: head || [chrome.hdr ||] body [|| chrome.ftr]
+     * pre-concatenated at startup. NULL for mutable resources (/stats)
+     * which fall back to the iovec send path. */
+    const char* wire_keepalive;  size_t wire_keepalive_len;
+    const char* wire_close;      size_t wire_close_len;
+    /* ETag + 304 Not Modified support. etag[0]=='\0' means no ETag. */
+    char        etag[32];        /* W/"<len>-<fnv64>" */
+    const char* wire_304_keepalive;  size_t wire_304_keepalive_len;
+    const char* wire_304_close;      size_t wire_304_close_len;
 } __attribute__((aligned(128))) resource_t;
 
 /* One flat-table slot. value == NULL marks the slot empty.
