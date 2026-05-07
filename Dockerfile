@@ -13,10 +13,7 @@ RUN apk add --no-cache libgcc \
 WORKDIR /app
 COPY --from=builder /build/picoweb .
 COPY wwwroot/ wwwroot/
-# Duplicate vhost for www. and _default (picoweb uses lstat, can't follow symlinks)
-RUN cp -a wwwroot/wavefunctionlabs.com wwwroot/www.wavefunctionlabs.com \
- && cp -a wwwroot/wavefunctionlabs.com wwwroot/_default \
- && chown -R picoweb:picoweb /app
+RUN chown -R picoweb:picoweb /app
 USER picoweb
 EXPOSE 8080
 CMD ["./picoweb", "8080", "wwwroot", "1"]
