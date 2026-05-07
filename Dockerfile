@@ -16,4 +16,4 @@ COPY wwwroot/ wwwroot/
 RUN chown -R picoweb:picoweb /app
 USER picoweb
 EXPOSE 8080
-CMD ["./picoweb", "8080", "wwwroot", "1", "100", "0", "64"]
+CMD ["./picoweb", "--io_uring", "8080", "wwwroot", "1", "100", "0", "64"]
