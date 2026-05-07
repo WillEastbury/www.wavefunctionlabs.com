@@ -15,40 +15,19 @@ spec:
       labels:
         app: wfl-www
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:v6xdp
+          image: tileforgeacr.azurecr.io/wfl-www:v10nobr
           ports:
             - containerPort: 8080
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
-          volumeMounts:
-            - name: scores-data
-              mountPath: /data
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 8080
-              httpHeaders:
-                - name: Host
-                  value: wavefunctionlabs.com
             initialDelaySeconds: 2
             periodSeconds: 5
           livenessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 8080
-              httpHeaders:
-                - name: Host
-                  value: wavefunctionlabs.com
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
@@ -58,10 +37,6 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
-      volumes:
-        - name: scores-data
-          persistentVolumeClaim:
-            claimName: wfl-www-scores
 ---
 apiVersion: v1
 kind: Service
@@ -72,7 +47,8 @@ spec:
   selector:
     app: wfl-www
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8080
       protocol: TCP
 ---
@@ -83,7 +59,6 @@ metadata:
   namespace: wfl-www
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
   tls:
