@@ -22,7 +22,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:v3pool64
+          image: tileforgeacr.azurecr.io/wfl-www:v5tls
           ports:
             - containerPort: 8080
           securityContext:
