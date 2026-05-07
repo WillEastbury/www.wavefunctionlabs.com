@@ -21,6 +21,7 @@
 
 #include "../userspace/dispatch.h"
 #include "../userspace/io/af_packet.h"
+#include "../userspace/io/af_xdp.h"
 #include "../userspace/tcp/ip.h"
 #include "../userspace/tcp/tcp.h"
 #include "../userspace/tls/cert.h"
@@ -49,7 +50,9 @@ typedef struct {
 
 struct tls_worker_ctx {
     const server_cfg_t* cfg;
-    af_packet_t af;
+    enum { TLS_IO_AF_PACKET = 0, TLS_IO_AF_XDP = 1 } io_mode;
+    af_packet_t afp;
+    af_xdp_t    xdp;
     tcp_stack_t stack;
     pw_dispatch_t dispatch;
     tls_conn_state_t conns[TCP_TABLE_SIZE];
@@ -211,7 +214,7 @@ static int if_hwaddr(const char* ifname, uint8_t mac_out[6]) {
 }
 
 typedef struct {
-    af_packet_t* af;
+    tls_worker_ctx_t* w;
 } emit_ctx_t;
 
 static void emit_seg(const tcp_seg_t* seg, void* user) {
@@ -219,7 +222,10 @@ static void emit_seg(const tcp_seg_t* seg, void* user) {
     uint8_t ipbuf[1600];
     size_t n = ip_tcp_build(ipbuf, sizeof(ipbuf), seg);
     if (n == 0) return;
-    (void)af_packet_send_ipv4(e->af, ipbuf, n);
+    if (e->w->io_mode == TLS_IO_AF_XDP)
+        (void)af_xdp_send_ipv4(&e->w->xdp, ipbuf, n);
+    else
+        (void)af_packet_send_ipv4(&e->w->afp, ipbuf, n);
 }
 
 typedef struct {
@@ -351,7 +357,7 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
             http_request_t dummy = {0};
             pw_iov_t resp[PW_IOV_MAX_FRAGS];
             unsigned rn = 0;
-                if (build_http_response_iov(c, HTTP_ERR_413, &dummy, resp, &rn, &close_after) != 0) {
+            if (build_http_response_iov(c, HTTP_ERR_413, &dummy, resp, &rn, &close_after) != 0) {
                 pw_tls_app_in_ack(&c->eng, app_len);
                 return PW_DISP_RESET;
             }
@@ -364,17 +370,33 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
             memcpy(c->plain + c->plain_len, app, app_len);
             c->plain_len += app_len;
             tls_bridge_t* b = &c->bridge;
-            int prc = tls_bridge_parse_request(b, (const uint8_t*)c->plain, c->plain_len);
-            if (prc == 1 || prc == -1) {
+            /* Parse and seal as many full requests as we can from the
+             * buffered plaintext. This prevents a pipeline stall when
+             * one TLS record carries multiple HTTP requests. */
+            while (c->plain_len > 0) {
+                int prc = tls_bridge_parse_request(b, (const uint8_t*)c->plain, c->plain_len);
+                if (prc == 0) break;   /* incomplete request, wait for more */
+
                 http_request_t req = b->req;
                 http_result_t pr = (prc == 1) ? HTTP_OK : b->parse_status;
                 pw_iov_t resp[PW_IOV_MAX_FRAGS];
                 unsigned rn = 0;
-                if (build_http_response_iov(c, pr, &req, resp, &rn, &close_after) != 0 ||
-                    pw_tls_app_seal_iov(&c->eng, resp, rn) != 0) {
+                if (build_http_response_iov(c, pr, &req, resp, &rn, &close_after) != 0) {
                     pw_tls_app_in_ack(&c->eng, app_len);
                     return PW_DISP_RESET;
                 }
+
+                if (pw_tls_app_seal_iov(&c->eng, resp, rn) != 0) {
+                    /* TX buffer pressure while additional pipelined
+                     * requests are buffered. We cannot safely keep the
+                     * connection open (no callback is guaranteed on pure
+                     * ACK traffic), so flush what we already sealed and
+                     * close. */
+                    close_after = true;
+                    c->plain_len = 0;
+                    break;
+                }
+
                 if (pr == HTTP_OK && req.consumed > 0 && c->plain_len > req.consumed) {
                     size_t left = c->plain_len - req.consumed;
                     memmove(c->plain, c->plain + req.consumed, left);
@@ -382,6 +404,8 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
                 } else {
                     c->plain_len = 0;
                 }
+
+                if (close_after) break;
             }
         }
         pw_tls_app_in_ack(&c->eng, app_len);
@@ -429,8 +453,16 @@ void* tls_worker_main(void* arg) {
     if (cfg->tls_peer_mac && parse_mac(cfg->tls_peer_mac, peer_mac) != 0) {
         metal_die("tls_worker_main: invalid --tls-peer-mac format (expected xx:xx:xx:xx:xx:xx)");
     }
-    if (af_packet_open(&w.af, cfg->tls_ifname, local_mac, peer_mac) != 0) {
-        metal_die("tls_worker_main: af_packet_open(ifname=%s)", cfg->tls_ifname);
+    if (cfg->tls_use_xdp) {
+        w.io_mode = TLS_IO_AF_XDP;
+        if (af_xdp_open(&w.xdp, cfg->tls_ifname, cfg->tls_xdp_queue, local_mac, peer_mac) != 0) {
+            metal_die("tls_worker_main: af_xdp_open(ifname=%s queue=%u)", cfg->tls_ifname, cfg->tls_xdp_queue);
+        }
+    } else {
+        w.io_mode = TLS_IO_AF_PACKET;
+        if (af_packet_open(&w.afp, cfg->tls_ifname, local_mac, peer_mac) != 0) {
+            metal_die("tls_worker_main: af_packet_open(ifname=%s)", cfg->tls_ifname);
+        }
     }
 
     pw_dispatch_init(&w.dispatch);
@@ -450,9 +482,10 @@ void* tls_worker_main(void* arg) {
         metal_die("tls_worker_main: tcp_attach_dispatch failed");
     }
 
-    emit_ctx_t emit_ctx = { .af = &w.af };
-    metal_log("worker %d ready: listen=:%d if=%s backend=tls cert=%s key=%s",
+    emit_ctx_t emit_ctx = { .w = &w };
+    metal_log("worker %d ready: listen=:%d if=%s backend=tls io=%s cert=%s key=%s",
               cfg->worker_index, cfg->port, cfg->tls_ifname,
+              w.io_mode == TLS_IO_AF_XDP ? "af_xdp" : "af_packet",
               cfg->tls_cert_path, cfg->tls_key_path);
 
     uint64_t last_tick_ms = 0;
@@ -460,7 +493,10 @@ void* tls_worker_main(void* arg) {
     for (;;) {
         const uint8_t* ip = NULL;
         size_t ip_len = 0;
-        if (af_packet_recv(&w.af, frame, sizeof(frame), &ip, &ip_len) == 0) {
+        int rr = (w.io_mode == TLS_IO_AF_XDP)
+                   ? af_xdp_recv(&w.xdp, frame, sizeof(frame), &ip, &ip_len)
+                   : af_packet_recv(&w.afp, frame, sizeof(frame), &ip, &ip_len);
+        if (rr == 0) {
             tcp_seg_t seg;
             if (ip_tcp_parse(ip, ip_len, &seg) == 0) {
                 uint64_t now = (uint64_t)metal_now_ms();
