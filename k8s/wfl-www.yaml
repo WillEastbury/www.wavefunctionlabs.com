@@ -17,19 +17,33 @@ spec:
     spec:
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:v10nobr
+          image: tileforgeacr.azurecr.io/wfl-www:v18rsa10
           ports:
-            - containerPort: 8080
+            - containerPort: 443
+          securityContext:
+            capabilities:
+              add:
+                - NET_RAW
+                - NET_ADMIN
+                - BPF
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /certs
+              readOnly: true
           readinessProbe:
             tcpSocket:
-              port: 8080
-            initialDelaySeconds: 2
-            periodSeconds: 5
-          livenessProbe:
-            tcpSocket:
-              port: 8080
+              port: 443
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 443
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               cpu: 50m
@@ -37,6 +51,10 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: wfl-www-tls
 ---
 apiVersion: v1
 kind: Service
@@ -44,49 +62,30 @@ metadata:
   name: wfl-www
   namespace: wfl-www
 spec:
+  type: LoadBalancer
   selector:
     app: wfl-www
   ports:
-    - name: http
-      port: 80
-      targetPort: 8080
+    - name: https
+      port: 443
+      targetPort: 443
       protocol: TCP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# Keep a minimal Certificate resource so cert-manager continues to
+# renew the wfl-www-tls secret even without an Ingress.
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
-  name: wfl-www
+  name: wfl-www-tls
   namespace: wfl-www
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - www.wavefunctionlabs.com
-        - wavefunctionlabs.com
-      secretName: wfl-www-tls
-  rules:
-    - host: www.wavefunctionlabs.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: wfl-www
-                port:
-                  number: 80
-    - host: wavefunctionlabs.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: wfl-www
-                port:
-                  number: 80
+  secretName: wfl-www-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - www.wavefunctionlabs.com
+    - wavefunctionlabs.com
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
