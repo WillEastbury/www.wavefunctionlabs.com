@@ -216,7 +216,6 @@ static int fire_open(tcp_conn_t* c, tcp_emit_fn emit, void* emit_user) {
     void* st = c->svc->on_open(c->svc->svc_state, &info);
     if (!st) {
         /* Pool exhausted or service refused - RST. */
-        fprintf(stderr, "tcp: RST fire_open returned NULL\n");
         emit_ctrl(c, TCPF_RST, emit, emit_user);
         c->state = TCP_CLOSED;
         return 0;
@@ -261,7 +260,6 @@ static int drive_service_data(tcp_conn_t* c,
     case PW_DISP_RESET:
     case PW_DISP_ERROR:
     default:
-        fprintf(stderr, "tcp: RST drive_service_data st=%d\n", (int)st);
         emit_ctrl(c, TCPF_RST, emit, emit_user);
         fire_close(c);
         c->state = TCP_CLOSED;
@@ -279,34 +277,35 @@ void tcp_input_at(tcp_stack_t* s, const tcp_seg_t* seg,
                   uint64_t now_ms,
                   tcp_on_data_fn on_data, void* on_data_user,
                   tcp_emit_fn emit, void* emit_user) {
-    /* Reject if not addressed to our local IP. */
+    /* Reject if not addressed to our local IP. Silently drop — these
+     * are stray packets from in-kernel filter races / unfiltered
+     * backends; sending a RST to a third party is wrong, and the
+     * fprintf was a hot-path stall under bursty cluster traffic. */
     if (seg->dst_ip != s->local_ip) {
-        fprintf(stderr, "tcp: RST ip-mismatch dst=%08x local=%08x\n", seg->dst_ip, s->local_ip);
-        emit_rst(seg, emit, emit_user);
         return;
     }
 
-    /* Port accept check (dispatch lookup or single-port match). */
+    /* Port accept check (dispatch lookup or single-port match). Same
+     * reasoning as above — drop, don't RST or log. */
     const pw_service_t* svc = NULL;
     int port_ok = port_accepts(s, seg->dst_port, &svc);
     if (!port_ok) {
-        fprintf(stderr, "tcp: RST port-reject port=%u\n", seg->dst_port);
-        emit_rst(seg, emit, emit_user);
         return;
     }
 
     tcp_conn_t* c = find_conn(s, seg);
 
     /* No matching PCB. If it's a SYN, allocate one and move to
-     * SYN-RECEIVED; otherwise RST. */
+     * SYN-RECEIVED; otherwise drop silently. (RFC 793 says RST,
+     * but in practice these are almost always stray ACKs from
+     * torn-down sessions or scanner traffic — RSTing them costs
+     * a syscall per packet and tells scanners we're alive.) */
     if (!c) {
         if (!(seg->flags & TCPF_SYN) || (seg->flags & TCPF_ACK)) {
-            fprintf(stderr, "tcp: RST no-conn flags=%04x src=%08x:%u\n", seg->flags, seg->src_ip, seg->src_port);
-            emit_rst(seg, emit, emit_user);
             return;
         }
         c = alloc_conn(s);
-        if (!c) { emit_rst(seg, emit, emit_user); return; }
+        if (!c) { return; }
         c->state       = TCP_SYN_RECEIVED;
         c->local_ip    = seg->dst_ip;
         c->remote_ip   = seg->src_ip;

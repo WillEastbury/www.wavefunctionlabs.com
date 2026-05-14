@@ -29,6 +29,7 @@
 #include "../userspace/tls/pem.h"
 #include "../userspace/tls/ticket_store.h"
 #include "tls_bridge.h"
+#include "metrics.h"
 #include "util.h"
 
 /* Shared connection-tail bytes (same semantics as epoll backend). */
@@ -167,6 +168,10 @@ static int load_cert_material(tls_worker_ctx_t* w) {
                              key_der, key_pem_len);
     int is_pkcs1_rsa = 0;
     if (key_len <= 0) {
+        key_len = pem_decode((const char*)key_pem, key_pem_len, "EC PRIVATE KEY",
+                             key_der, key_pem_len);
+    }
+    if (key_len <= 0) {
         key_len = pem_decode((const char*)key_pem, key_pem_len, "RSA PRIVATE KEY",
                              key_der, key_pem_len);
         if (key_len > 0) is_pkcs1_rsa = 1;
@@ -183,6 +188,8 @@ static int load_cert_material(tls_worker_ctx_t* w) {
         w->cert_sig_scheme = TLS13_SIG_SCHEME_ED25519;
     } else if (w->key_type == CERT_KEY_RSA) {
         w->cert_sig_scheme = TLS13_SIG_SCHEME_RSA_PSS_RSAE_SHA256;
+    } else if (w->key_type == CERT_KEY_ECDSA_P256) {
+        w->cert_sig_scheme = TLS13_SIG_SCHEME_ECDSA_SECP256R1_SHA256;
     }
 
     w->cert_chain_der = chain;
@@ -330,6 +337,41 @@ static int build_http_response_iov(tls_conn_state_t* c,
     return 0;
 }
 
+/* Emit a sealed HTTP/1.1 103 Early Hints record for `req` if the
+ * resource has a precomputed Link header and the request would not
+ * be answered with a 304 or HEAD-only response. Best-effort: any
+ * failure (e.g. tx-buf pressure) is a silent no-op — clients still
+ * receive the same Link headers in the final 200. */
+static void maybe_seal_103(tls_conn_state_t* c,
+                           http_result_t pr, http_request_t* req) {
+    tls_worker_ctx_t* w = c->w;
+    if (!w || !w->cfg || !w->cfg->http_early_hints) return;
+    if (pr != HTTP_OK) return;
+    if (req->method != M_GET) return;
+
+    bool ca = false, ho = false;
+    const resource_t* r = http_select(w->cfg->jt, pr, req, &ca, &ho);
+    if (!r || ho || !r->link_hdr || r->link_hdr_len == 0) return;
+
+    if (req->if_none_match) {
+        const char* etag = NULL;
+        if (req->accept_br && r->brotli)            etag = r->brotli->etag;
+        else if (req->accept_pc && r->compressed)   etag = r->compressed->etag;
+        else if (r->etag[0] != '\0')                etag = r->etag;
+        if (etag && etag_matches(req->if_none_match,
+                                 req->if_none_match_len, etag)) return;
+    }
+
+    static const char status[] = "HTTP/1.1 103 Early Hints\r\n";
+    static const char term[]   = "\r\n";
+    pw_iov_t iov[3] = {
+        { .base = (const uint8_t*)status, .len = sizeof(status) - 1 },
+        { .base = (const uint8_t*)r->link_hdr, .len = r->link_hdr_len },
+        { .base = (const uint8_t*)term, .len = sizeof(term) - 1 },
+    };
+    (void)pw_tls_app_seal_iov(&c->eng, iov, 3);
+}
+
 static void* tls_on_open(void* svc_state, const pw_conn_info_t* info) {
     (void)info;
     svc_state_t* s = (svc_state_t*)svc_state;
@@ -413,8 +455,6 @@ static void maybe_emit_session_ticket(tls_conn_state_t* c) {
                                      PW_TLS_TICKET_MAX_EARLY);
     psk_wipe(psk);
     c->ticket_emitted = 1;
-    fprintf(stderr, "tls: NST emitted (max_early=%u lifetime=%us)\n",
-            PW_TLS_TICKET_MAX_EARLY, PW_TLS_TICKET_LIFETIME_S);
 }
 
 static pw_disp_status_t tls_on_data(void* per_conn_state,
@@ -426,6 +466,9 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
     *iov_n = 0;
     c->tx_stage_len = 0;
 
+    /* P0 per-stage timing. cntvct/rdtsc reads are <10 cycles. */
+    const uint64_t t_enter = metal_tsc();
+
     size_t cap = 0;
     uint8_t* rx = pw_tls_rx_buf(&c->eng, &cap);
     if (len > cap) { fprintf(stderr, "tls: RESET len=%zu > cap=%zu\n", len, cap); return PW_DISP_RESET; }
@@ -433,9 +476,13 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
     if (pw_tls_rx_ack(&c->eng, len) != 0) { fprintf(stderr, "tls: RESET rx_ack failed len=%zu\n", len); return PW_DISP_RESET; }
 
     pw_tls_engine_set_clock(&c->eng, (uint64_t)metal_now_ms());
+    const uint64_t t_after_rx = metal_tsc();
+    metrics_stage_add(METRICS_STAGE_TLS_RX, t_after_rx - t_enter);
     int step_rc = pw_tls_step(&c->eng);
     if (step_rc < 0) { fprintf(stderr, "tls: RESET step failed state=%d phase=%d err=%d rxlen=%zu\n", c->eng.state, c->eng.hs_phase, c->eng.last_err, len); return PW_DISP_RESET; }
-    if (step_rc > 0 || c->eng.tx_len > 0) { fprintf(stderr, "tls: step rc=%d state=%d phase=%d tx_len=%zu datalen=%zu\n", step_rc, c->eng.state, c->eng.hs_phase, (size_t)c->eng.tx_len, len); }
+    /* Hot-path step trace removed: per-call fprintf (with stderr lock)
+     * was costing 100s of µs per request and ~1ms under any contention. */
+    metrics_stage_add(METRICS_STAGE_TLS_STEP, metal_tsc() - t_after_rx);
 
     size_t app_len = 0;
     const uint8_t* app = pw_tls_app_in_buf(&c->eng, &app_len);
@@ -459,14 +506,18 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
             http_request_t dummy = {0};
             pw_iov_t resp[PW_IOV_MAX_FRAGS];
             unsigned rn = 0;
+            const uint64_t t_b0 = metal_tsc();
             if (build_http_response_iov(c, HTTP_ERR_413, &dummy, resp, &rn, &close_after) != 0) {
                 pw_tls_app_in_ack(&c->eng, app_len);
                 return PW_DISP_RESET;
             }
+            const uint64_t t_b1 = metal_tsc();
+            metrics_stage_add(METRICS_STAGE_TLS_BUILD, t_b1 - t_b0);
             if (pw_tls_app_seal_iov(&c->eng, resp, rn) != 0) {
                 pw_tls_app_in_ack(&c->eng, app_len);
                 return PW_DISP_RESET;
             }
+            metrics_stage_add(METRICS_STAGE_TLS_SEAL, metal_tsc() - t_b1);
             c->plain_len = 0;
         } else {
             memcpy(c->plain + c->plain_len, app, app_len);
@@ -483,7 +534,10 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
     if (pw_tls_state(&c->eng) == PW_TLS_ST_APP && c->plain_len > 0) {
         tls_bridge_t* b = &c->bridge;
         while (c->plain_len > 0) {
+            const uint64_t t_p0 = metal_tsc();
             int prc = tls_bridge_parse_request(b, (const uint8_t*)c->plain, c->plain_len);
+            const uint64_t t_p1 = metal_tsc();
+            metrics_stage_add(METRICS_STAGE_TLS_PARSE, t_p1 - t_p0);
             if (prc == 0) break;   /* incomplete request, wait for more */
 
             http_request_t req = b->req;
@@ -493,6 +547,13 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
             if (build_http_response_iov(c, pr, &req, resp, &rn, &close_after) != 0) {
                 return PW_DISP_RESET;
             }
+            const uint64_t t_p2 = metal_tsc();
+            metrics_stage_add(METRICS_STAGE_TLS_BUILD, t_p2 - t_p1);
+
+            /* Best-effort interim 103 Early Hints record. Sealed
+             * separately so the client parser sees a distinct status
+             * line ahead of the 200. */
+            maybe_seal_103(c, pr, &req);
 
             if (pw_tls_app_seal_iov(&c->eng, resp, rn) != 0) {
                 /* TX buffer pressure while additional pipelined
@@ -503,6 +564,14 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
                 close_after = true;
                 c->plain_len = 0;
                 break;
+            }
+            const uint64_t t_p3 = metal_tsc();
+            metrics_stage_add(METRICS_STAGE_TLS_SEAL, t_p3 - t_p2);
+
+            /* End-to-end per-request latency: parse start through seal
+             * end. Pipelined requests each get their own sample. */
+            if (g_worker_metrics) {
+                metrics_record(g_worker_metrics, t_p0, t_p3);
             }
 
             if (pr == HTTP_OK && req.consumed > 0 && c->plain_len > req.consumed) {
@@ -521,12 +590,16 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
      * NewSessionTicket so future connections can resume (and, since
      * MAX_EARLY > 0, carry 0-RTT). After response sealing so the NST
      * cannot starve the user-visible response of TX buffer space. */
-    if (!close_after) maybe_emit_session_ticket(c);
+    if (!close_after) {
+        const uint64_t t_n0 = metal_tsc();
+        maybe_emit_session_ticket(c);
+        metrics_stage_add(METRICS_STAGE_TLS_NST, metal_tsc() - t_n0);
+    }
 
+    const uint64_t t_before_tx = metal_tsc();
     size_t tx_len = 0;
     const uint8_t* tx = pw_tls_tx_buf(&c->eng, &tx_len);
     if (tx_len > 0) {
-        fprintf(stderr, "tls: TX tx_len=%zu stage_cap=%zu\n", tx_len, sizeof(c->tx_stage));
         if (tx_len > sizeof(c->tx_stage)) return PW_DISP_RESET;
         memcpy(c->tx_stage, tx, tx_len);
         c->tx_stage_len = tx_len;
@@ -534,8 +607,10 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
         iov_out[0].base = c->tx_stage;
         iov_out[0].len = c->tx_stage_len;
         *iov_n = 1;
+        metrics_stage_add(METRICS_STAGE_TLS_TX, metal_tsc() - t_before_tx);
         return close_after ? PW_DISP_OUTPUT_AND_CLOSE : PW_DISP_OUTPUT;
     }
+    metrics_stage_add(METRICS_STAGE_TLS_TX, metal_tsc() - t_before_tx);
     return PW_DISP_NO_OUTPUT;
 }
 
@@ -556,11 +631,12 @@ void* tls_worker_main(void* arg) {
     if (load_cert_material(w) != 0) {
         metal_die("tls_worker_main: failed loading TLS cert/key");
     }
-    if (w->key_type != CERT_KEY_ED25519 && w->key_type != CERT_KEY_RSA) {
+    if (w->key_type != CERT_KEY_ED25519 && w->key_type != CERT_KEY_RSA &&
+        w->key_type != CERT_KEY_ECDSA_P256) {
         const char* kt = "unknown";
         if (w->key_type == CERT_KEY_RSA) kt = "rsa";
         else if (w->key_type == CERT_KEY_ECDSA_P256) kt = "ecdsa-p256";
-        metal_die("tls_worker_main: key type '%s' loaded but handshake signing for this type is not implemented yet (supported: Ed25519, RSA-PSS)", kt);
+        metal_die("tls_worker_main: key type '%s' loaded but handshake signing for this type is not implemented yet (supported: Ed25519, RSA-PSS, ECDSA P-256)", kt);
     }
 
     uint8_t local_mac[6];
@@ -585,6 +661,24 @@ void* tls_worker_main(void* arg) {
         if (af_packet_open(&w->afp, cfg->tls_ifname, local_mac, peer_mac) != 0) {
             metal_die("tls_worker_main: af_packet_open(ifname=%s)", cfg->tls_ifname);
         }
+        /* Drop everything the kernel sees on this veth that isn't
+         * for our listener. Without this filter the worker thread
+         * burns ms/burst on unrelated cluster traffic (kubelet
+         * probes, kube-proxy, DNS, stray ACKs from torn-down
+         * sessions) which causes ~60 ms tail spikes between real
+         * requests. */
+        if (af_packet_install_filter(&w->afp, local_ip,
+                                     (uint16_t)cfg->port) != 0) {
+            metal_log("tls_worker_main: af_packet filter install failed; "
+                      "continuing without (variance may be high)");
+        }
+    }
+
+    /* Per-worker end-to-end histogram. The TLS backend was previously
+     * not setting this, so /stats reported total_requests=0 and
+     * p95/p99/p99.9=0 — making tail-latency optimization blind. */
+    if (g_metrics && cfg->worker_index < g_n_workers) {
+        g_worker_metrics = &g_metrics[cfg->worker_index];
     }
 
     pw_dispatch_init(&w->dispatch);

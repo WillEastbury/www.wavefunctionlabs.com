@@ -7,6 +7,8 @@ metadata:
     app: wfl-www
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: wfl-www
@@ -17,7 +19,7 @@ spec:
     spec:
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:v19-0rtt
+          image: tileforgeacr.azurecr.io/wfl-www:p3-103-early-hints
           ports:
             - containerPort: 443
           securityContext:
@@ -45,11 +47,17 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           resources:
+            # NOTE: picoweb's TLS worker busy-polls the AF_XDP RX ring (no
+            # blocking syscall), so it pegs ~1 core. With a CPU limit, CFS
+            # bandwidth control throttles the thread for 80ms out of every
+            # 100ms period, producing the classic 12ms/80ms alternating
+            # tail-latency pattern. We request a full core and DELIBERATELY
+            # set NO cpu limit so the kernel doesn't throttle the spinner.
+            # (memory limit retained.)
             requests:
-              cpu: 50m
+              cpu: 1000m
               memory: 32Mi
             limits:
-              cpu: 200m
               memory: 128Mi
       volumes:
         - name: tls-certs
@@ -86,6 +94,10 @@ spec:
   dnsNames:
     - www.wavefunctionlabs.com
     - wavefunctionlabs.com
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
