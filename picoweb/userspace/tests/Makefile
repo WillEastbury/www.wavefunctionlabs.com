@@ -64,7 +64,8 @@ QUIC_PRIM_SRC := \
     ../quic/flow.c               \
     ../quic/special.c            \
     ../quic/transport_params.c   \
-    ../quic/crypto_stream.c
+    ../quic/crypto_stream.c      \
+    ../quic/keys.c
 
 all: test_crypto test_preload test_quic_primitives
 
