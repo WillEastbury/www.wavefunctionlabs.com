@@ -62,7 +62,8 @@ QUIC_PRIM_SRC := \
     ../quic/loss.c               \
     ../quic/cc.c                 \
     ../quic/flow.c               \
-    ../quic/special.c
+    ../quic/special.c            \
+    ../quic/transport_params.c
 
 all: test_crypto test_preload test_quic_primitives
 
