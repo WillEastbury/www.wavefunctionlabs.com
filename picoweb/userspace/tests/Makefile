@@ -42,7 +42,13 @@ CRYPTO_SRC := \
 
 .PHONY: all clean test
 
-all: test_crypto test_preload
+QUIC_PRIM_SRC := \
+    ../udp/udp.c                 \
+    ../tcp/ip.c                  \
+    ../crypto/aes.c              \
+    ../crypto/aes_gcm.c
+
+all: test_crypto test_preload test_quic_primitives
 
 test_crypto: test_crypto.c $(CRYPTO_SRC)
 	$(CC) $(CFLAGS) -o $@ $^
@@ -50,9 +56,13 @@ test_crypto: test_crypto.c $(CRYPTO_SRC)
 test_preload: test_preload.c ../../src/preload.c
 	$(CC) $(CFLAGS) -I../../src -o $@ $^
 
-test: test_crypto test_preload
+test_quic_primitives: test_quic_primitives.c $(QUIC_PRIM_SRC)
+	$(CC) $(CFLAGS) -o $@ $^
+
+test: test_crypto test_preload test_quic_primitives
 	./test_crypto
 	./test_preload
+	./test_quic_primitives
 
 clean:
-	rm -f test_crypto test_preload
+	rm -f test_crypto test_preload test_quic_primitives
