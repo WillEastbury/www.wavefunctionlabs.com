@@ -14,6 +14,7 @@
 #include "../crypto/util.h"
 #include "../crypto/sha256.h"
 #include "../crypto/x25519.h"
+#include "../crypto/rsa.h"
 #include "handshake.h"
 #include "keysched.h"
 #include "record.h"
@@ -45,14 +46,22 @@ void pw_tls_engine_init(pw_tls_engine_t* eng) {
 int pw_tls_engine_configure_server(pw_tls_engine_t* eng,
                                    pw_tls_rng_fn rng_fn,
                                    void* rng_user,
+                                   uint16_t cert_sig_scheme,
                                    const uint8_t seed_ed25519[32],
+                                   const uint8_t* cert_key_der,
+                                   size_t cert_key_der_len,
                                    const uint8_t* cert_chain_der,
                                    const size_t* cert_lens,
                                    unsigned n_certs) {
-    if (!eng || !rng_fn || !seed_ed25519) return -1;
+    if (!eng || !rng_fn) return -1;
     if (n_certs == 0 || !cert_chain_der || !cert_lens) return -1;
     if (eng->state != PW_TLS_ST_HANDSHAKE) return -1;
     if (eng->hs_phase != PW_TLS_HS_WAIT_CH) return -1;
+    if (cert_sig_scheme != TLS13_SIG_SCHEME_ED25519 &&
+        cert_sig_scheme != TLS13_SIG_SCHEME_RSA_PSS_RSAE_SHA256) return -1;
+    if (cert_sig_scheme == TLS13_SIG_SCHEME_ED25519 && !seed_ed25519) return -1;
+    if (cert_sig_scheme == TLS13_SIG_SCHEME_RSA_PSS_RSAE_SHA256 &&
+        (!cert_key_der || cert_key_der_len == 0)) return -1;
 
     /* Validate cert chain fits in the per-message stack scratch the
      * flight emitter uses (PW_TLS_ENGINE_CERT_MSG_MAX). Catching
@@ -68,7 +77,10 @@ int pw_tls_engine_configure_server(pw_tls_engine_t* eng,
 
     eng->rng_fn         = rng_fn;
     eng->rng_user       = rng_user;
-    memcpy(eng->seed_ed25519, seed_ed25519, 32);
+    eng->cert_sig_scheme = cert_sig_scheme;
+    if (seed_ed25519) memcpy(eng->seed_ed25519, seed_ed25519, 32);
+    eng->cert_key_der   = cert_key_der;
+    eng->cert_key_der_len = cert_key_der_len;
     eng->cert_chain_der = cert_chain_der;
     eng->cert_lens      = cert_lens;
     eng->n_certs        = n_certs;
@@ -140,6 +152,7 @@ int pw_tls_engine_emit_session_ticket(pw_tls_engine_t* eng,
                                       size_t nonce_len,
                                       const uint8_t* ticket_id,
                                       size_t id_len,
+                                      uint32_t max_early_data,
                                       uint8_t out_psk[32]) {
     if (!eng || !ticket_nonce || !ticket_id || !out_psk)         return -1;
     if (eng->state != PW_TLS_ST_APP || eng->has_rms != 1)        return -1;
@@ -158,11 +171,12 @@ int pw_tls_engine_emit_session_ticket(pw_tls_engine_t* eng,
     int nst_len = tls13_build_new_session_ticket(nst, sizeof(nst),
                                                  lifetime_s, age_add,
                                                  ticket_nonce, nonce_len,
-                                                 ticket_id, id_len);
+                                                 ticket_id, id_len,
+                                                 max_early_data);
     if (nst_len <= 0) { secure_zero(out_psk, 32); return -1; }
 
     size_t need = TLS13_RECORD_HEADER_LEN + (size_t)nst_len + 1 + TLS13_AEAD_TAG_LEN;
-    if (need > PW_TLS_BUF_CAP - eng->tx_len) {
+    if (need > PW_TLS_TX_BUF_CAP - eng->tx_len) {
         secure_zero(out_psk, 32);
         secure_zero(nst,     sizeof(nst));
         return -1;
@@ -173,7 +187,7 @@ int pw_tls_engine_emit_session_ticket(pw_tls_engine_t* eng,
                                      TLS_CT_APPLICATION_DATA,
                                      nst, (size_t)nst_len,
                                      eng->tx_buf + eng->tx_len,
-                                     PW_TLS_BUF_CAP - eng->tx_len);
+                                     PW_TLS_TX_BUF_CAP - eng->tx_len);
     secure_zero(nst, sizeof(nst));
     if (wrote == 0) { secure_zero(out_psk, 32); return -1; }
     eng->tx_len += wrote;
@@ -296,21 +310,69 @@ int pw_tls_app_seal_iov(pw_tls_engine_t* eng,
     if (eng->state != PW_TLS_ST_APP) return -1;
 
     size_t total = 0;
-    for (unsigned i = 0; i < n; i++) total += iov[i].len;
-    if (total > TLS13_MAX_PLAINTEXT) return -1;
+    for (unsigned i = 0; i < n; i++) {
+        if (SIZE_MAX - total < iov[i].len) return -1;
+        total += iov[i].len;
+    }
 
-    size_t need = TLS13_RECORD_HEADER_LEN + total + 1 + TLS13_AEAD_TAG_LEN;
-    if (need > PW_TLS_BUF_CAP - eng->tx_len) return -1;
+    const size_t rec_overhead = TLS13_RECORD_HEADER_LEN + 1u + TLS13_AEAD_TAG_LEN;
+    size_t records = (total == 0) ? 1u
+                                  : ((total + TLS13_MAX_PLAINTEXT - 1u) / TLS13_MAX_PLAINTEXT);
+    if (records != 0 && (SIZE_MAX - total) / rec_overhead < records) return -1;
+    size_t need = total + records * rec_overhead;
+    if (need > PW_TLS_TX_BUF_CAP - eng->tx_len) return -1;
 
-    size_t wrote = tls13_seal_record_iov(&eng->write,
-                                         TLS_CT_APPLICATION_DATA,
-                                         TLS_CT_APPLICATION_DATA,
-                                         iov, n, total,
-                                         eng->tx_buf + eng->tx_len,
-                                         PW_TLS_BUF_CAP - eng->tx_len);
-    if (wrote == 0) return -1;
-    eng->tx_len += wrote;
-    eng->records_out++;
+    if (total == 0) {
+        size_t wrote = tls13_seal_record_iov(&eng->write,
+                                             TLS_CT_APPLICATION_DATA,
+                                             TLS_CT_APPLICATION_DATA,
+                                             iov, 0, 0,
+                                             eng->tx_buf + eng->tx_len,
+                                             PW_TLS_TX_BUF_CAP - eng->tx_len);
+        if (wrote == 0) return -1;
+        eng->tx_len += wrote;
+        eng->records_out++;
+        return 0;
+    }
+
+    size_t seg_i = 0;
+    size_t seg_off = 0;
+    size_t remaining = total;
+    while (remaining > 0) {
+        size_t chunk = remaining > TLS13_MAX_PLAINTEXT ? TLS13_MAX_PLAINTEXT : remaining;
+        pw_iov_t chunk_iov[PW_IOV_MAX_FRAGS];
+        unsigned chunk_n = 0;
+        size_t chunk_left = chunk;
+
+        while (chunk_left > 0 && seg_i < n) {
+            size_t avail = iov[seg_i].len - seg_off;
+            size_t take = (avail < chunk_left) ? avail : chunk_left;
+            if (take > 0) {
+                if (chunk_n >= PW_IOV_MAX_FRAGS) return -1;
+                chunk_iov[chunk_n].base = iov[seg_i].base + seg_off;
+                chunk_iov[chunk_n].len = take;
+                chunk_n++;
+                chunk_left -= take;
+                seg_off += take;
+            }
+            if (seg_off == iov[seg_i].len) {
+                seg_i++;
+                seg_off = 0;
+            }
+        }
+        if (chunk_left != 0) return -1;
+
+        size_t wrote = tls13_seal_record_iov(&eng->write,
+                                             TLS_CT_APPLICATION_DATA,
+                                             TLS_CT_APPLICATION_DATA,
+                                             chunk_iov, chunk_n, chunk,
+                                             eng->tx_buf + eng->tx_len,
+                                             PW_TLS_TX_BUF_CAP - eng->tx_len);
+        if (wrote == 0) return -1;
+        eng->tx_len += wrote;
+        eng->records_out++;
+        remaining -= chunk;
+    }
     return 0;
 }
 
@@ -393,14 +455,14 @@ static int try_seal_one(pw_tls_engine_t* eng) {
     if (pt_len > TLS13_MAX_PLAINTEXT) pt_len = TLS13_MAX_PLAINTEXT;
 
     size_t need = TLS13_RECORD_HEADER_LEN + pt_len + 1 + TLS13_AEAD_TAG_LEN;
-    if (need > PW_TLS_BUF_CAP - eng->tx_len) return 0;
+    if (need > PW_TLS_TX_BUF_CAP - eng->tx_len) return 0;
 
     size_t wrote = tls13_seal_record(&eng->write,
                                      TLS_CT_APPLICATION_DATA,
                                      TLS_CT_APPLICATION_DATA,
                                      eng->app_out_buf, pt_len,
                                      eng->tx_buf + eng->tx_len,
-                                     PW_TLS_BUF_CAP - eng->tx_len);
+                                     PW_TLS_TX_BUF_CAP - eng->tx_len);
     if (wrote == 0) return -1;
 
     /* tls13_seal_record already advances eng->write.seq on success
@@ -557,6 +619,15 @@ static int try_drive_handshake_server(pw_tls_engine_t* eng) {
             eng->selected_psk_identity = (int)i;
             memcpy(eng->selected_psk, t->psk, 32);
 
+            /* Snapshot whether this ticket is still eligible for 0-RTT
+             * BEFORE consuming it. pw_tls_ticket_consume_for_0rtt()
+             * marks `used`, after which can_early_data() returns 0; if
+             * we read it after consume we would always reject 0-RTT,
+             * but if we accepted 0-RTT based on the unchecked
+             * max_early_data field we would also accept replays of an
+             * already-used ticket. */
+            int can_early = pw_tls_ticket_can_early_data(t);
+
             /* Mark the ticket consumed unconditionally on successful
              * binder match. RFC 8446 §4.6.1 + §8: a server SHOULD
              * treat tickets as single-use to bound replay windows;
@@ -566,13 +637,11 @@ static int try_drive_handshake_server(pw_tls_engine_t* eng) {
             (void)pw_tls_ticket_consume_for_0rtt(t);
 
             /* 0-RTT acceptance: client must have sent early_data AND
-             * the ticket must permit it. We only accept 0-RTT for the
-             * FIRST offered identity (RFC 8446 §4.2.10), which is the
-             * one we matched at i=0. Note: the ticket has already been
-             * marked used above, so can_early_data() is checked against
-             * the pre-consume snapshot via the local flags we recorded. */
-            if (i == 0 && ch.offers_early_data
-                && t->max_early_data > 0) {
+             * the ticket must permit it AND must not have been used
+             * for a previous 0-RTT (or non-0-RTT) handshake. We only
+             * accept 0-RTT for the FIRST offered identity (RFC 8446
+             * §4.2.10), which is the one we matched at i=0. */
+            if (i == 0 && ch.offers_early_data && can_early) {
                 eng->early_data_accepted = 1;
                 eng->early_data_max      = t->max_early_data;
                 eng->early_data_seen     = 0;
@@ -581,10 +650,14 @@ static int try_drive_handshake_server(pw_tls_engine_t* eng) {
         }
     }
 
-    /* Full handshake requires ed25519 for the CertificateVerify. A
-     * resumption handshake skips Cert+CV entirely so this requirement
-     * is dropped. */
-    if (!eng->resumed && !ch.offers_ed25519) return -1;
+    /* Full handshake requires the peer to offer our configured
+     * CertificateVerify signature scheme. */
+    if (!eng->resumed) {
+        if (eng->cert_sig_scheme == TLS13_SIG_SCHEME_ED25519 &&
+            !ch.offers_ed25519) return -1;
+        if (eng->cert_sig_scheme == TLS13_SIG_SCHEME_RSA_PSS_RSAE_SHA256 &&
+            !ch.offers_rsa_pss_rsae_sha256) return -1;
+    }
 
     /* Generate server randomness and X25519 ephemeral keypair. */
     if (eng->rng_fn(eng->rng_user, eng->server_random, 32) != 0) {
@@ -636,7 +709,7 @@ static int try_drive_handshake_server(pw_tls_engine_t* eng) {
     /* Bounds-check TX before any state mutation. SH wire size is
      * 5 (record header) + sh_len (handshake msg). */
     size_t need = TLS13_RECORD_HEADER_LEN + (size_t)sh_len;
-    if (need > PW_TLS_BUF_CAP - eng->tx_len) {
+    if (need > PW_TLS_TX_BUF_CAP - eng->tx_len) {
         secure_zero(shared, sizeof(shared));
         secure_zero(eng->eph_priv, sizeof(eng->eph_priv));
         return -1;
@@ -769,7 +842,7 @@ static int try_drive_handshake_server(pw_tls_engine_t* eng) {
 static int seal_one_handshake_msg(pw_tls_engine_t* eng,
                                   const uint8_t* msg, size_t msg_len) {
     size_t need = TLS13_RECORD_HEADER_LEN + msg_len + 1 + TLS13_AEAD_TAG_LEN;
-    if (need > PW_TLS_BUF_CAP - eng->tx_len) return -1;
+    if (need > PW_TLS_TX_BUF_CAP - eng->tx_len) return -1;
 
     tls13_transcript_update(&eng->transcript, msg, msg_len);
 
@@ -778,7 +851,7 @@ static int seal_one_handshake_msg(pw_tls_engine_t* eng,
                                      TLS_CT_APPLICATION_DATA,
                                      msg, msg_len,
                                      eng->tx_buf + eng->tx_len,
-                                     PW_TLS_BUF_CAP - eng->tx_len);
+                                     PW_TLS_TX_BUF_CAP - eng->tx_len);
     if (wrote == 0) return -1;
     eng->tx_len += wrote;
     eng->records_out++;
@@ -842,10 +915,26 @@ static int try_emit_server_flight(pw_tls_engine_t* eng) {
         uint8_t th_through_cert[32];
         tls13_transcript_snapshot(&eng->transcript, th_through_cert);
 
-        uint8_t cv[128];
-        int cv_len = tls13_build_certificate_verify(cv, sizeof(cv),
-                                                    th_through_cert,
-                                                    eng->seed_ed25519);
+        uint8_t cv[4 + 2 + 2 + (PW_RSA_MAX_BITS / 8)];
+        uint8_t rsa_pss_salt[32];
+        const uint8_t* salt = NULL;
+        size_t salt_len = 0;
+        if (eng->cert_sig_scheme == TLS13_SIG_SCHEME_RSA_PSS_RSAE_SHA256) {
+            if (eng->rng_fn(eng->rng_user, rsa_pss_salt, sizeof(rsa_pss_salt)) != 0) {
+                secure_zero(th_through_cert, sizeof(th_through_cert));
+                return -1;
+            }
+            salt = rsa_pss_salt;
+            salt_len = sizeof(rsa_pss_salt);
+        }
+        int cv_len = tls13_build_certificate_verify_ex(cv, sizeof(cv),
+                                                       th_through_cert,
+                                                       eng->cert_sig_scheme,
+                                                       eng->seed_ed25519,
+                                                       eng->cert_key_der,
+                                                       eng->cert_key_der_len,
+                                                       salt, salt_len);
+        secure_zero(rsa_pss_salt, sizeof(rsa_pss_salt));
         secure_zero(th_through_cert, sizeof(th_through_cert));
         if (cv_len <= 0) return -1;
         if (seal_one_handshake_msg(eng, cv, (size_t)cv_len) != 0) return -1;

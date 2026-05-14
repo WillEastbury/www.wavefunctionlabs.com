@@ -13,6 +13,7 @@
 
 #include "tcp.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static void rtx_on_ack(tcp_conn_t* c, uint32_t ack_no, uint64_t now_ms);
@@ -215,6 +216,7 @@ static int fire_open(tcp_conn_t* c, tcp_emit_fn emit, void* emit_user) {
     void* st = c->svc->on_open(c->svc->svc_state, &info);
     if (!st) {
         /* Pool exhausted or service refused - RST. */
+        fprintf(stderr, "tcp: RST fire_open returned NULL\n");
         emit_ctrl(c, TCPF_RST, emit, emit_user);
         c->state = TCP_CLOSED;
         return 0;
@@ -259,6 +261,7 @@ static int drive_service_data(tcp_conn_t* c,
     case PW_DISP_RESET:
     case PW_DISP_ERROR:
     default:
+        fprintf(stderr, "tcp: RST drive_service_data st=%d\n", (int)st);
         emit_ctrl(c, TCPF_RST, emit, emit_user);
         fire_close(c);
         c->state = TCP_CLOSED;
@@ -278,6 +281,7 @@ void tcp_input_at(tcp_stack_t* s, const tcp_seg_t* seg,
                   tcp_emit_fn emit, void* emit_user) {
     /* Reject if not addressed to our local IP. */
     if (seg->dst_ip != s->local_ip) {
+        fprintf(stderr, "tcp: RST ip-mismatch dst=%08x local=%08x\n", seg->dst_ip, s->local_ip);
         emit_rst(seg, emit, emit_user);
         return;
     }
@@ -286,6 +290,7 @@ void tcp_input_at(tcp_stack_t* s, const tcp_seg_t* seg,
     const pw_service_t* svc = NULL;
     int port_ok = port_accepts(s, seg->dst_port, &svc);
     if (!port_ok) {
+        fprintf(stderr, "tcp: RST port-reject port=%u\n", seg->dst_port);
         emit_rst(seg, emit, emit_user);
         return;
     }
@@ -296,6 +301,7 @@ void tcp_input_at(tcp_stack_t* s, const tcp_seg_t* seg,
      * SYN-RECEIVED; otherwise RST. */
     if (!c) {
         if (!(seg->flags & TCPF_SYN) || (seg->flags & TCPF_ACK)) {
+            fprintf(stderr, "tcp: RST no-conn flags=%04x src=%08x:%u\n", seg->flags, seg->src_ip, seg->src_port);
             emit_rst(seg, emit, emit_user);
             return;
         }
@@ -666,31 +672,34 @@ int tcp_send_at(tcp_conn_t* c,
      * for back-compat. */
     if (now_ms != 0 && (uint32_t)len > tcp_send_window(c)) return -1;
     if (c->rto_ms == 0) c->rto_ms = TCP_RTO_INIT_MS;
-    /* Refresh advertised window for the outbound. */
-    c->rcv_wnd = tcp_advertised_wnd(c);
-    tcp_seg_t s = {0};
-    s.src_ip   = c->local_ip;
-    s.dst_ip   = c->remote_ip;
-    s.src_port = c->local_port;
-    s.dst_port = c->remote_port;
-    s.seq      = c->snd_nxt;
-    s.ack      = c->rcv_nxt;
-    s.flags    = TCPF_ACK | TCPF_PSH;
-    s.window   = c->rcv_wnd;
-    s.payload  = data;
-    s.payload_len = len;
-    emit(&s, emit_user);
-    if (now_ms != 0 && len > 0) {
-        /* The precondition at line ~644 already guarantees rtx_n <
-         * MAX, so this enqueue cannot fail today. Check the return
-         * anyway so a future change to the precondition can't silently
-         * orphan a sent segment with no RTO recovery path. */
-        if (rtx_enqueue(c, c->snd_nxt, (uint32_t)len, data,
-                        TCPF_ACK | TCPF_PSH, now_ms) != 0) {
-            return -1;
+
+    /* Segment the payload into MSS-sized chunks. */
+    size_t sent = 0;
+    while (sent < len) {
+        size_t chunk = len - sent;
+        if (chunk > TCP_MSS) chunk = TCP_MSS;
+        c->rcv_wnd = tcp_advertised_wnd(c);
+        tcp_seg_t s = {0};
+        s.src_ip   = c->local_ip;
+        s.dst_ip   = c->remote_ip;
+        s.src_port = c->local_port;
+        s.dst_port = c->remote_port;
+        s.seq      = c->snd_nxt;
+        s.ack      = c->rcv_nxt;
+        s.flags    = TCPF_ACK | ((sent + chunk >= len) ? TCPF_PSH : 0);
+        s.window   = c->rcv_wnd;
+        s.payload  = data + sent;
+        s.payload_len = chunk;
+        emit(&s, emit_user);
+        if (now_ms != 0 && chunk > 0) {
+            if (rtx_enqueue(c, c->snd_nxt, (uint32_t)chunk, data + sent,
+                            s.flags, now_ms) != 0) {
+                return -1;
+            }
         }
+        c->snd_nxt += (uint32_t)chunk;
+        sent += chunk;
     }
-    c->snd_nxt += (uint32_t)len;
     return (int)len;
 }
 

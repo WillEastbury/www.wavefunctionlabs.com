@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:v18rsa10
+          image: tileforgeacr.azurecr.io/wfl-www:v19-0rtt
           ports:
             - containerPort: 443
           securityContext:
