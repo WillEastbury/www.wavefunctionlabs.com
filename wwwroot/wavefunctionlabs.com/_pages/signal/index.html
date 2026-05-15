@@ -300,4 +300,28 @@
                 </div>
             </div>
         </div>
+<script>
+function toggleSignal() {
+    var btn = document.getElementById('signalToggle');
+    var psi = document.getElementById('signalPsi');
+    if (!btn || !psi) return;
+    var section = btn.closest('.wf-section') || document.body;
+    var open = section.classList.toggle('wf-state-psi');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    psi.setAttribute('aria-hidden', open ? 'false' : 'true');
+    btn.textContent = open
+        ? 'Collapse \u03A8'
+        : 'Expand \u03A8 \u2014 full experience & background';
+}
+function toggleEta() {
+    var btn = document.getElementById('etaToggle');
+    var content = document.getElementById('etaContent');
+    var eta = document.getElementById('etaNoise');
+    if (!btn || !content || !eta) return;
+    var open = eta.classList.toggle('wf-eta-open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    content.setAttribute('aria-hidden', open ? 'false' : 'true');
+    btn.textContent = open ? 'Collapse residual signal' : 'Expand residual signal';
+}
+</script>
     </div>
