@@ -18,6 +18,8 @@ CRYPTO_SRC := \
     ../crypto/sha512.c           \
     ../crypto/ed25519.c          \
     ../crypto/rsa.c              \
+    ../crypto/p256.c             \
+    ../crypto/ecdsa.c            \
     ../crypto/pool.c             \
     ../crypto/hmac.c             \
     ../crypto/hkdf.c             \
@@ -83,7 +85,7 @@ QUIC_PRIM_SRC := \
 all: test_crypto test_quic_primitives
 
 test_crypto: test_crypto.c $(CRYPTO_SRC)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ -lpthread
 
 test_quic_primitives: test_quic_primitives.c $(QUIC_PRIM_SRC)
 	$(CC) $(CFLAGS) -o $@ $^
