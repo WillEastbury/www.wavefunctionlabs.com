@@ -479,7 +479,28 @@ static pw_disp_status_t tls_on_data(void* per_conn_state,
     const uint64_t t_after_rx = metal_tsc();
     metrics_stage_add(METRICS_STAGE_TLS_RX, t_after_rx - t_enter);
     int step_rc = pw_tls_step(&c->eng);
-    if (step_rc < 0) { fprintf(stderr, "tls: RESET step failed state=%d phase=%d err=%d rxlen=%zu\n", c->eng.state, c->eng.hs_phase, c->eng.last_err, len); return PW_DISP_RESET; }
+    if (step_rc < 0) {
+        /* DIAG: when the engine fails on the very first record (phase=WAIT_CH)
+         * we want to know whether we were handed real ClientHello bytes or
+         * garbage. Throttle to first 50 + every 100th to avoid log floods. */
+        static _Thread_local unsigned long diag_n = 0;
+        diag_n++;
+        if (diag_n <= 50 || (diag_n % 100) == 0) {
+            char hex[3 * 32 + 1];
+            size_t dump = len < 32 ? len : 32;
+            for (size_t i = 0; i < dump; i++)
+                snprintf(hex + i * 3, 4, "%02x ", rx[i]);
+            hex[dump ? dump * 3 - 1 : 0] = '\0';
+            fprintf(stderr,
+                    "tls: RESET step failed state=%d phase=%d err=%d rxlen=%zu cap=%zu n=%lu rx[0..%zu]=%s\n",
+                    c->eng.state, c->eng.hs_phase, c->eng.last_err,
+                    len, cap, diag_n, dump, hex);
+        } else {
+            fprintf(stderr, "tls: RESET step failed state=%d phase=%d err=%d rxlen=%zu (n=%lu)\n",
+                    c->eng.state, c->eng.hs_phase, c->eng.last_err, len, diag_n);
+        }
+        return PW_DISP_RESET;
+    }
     /* Hot-path step trace removed: per-call fprintf (with stderr lock)
      * was costing 100s of µs per request and ~1ms under any contention. */
     metrics_stage_add(METRICS_STAGE_TLS_STEP, metal_tsc() - t_after_rx);
