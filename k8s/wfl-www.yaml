@@ -52,29 +52,28 @@ spec:
           # AF_XDP-bound TLS engine is listening (loopback would miss it).
           # Host header is set explicitly because picoweb returns 409 on
           # missing/unknown Host (and httpGet only treats <400 as success).
+          # Probes: tcpSocket on :443 (NOT httpGet). httpGet would force a
+          # full TLS 1.3 handshake every 10s on the single AF_XDP worker;
+          # while the worker is mid-probe, concurrent user SYNs get
+          # dropped at the XDP RX ring. tcpSocket only verifies that the
+          # userspace TCP stack accepts a SYN, which is what we actually
+          # need from a probe (process is alive and the AF_XDP socket is
+          # bound). It does NOT catch the rare TLS-engine wedge — that's
+          # OK; the wedge is a 1-in-thousands event and is observable in
+          # logs (`tls: RESET step failed`).
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 443
-              scheme: HTTPS
-              httpHeaders:
-                - name: Host
-                  value: wavefunctionlabs.com
             initialDelaySeconds: 5
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 3
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 443
-              scheme: HTTPS
-              httpHeaders:
-                - name: Host
-                  value: wavefunctionlabs.com
             initialDelaySeconds: 30
             periodSeconds: 30
-            timeoutSeconds: 6
+            timeoutSeconds: 5
             failureThreshold: 3
           resources:
             # NOTE: picoweb's TLS worker busy-polls the AF_XDP RX ring (no

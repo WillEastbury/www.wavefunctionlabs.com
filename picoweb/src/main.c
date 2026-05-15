@@ -337,20 +337,29 @@ int main(int argc, char** argv) {
             metal_die("pthread_create #%ld", i);
         }
         if (attr_p) pthread_attr_destroy(&attr);
-        /* Pin worker N to core (N % nproc). With SO_REUSEPORT each
-         * worker has its own listen socket and per-worker state, so
-         * keeping each on a fixed core preserves L1/L2 cache locality
-         * and matches the kernel's RPS hashing for steady throughput.
+        /* Pin worker N to a CPU. We deliberately AVOID CPU 0 when
+         * possible because the veth NET_RX softirq for inbound traffic
+         * tends to run on CPU 0 (it hashes the first interrupt-handling
+         * core), and a busy-polling user thread on the same core fights
+         * those softirqs for cycles — under burst load this manifests as
+         * XDP-layer RX drops because softirq slice doesn't run long
+         * enough to push frames into the XSK ring before the user thread
+         * resumes.
+         * Mapping: worker N -> CPU ((N + 1) % nproc). With workers=1 and
+         * nproc>=2, that puts the worker on CPU 1 and leaves CPU 0 free
+         * for kernel softirqs. With nproc==1 we have no choice and stay
+         * on CPU 0. With workers>1 we still cycle across all cores.
          * Best-effort: failure is logged and ignored. */
 #ifdef __linux__
         long nproc = sysconf(_SC_NPROCESSORS_ONLN);
         if (nproc >= 1) {
+            long target = (nproc >= 2) ? ((i + 1) % nproc) : 0;
             cpu_set_t cpus;
             CPU_ZERO(&cpus);
-            CPU_SET((int)(i % nproc), &cpus);
+            CPU_SET((int)target, &cpus);
             if (pthread_setaffinity_np(threads[i], sizeof(cpus), &cpus) != 0) {
                 metal_log("pthread_setaffinity_np worker %ld -> cpu %ld: %s",
-                          i, i % nproc, strerror(errno));
+                          i, target, strerror(errno));
             }
         }
 #endif

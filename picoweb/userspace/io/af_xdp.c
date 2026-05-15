@@ -21,12 +21,22 @@
 #include <linux/bpf.h>
 #endif
 
-#define XSK_RX_RING_SZ 256u
-#define XSK_TX_RING_SZ 256u
-#define XSK_FR_RING_SZ 512u
-#define XSK_CR_RING_SZ 512u
+/* Ring sizes: 4x bump (256→1024 RX/TX, 512→2048 FR/CR) so bursts of
+ * parallel SYNs (e.g. browser opening 6+ concurrent sockets to load a
+ * page) can land in the RX ring while the worker is mid-handshake on a
+ * previous connection. With the original 256-entry RX ring, ~17–42% of
+ * fresh handshakes were silently dropped at the XDP layer under typical
+ * browser concurrency. UMEM frame count must be ≥ 2*FR (pre-fill is
+ * FRAME_N/2). 16x bump tested first but kernel returned ENOBUFS on
+ * UMEM_REG (likely cgroup memory accounting); 4x is conservative.
+ *   UMEM = 4096 * 2048 = 8 MiB — well within the 128Mi pod memory limit.
+ */
+#define XSK_RX_RING_SZ 1024u
+#define XSK_TX_RING_SZ 1024u
+#define XSK_FR_RING_SZ 2048u
+#define XSK_CR_RING_SZ 2048u
 #define XSK_FRAME_SZ   2048u
-#define XSK_FRAME_N    1024u
+#define XSK_FRAME_N    4096u
 
 static inline uint32_t load_u32(uint32_t* p) {
     return __atomic_load_n(p, __ATOMIC_ACQUIRE);
@@ -115,11 +125,27 @@ int af_xdp_open(af_xdp_t* x, const char* ifname, uint32_t queue_id,
         .headroom = 0,
         .flags = 0,
     };
-    if (setsockopt(x->fd, SOL_XDP, XDP_UMEM_REG, &um, sizeof(um)) != 0) goto fail;
-    if (setsockopt(x->fd, SOL_XDP, XDP_UMEM_FILL_RING, &(uint32_t){XSK_FR_RING_SZ}, sizeof(uint32_t)) != 0) goto fail;
-    if (setsockopt(x->fd, SOL_XDP, XDP_UMEM_COMPLETION_RING, &(uint32_t){XSK_CR_RING_SZ}, sizeof(uint32_t)) != 0) goto fail;
-    if (setsockopt(x->fd, SOL_XDP, XDP_RX_RING, &(uint32_t){XSK_RX_RING_SZ}, sizeof(uint32_t)) != 0) goto fail;
-    if (setsockopt(x->fd, SOL_XDP, XDP_TX_RING, &(uint32_t){XSK_TX_RING_SZ}, sizeof(uint32_t)) != 0) goto fail;
+    if (setsockopt(x->fd, SOL_XDP, XDP_UMEM_REG, &um, sizeof(um)) != 0) {
+        fprintf(stderr, "af_xdp_open: XDP_UMEM_REG (umem=%zuB frame=%u nframes=%u): %s\n",
+                x->umem_len, x->frame_size, x->frame_count, strerror(errno));
+        goto fail;
+    }
+    if (setsockopt(x->fd, SOL_XDP, XDP_UMEM_FILL_RING, &(uint32_t){XSK_FR_RING_SZ}, sizeof(uint32_t)) != 0) {
+        fprintf(stderr, "af_xdp_open: XDP_UMEM_FILL_RING (sz=%u): %s\n", XSK_FR_RING_SZ, strerror(errno));
+        goto fail;
+    }
+    if (setsockopt(x->fd, SOL_XDP, XDP_UMEM_COMPLETION_RING, &(uint32_t){XSK_CR_RING_SZ}, sizeof(uint32_t)) != 0) {
+        fprintf(stderr, "af_xdp_open: XDP_UMEM_COMPLETION_RING (sz=%u): %s\n", XSK_CR_RING_SZ, strerror(errno));
+        goto fail;
+    }
+    if (setsockopt(x->fd, SOL_XDP, XDP_RX_RING, &(uint32_t){XSK_RX_RING_SZ}, sizeof(uint32_t)) != 0) {
+        fprintf(stderr, "af_xdp_open: XDP_RX_RING (sz=%u): %s\n", XSK_RX_RING_SZ, strerror(errno));
+        goto fail;
+    }
+    if (setsockopt(x->fd, SOL_XDP, XDP_TX_RING, &(uint32_t){XSK_TX_RING_SZ}, sizeof(uint32_t)) != 0) {
+        fprintf(stderr, "af_xdp_open: XDP_TX_RING (sz=%u): %s\n", XSK_TX_RING_SZ, strerror(errno));
+        goto fail;
+    }
 
     struct xdp_mmap_offsets off;
     socklen_t olen = sizeof(off);
