@@ -8,6 +8,18 @@ metadata:
 spec:
   replicas: 1
   strategy:
+    # NOTE: Recreate is needed because:
+    #  - this 2-node cluster is at ~99% CPU requested already (the picoweb
+    #    worker reserves 500m+ and there is nowhere for a surge pod), AND
+    #  - the AF_XDP socket is bound to the pod's veth eth0; only one
+    #    process per netns can own the XDP map. RollingUpdate on a single-
+    #    replica deploy means the new pod must Ready before the old goes
+    #    Terminating, so we'd briefly have both contending for the same
+    #    XDP attachment if it ever scheduled.
+    # Once the cluster has more nodes (or a 3rd worker), bump replicas to
+    # >=2 and switch to RollingUpdate maxUnavailable:0 maxSurge:1 to gain
+    # burst-handshake capacity (single-replica AF_XDP currently drops
+    # ~33% of fresh handshakes when 6+ arrive in parallel).
     type: Recreate
   selector:
     matchLabels:
@@ -73,7 +85,13 @@ spec:
             # set NO cpu limit so the kernel doesn't throttle the spinner.
             # (memory limit retained.)
             requests:
-              cpu: 1000m
+              # 500m (down from 1000m): this 2-node cluster is fully
+              # subscribed and a 1000m request was the only thing
+              # blocking >1 replica from scheduling. Picoweb still
+              # busy-polls AF_XDP and uses ~1 full core at runtime;
+              # the request controls scheduling only and there is
+              # intentionally no CPU limit, so no CFS throttling.
+              cpu: 500m
               memory: 32Mi
             limits:
               memory: 128Mi
