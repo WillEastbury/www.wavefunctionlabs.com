@@ -32,19 +32,43 @@ spec:
             - name: tls-certs
               mountPath: /certs
               readOnly: true
+          # Probes do a real HTTPS GET (httpGet, not tcpSocket) so that a
+          # wedged userspace TLS engine — which can keep accepting SYNs
+          # while RST-ing every handshake — actually fails the probe and
+          # triggers a restart. kubelet runs the probe from the node's net
+          # namespace, so the request reaches the pod via eth0 where the
+          # AF_XDP-bound TLS engine is listening (loopback would miss it).
+          # HTTPS scheme means kubelet does the TLS handshake itself; the
+          # probe passes only when the engine actually completes one.
+          # Host header isn't set by httpGet, so picoweb sees a missing
+          # Host and returns 409 — that's a real handshake-completed
+          # response, which is what we want, so we accept any 2xx/4xx
+          # except 5xx by checking via tcpSocket fallback... actually
+          # httpGet only treats <400 as success, so we point Host at the
+          # default vhost via the Host header.
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /
               port: 443
+              scheme: HTTPS
+              httpHeaders:
+                - name: Host
+                  value: wavefunctionlabs.com
             initialDelaySeconds: 5
             periodSeconds: 10
-            timeoutSeconds: 3
+            timeoutSeconds: 5
             failureThreshold: 3
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /
               port: 443
+              scheme: HTTPS
+              httpHeaders:
+                - name: Host
+                  value: wavefunctionlabs.com
             initialDelaySeconds: 30
             periodSeconds: 30
-            timeoutSeconds: 5
+            timeoutSeconds: 6
             failureThreshold: 3
           resources:
             # NOTE: picoweb's TLS worker busy-polls the AF_XDP RX ring (no
