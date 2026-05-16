@@ -1,5 +1,35 @@
 # Copilot Instructions — www.wavefunctionlabs.com
 
+## Production architecture invariants (READ FIRST)
+
+These are non-negotiable design rules. Do not violate them silently to keep
+the site up; if they conflict with reality, stop and ask the user.
+
+1. **picoweb owns :443 inline.** The production listener is picoweb itself,
+   serving TLS in-process via a byte-driven TLS engine over a kernel TCP
+   socket. The connection is a single hop from `accept()` through the HTTP
+   response — no reverse proxy, no TLS terminator, no service mesh sidecar
+   in front. "Fewest hops possible" is the explicit product requirement.
+
+2. **Never swap picoweb out for an nginx (or other) TLS terminator without
+   explicit user approval — even temporarily, even to keep the site up.**
+   If picoweb is failing, the correct response is to diagnose and fix
+   picoweb (or roll the picoweb image back to a known-good tag). Putting
+   an nginx terminator in front silently changes the product architecture
+   and hides the bug. Past sessions have done this and it was wrong.
+
+3. **AF_PACKET, AF_XDP, io_uring zero-copy, DPDK, etc. are *optional*
+   optimisations layered on top of the kernel-socket baseline.** They
+   must be CLI/build-flag gated and must not be the only path. The
+   kernel-socket TLS path must always remain functional in the same
+   image. Do not reintroduce userspace TCP/IP on AKS — kernel conntrack
+   and Azure LB reverse-NAT are incompatible with AF_PACKET-emitted
+   SYN-ACKs (documented failure mode).
+
+4. **TLS certs come from the `wfl-www-tls` Kubernetes secret** (managed by
+   cert-manager with the `letsencrypt-prod` ClusterIssuer) and are
+   mounted into the picoweb pod at `/certs/tls.crt` and `/certs/tls.key`.
+
 ## Architecture
 
 Static marketing site for WaveFunctionLabs, served via Nginx in a Docker container and deployed to Kubernetes on Azure (ACR: `tileforgeacr.azurecr.io`).
