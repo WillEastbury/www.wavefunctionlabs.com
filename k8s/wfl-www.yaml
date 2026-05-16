@@ -169,13 +169,11 @@ spec:
       targetPort: 8080
       protocol: TCP
 ---
-# Keep a minimal Certificate resource so cert-manager continues to
-# renew the wfl-www-tls secret even without an Ingress.
-# NOTE: HTTP-01 challenges will currently fail because DNS for
-# www/apex points at the picoweb LB IP (which doesn't serve the
-# .well-known/acme-challenge path), not at the nginx ingress
-# controller. Cert renews around 2026-07-13 — switch to DNS-01
-# before then.
+# cert-manager renews the wfl-www-tls secret via DNS-01 (azureDNS).
+# Switched from letsencrypt-prod (HTTP-01) because DNS now points at
+# picoweb's LB IP, not at the nginx ingress controller, so HTTP-01
+# challenges can no longer be served. DNS-01 issuer is provisioned
+# out-of-band — see k8s/wfl-www-staging.yaml for details.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -184,7 +182,7 @@ metadata:
 spec:
   secretName: wfl-www-tls
   issuerRef:
-    name: letsencrypt-prod
+    name: letsencrypt-prod-dns01
     kind: ClusterIssuer
   dnsNames:
     - www.wavefunctionlabs.com

@@ -4,26 +4,29 @@ kind: Namespace
 metadata:
   name: wfl-www-staging
 ---
-# NOTE: Self-signed cert for now (ECDSA P-256, valid 365d).
-# cert-manager HTTP-01 needs the cluster nginx ingress controller in the
-# request path, which would defeat the whole point of staging — testing
-# the inline-TLS picoweb. Switch to DNS-01 once we have DNS-provider
-# credentials in the cluster. Browser users will see a cert warning;
-# load tests use --insecure / -k.
-# Generated with:
-#   openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
-#     -days 365 -nodes -keyout staging.key -out staging.crt \
-#     -subj "/CN=staging.wavefunctionlabs.com" \
-#     -addext "subjectAltName=DNS:staging.wavefunctionlabs.com"
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
+# cert-manager DNS-01 (azureDNS) issues the cert from Let's Encrypt prod.
+# DNS-01 chosen over HTTP-01 because HTTP-01 would route the challenge
+# through the cluster nginx ingress, defeating the point of staging the
+# inline-TLS picoweb path. ClusterIssuer letsencrypt-prod-dns01 is
+# provisioned out-of-band (Azure SP `cert-manager-dns01-wfl` scoped to
+# the wavefunctionlabs.com zone; credentials in Secret azuredns-sp in
+# the cert-manager namespace — NOT committed to git).
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
   name: wfl-www-staging-tls
   namespace: wfl-www-staging
-data:
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJ6RENDQVhLZ0F3SUJBZ0lVS0RBWVlSVHJZQW5SajIvems3RHduUVZNRUlnd0NnWUlLb1pJemowRUF3SXcKSnpFbE1DTUdBMVVFQXd3Y2MzUmhaMmx1Wnk1M1lYWmxablZ1WTNScGIyNXNZV0p6TG1OdmJUQWVGdzB5TmpBMQpNVFl4TlRBMk1EbGFGdzB5TnpBMU1UWXhOVEEyTURsYU1DY3hKVEFqQmdOVkJBTU1ISE4wWVdkcGJtY3VkMkYyClpXWjFibU4wYVc5dWJHRmljeTVqYjIwd1dUQVRCZ2NxaGtqT1BRSUJCZ2dxaGtqT1BRTUJCd05DQUFUVElGeVQKOWs2ZGtzaW9uYit1cE52cXdvSkN6WThtVmZDam16VFF0aHE0R2JQQk9wS05qYXVTOTRtMkg1RFhLWVVENHhYdworRjFqdDVQNlRBUnpjUzAzbzN3d2VqQWRCZ05WSFE0RUZnUVVOY2JrcmV4K1F0WnJ2VTgyVDEwOXJsUTh4SzR3Ckh3WURWUjBqQkJnd0ZvQVVOY2JrcmV4K1F0WnJ2VTgyVDEwOXJsUTh4SzR3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBbkJnTlZIUkVFSURBZWdoeHpkR0ZuYVc1bkxuZGhkbVZtZFc1amRHbHZibXhoWW5NdVkyOXRNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSUFGLzR2NXlORTFFWEh5QTB0YTVHdmFhSTJaZjBKTzhSRzkzSkJTRkgwb0ZBaUVBCnFGYTl1N1dUVEdVc2NxUzV3V2EyVGZnbFJKT1hwbnZSSDFsWSszekpDWHc9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JR0hBZ0VBTUJNR0J5cUdTTTQ5QWdFR0NDcUdTTTQ5QXdFSEJHMHdhd0lCQVFRZ2Nzem5LbnBPcWlQKzJ1dWMKeEhQakhmcVZ2Uk1Pd3FETnowNVlJajZoMG1TaFJBTkNBQVRUSUZ5VDlrNmRrc2lvbmIrdXBOdnF3b0pDelk4bQpWZkNqbXpUUXRocTRHYlBCT3BLTmphdVM5NG0ySDVEWEtZVUQ0eFh3K0YxanQ1UDZUQVJ6Y1MwMwotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==
+spec:
+  secretName: wfl-www-staging-tls
+  issuerRef:
+    name: letsencrypt-prod-dns01
+    kind: ClusterIssuer
+  dnsNames:
+    - staging.wavefunctionlabs.com
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
 ---
 apiVersion: apps/v1
 kind: Deployment
