@@ -61,9 +61,35 @@
 
             <p>The whole production site — TLS&nbsp;1.3 engine, every header, every body, every pre-compressed Brotli and gzip variant, the metrics page, the lot — runs in <strong>under 6&nbsp;MiB of RAM</strong>. Resident set is 4.9&nbsp;MiB for the picoweb process; the whole container cgroup sits at 5.9&nbsp;MiB. The nginx pod it replaced used 44&nbsp;MiB to do less. The Kubernetes memory limit is 128&nbsp;MiB and is roughly 20× more than the site will ever touch.</p>
 
+            <p>The shocking part isn't that picoweb is small. It's that the <em>useful-work density</em> is so high that a real, production-grade, interactive TLS site fits into ~6&nbsp;MiB — while heavier stacks spend most of their memory preserving architectural flexibility nobody is using on the hot path.</p>
+
             <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
 
             <div class="wf-insight">The fastest system is usually the one that simply does less nonsense.</div>
+
+            <p style="margin-top:2.5rem;"><strong>People who built things for a living, on the same point</strong></p>
+
+            <p>This isn't a new idea. It's been the working philosophy of more or less every operator who ever shipped a serious system.</p>
+
+            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
+                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"That's been one of my mantras — focus and simplicity. Simple can be harder than complex: you have to work hard to get your thinking clean to make it simple. But it's worth it in the end because once you get there, you can move mountains."</blockquote>
+                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Steve Jobs, <em>BusinessWeek</em>, 25 May 1998. The same year Apple ran <a href="https://en.wikipedia.org/wiki/Think_different" target="_blank" style="color:var(--wf-cyan);">"Think Different"</a>.</figcaption>
+            </figure>
+
+            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
+                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"The best part is no part. The best process is no process. It weighs nothing, costs nothing, can't go wrong."</blockquote>
+                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Elon Musk, <a href="https://en.wikiquote.org/wiki/Elon_Musk" target="_blank" style="color:var(--wf-cyan);">five-step engineering algorithm</a>, Starbase tour with Tim Dodd, 2021. Step 2 of 5 is <em>delete the part or process</em>; if you're not putting at least 10% back in, you didn't delete enough.</figcaption>
+            </figure>
+
+            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
+                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"Hitting refresh is about seeing things with a beginner's mind … a culture of deep technical excellence, and making things simpler and easier for everyone."</blockquote>
+                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Satya Nadella, <em><a href="https://www.goodreads.com/work/quotes/51432387" target="_blank" style="color:var(--wf-cyan);">Hit Refresh</a></em> (2017). Simpler and easier is the deliverable; technical excellence is what makes it possible.</figcaption>
+            </figure>
+
+            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
+                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"The computer industry is the only industry that is more fashion-driven than women's fashion. … What is it? It's complete gibberish. When is this idiocy going to stop?"</blockquote>
+                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Larry Ellison on the cloud-computing hype cycle, <a href="https://en.wikiquote.org/wiki/Larry_Ellison" target="_blank" style="color:var(--wf-cyan);">Oracle OpenWorld</a>, 2008. Most layers exist because they were fashionable, not because they were needed.</figcaption>
+            </figure>
 
             <p style="margin-top: 2rem;color:var(--wf-muted);font-size:.85rem;">The system described above is what serves <code>wavefunctionlabs.com</code>. The TLS server has been pushed back to <a href="https://github.com/WillEastbury/picoweb" target="_blank" style="color:var(--wf-cyan);">picoweb</a> upstream.</p>
 
