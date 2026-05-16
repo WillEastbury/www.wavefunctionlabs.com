@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p6-batched-rx
+          image: tileforgeacr.azurecr.io/wfl-www:p7-revert-batched
           ports:
             - containerPort: 443
           securityContext:
