@@ -1,33 +1,62 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wfl-www-staging
+---
+# NOTE: Self-signed cert for now (ECDSA P-256, valid 365d).
+# cert-manager HTTP-01 needs the cluster nginx ingress controller in the
+# request path, which would defeat the whole point of staging — testing
+# the inline-TLS picoweb. Switch to DNS-01 once we have DNS-provider
+# credentials in the cluster. Browser users will see a cert warning;
+# load tests use --insecure / -k.
+# Generated with:
+#   openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
+#     -days 365 -nodes -keyout staging.key -out staging.crt \
+#     -subj "/CN=staging.wavefunctionlabs.com" \
+#     -addext "subjectAltName=DNS:staging.wavefunctionlabs.com"
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: wfl-www-staging-tls
+  namespace: wfl-www-staging
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJ6RENDQVhLZ0F3SUJBZ0lVS0RBWVlSVHJZQW5SajIvems3RHduUVZNRUlnd0NnWUlLb1pJemowRUF3SXcKSnpFbE1DTUdBMVVFQXd3Y2MzUmhaMmx1Wnk1M1lYWmxablZ1WTNScGIyNXNZV0p6TG1OdmJUQWVGdzB5TmpBMQpNVFl4TlRBMk1EbGFGdzB5TnpBMU1UWXhOVEEyTURsYU1DY3hKVEFqQmdOVkJBTU1ISE4wWVdkcGJtY3VkMkYyClpXWjFibU4wYVc5dWJHRmljeTVqYjIwd1dUQVRCZ2NxaGtqT1BRSUJCZ2dxaGtqT1BRTUJCd05DQUFUVElGeVQKOWs2ZGtzaW9uYit1cE52cXdvSkN6WThtVmZDam16VFF0aHE0R2JQQk9wS05qYXVTOTRtMkg1RFhLWVVENHhYdworRjFqdDVQNlRBUnpjUzAzbzN3d2VqQWRCZ05WSFE0RUZnUVVOY2JrcmV4K1F0WnJ2VTgyVDEwOXJsUTh4SzR3Ckh3WURWUjBqQkJnd0ZvQVVOY2JrcmV4K1F0WnJ2VTgyVDEwOXJsUTh4SzR3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBbkJnTlZIUkVFSURBZWdoeHpkR0ZuYVc1bkxuZGhkbVZtZFc1amRHbHZibXhoWW5NdVkyOXRNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSUFGLzR2NXlORTFFWEh5QTB0YTVHdmFhSTJaZjBKTzhSRzkzSkJTRkgwb0ZBaUVBCnFGYTl1N1dUVEdVc2NxUzV3V2EyVGZnbFJKT1hwbnZSSDFsWSszekpDWHc9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JR0hBZ0VBTUJNR0J5cUdTTTQ5QWdFR0NDcUdTTTQ5QXdFSEJHMHdhd0lCQVFRZ2Nzem5LbnBPcWlQKzJ1dWMKeEhQakhmcVZ2Uk1Pd3FETnowNVlJajZoMG1TaFJBTkNBQVRUSUZ5VDlrNmRrc2lvbmIrdXBOdnF3b0pDelk4bQpWZkNqbXpUUXRocTRHYlBCT3BLTmphdVM5NG0ySDVEWEtZVUQ0eFh3K0YxanQ1UDZUQVJ6Y1MwMwotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wfl-www
-  namespace: wfl-www
+  name: wfl-www-staging
+  namespace: wfl-www-staging
   labels:
-    app: wfl-www
+    app: wfl-www-staging
+    env: staging
 spec:
   replicas: 1
   strategy:
-    # Inline kernel-socket TLS (no AF_XDP map contention any more), so
-    # RollingUpdate is safe — fresh pod can bind :443 in its own netns
-    # concurrently with the old one. maxUnavailable:0 + maxSurge:1 keeps
-    # the site up across rolls.
+    # Kernel-socket TLS supports SO_REUSEPORT, so RollingUpdate is safe
+    # (no AF_XDP map contention any more). maxUnavailable:0 keeps staging
+    # available across image rolls; maxSurge:1 lets a fresh pod come up
+    # before the old one drains.
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
   selector:
     matchLabels:
-      app: wfl-www
+      app: wfl-www-staging
   template:
     metadata:
       labels:
-        app: wfl-www
+        app: wfl-www-staging
+        env: staging
     spec:
-      # Hardening: non-root + read-only rootfs + minimal caps. picoweb
-      # binds :443 directly so it needs CAP_NET_BIND_SERVICE; everything
-      # else is dropped (no NET_RAW/NET_ADMIN/BPF — kernel-socket TLS
-      # has no use for them; they were left over from the AF_XDP era).
+      # Hardening: non-root + read-only rootfs. picoweb binds :443 directly
+      # so it needs CAP_NET_BIND_SERVICE; we grant only that and drop all
+      # other caps (no NET_RAW/NET_ADMIN/BPF — kernel-socket TLS doesn't
+      # need them).
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -54,10 +83,7 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
-          # tcpSocket probe: cheap, doesn't churn a full TLS handshake
-          # every 10s, verifies the listener is accepting. A wedged TLS
-          # engine would still pass — accepted; the wedge is rare and
-          # visible in logs.
+          # kernel-socket TLS: tcpSocket probe is sufficient and cheap.
           readinessProbe:
             tcpSocket:
               port: 443
@@ -73,18 +99,14 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           resources:
-            # Kernel-socket TLS is epoll-driven, not busy-polling, so
-            # CFS throttling is no longer a hazard. CPU limit deliberately
-            # left unset to preserve burst headroom (memory limit retained).
+            # Staging gets a smaller slice so it can coexist with prod on
+            # this 2-node cluster (prod node already at 99% requested).
             requests:
-              cpu: 200m
+              cpu: 100m
               memory: 32Mi
             limits:
+              cpu: 500m
               memory: 128Mi
-        # ---- HTTP -> HTTPS redirect sidecar -----------------------------
-        # picoweb only listens on :443. Without something on :80, anyone
-        # typing 'wavefunctionlabs.com' in a browser hits a 5+ second TCP
-        # timeout before HSTS kicks in. Tiny nginx 301s everything.
         - name: redirect
           image: tileforgeacr.azurecr.io/nginx:alpine
           imagePullPolicy: IfNotPresent
@@ -127,7 +149,7 @@ spec:
               port: 8080
               httpHeaders:
                 - name: Host
-                  value: wavefunctionlabs.com
+                  value: staging.wavefunctionlabs.com
             initialDelaySeconds: 2
             periodSeconds: 10
             timeoutSeconds: 2
@@ -145,20 +167,22 @@ spec:
       volumes:
         - name: tls-certs
           secret:
-            secretName: wfl-www-tls
+            secretName: wfl-www-staging-tls
         - name: tmp
           emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: wfl-www
-  namespace: wfl-www
+  name: wfl-www-staging
+  namespace: wfl-www-staging
+  labels:
+    app: wfl-www-staging
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
   selector:
-    app: wfl-www
+    app: wfl-www-staging
   ports:
     - name: https
       port: 443
@@ -168,40 +192,3 @@ spec:
       port: 80
       targetPort: 8080
       protocol: TCP
----
-# Keep a minimal Certificate resource so cert-manager continues to
-# renew the wfl-www-tls secret even without an Ingress.
-# NOTE: HTTP-01 challenges will currently fail because DNS for
-# www/apex points at the picoweb LB IP (which doesn't serve the
-# .well-known/acme-challenge path), not at the nginx ingress
-# controller. Cert renews around 2026-07-13 — switch to DNS-01
-# before then.
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: wfl-www-tls
-  namespace: wfl-www
-spec:
-  secretName: wfl-www-tls
-  issuerRef:
-    name: letsencrypt-prod
-    kind: ClusterIssuer
-  dnsNames:
-    - www.wavefunctionlabs.com
-    - wavefunctionlabs.com
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-    rotationPolicy: Always
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: wfl-www-scores
-  namespace: wfl-www
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
