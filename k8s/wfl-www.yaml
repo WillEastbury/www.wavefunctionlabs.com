@@ -5,6 +5,7 @@ metadata:
   namespace: wfl-www
   labels:
     app: wfl-www
+    env: prod
 spec:
   replicas: 1
   strategy:
@@ -23,6 +24,7 @@ spec:
     metadata:
       labels:
         app: wfl-www
+        env: prod
     spec:
       # Hardening: non-root + read-only rootfs + minimal caps. picoweb
       # binds :443 directly so it needs CAP_NET_BIND_SERVICE; everything
