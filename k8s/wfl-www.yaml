@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p3-103-early-hints-signalfix
+          image: tileforgeacr.azurecr.io/wfl-www:p6-batched-rx
           ports:
             - containerPort: 443
           securityContext:

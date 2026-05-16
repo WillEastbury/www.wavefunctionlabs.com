@@ -1186,26 +1186,24 @@ int pw_tls_step(pw_tls_engine_t* eng) {
 
             rc = try_recv_client_finished(eng);
             if (rc < 0) goto fail;
-            if (rc > 0) continue;
+            if (rc > 0) {
+                /* cFin success promotes state to APP. Break out of the
+                 * handshake spin so the APP drain below can consume any
+                 * application_data record the client coalesced into the
+                 * same TCP segment as the Finished — otherwise the
+                 * first GET would stall for one RTT until the next
+                 * inbound packet woke us. */
+                if (eng->state == PW_TLS_ST_APP) break;
+                continue;
+            }
 
             /* No phase made progress this round — wait for more I/O. */
             break;
         }
-        return (int)pw_tls_want(eng);
-
-      fail:
-        /* On any fatal handshake failure: wipe ALL key material AND
-         * drop any partially-emitted bytes from TX. The engine MUST
-         * NOT expose half-emitted handshake records to a caller that
-         * reads pw_tls_tx_buf after we go FAILED. (Rubber-duck blocker
-         * #1 from the Commit B critique.) */
-        wipe_all_key_material(eng);
-        eng->tx_len     = 0;
-        eng->app_in_len = 0;
-        eng->state      = PW_TLS_ST_FAILED;
-        if (eng->last_err == PW_TLS_ERR_NONE)
-            eng->last_err = PW_TLS_ERR_PROTOCOL;
-        return -1;
+        /* Still handshaking — nothing more to do this call. */
+        if (eng->state != PW_TLS_ST_APP) return (int)pw_tls_want(eng);
+        /* Fall through into APP drain so a cFin+GET coalesced segment
+         * gets the GET processed in this same step() call. */
     }
 
     /* Drain RX -> APP_IN, AT MOST ONE record per step in APP state.
@@ -1238,4 +1236,17 @@ int pw_tls_step(pw_tls_engine_t* eng) {
     } while (rc == 1);
 
     return (int)pw_tls_want(eng);
+
+  fail:
+    /* On any fatal handshake failure: wipe ALL key material AND
+     * drop any partially-emitted bytes from TX. The engine MUST
+     * NOT expose half-emitted handshake records to a caller that
+     * reads pw_tls_tx_buf after we go FAILED. */
+    wipe_all_key_material(eng);
+    eng->tx_len     = 0;
+    eng->app_in_len = 0;
+    eng->state      = PW_TLS_ST_FAILED;
+    if (eng->last_err == PW_TLS_ERR_NONE)
+        eng->last_err = PW_TLS_ERR_PROTOCOL;
+    return -1;
 }
