@@ -37,7 +37,11 @@
 
             <p>A "normal" web stack handling 20,000 requests per second is doing an enormous amount of plumbing. The kernel receives a packet, hands it to a virtual ethernet pair, which forwards it through a bridge, through connection tracking, through SNAT at the cloud load balancer, into nginx, which terminates TLS, re-parses the HTTP, opens a backend connection, re-serialises the request, sends it over loopback to an application server, which parses it <em>again</em>, dispatches a route, runs middleware, fetches a body from somewhere, serialises a response, and sends the whole thing back, where the chain unwinds in reverse. Every hop copies bytes, makes syscalls, switches contexts, runs allocators, takes locks. Most of the CPU's budget goes on moving the request around rather than on the request itself.</p>
 
-            <p>Collapse that chain to <em>one process that owns the socket, the TLS state, the parser and the file table</em>, and the CPU cost per request shrinks until a single Arm core at modest clock can saturate a one-gigabit pipe. You haven't optimised anything. You've just stopped paying tax.</p>
+            <div style="border:1px solid var(--wf-cyan);border-left-width:4px;border-radius:6px;padding:1.4rem 1.6rem;margin:1.8rem 0;background:rgba(0,200,255,0.04);">
+                <div style="color:var(--wf-cyan);font-size:.7rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.7rem;">The whole enchilada</div>
+                <p style="font-size:1.35rem;line-height:1.45;margin:0 0 .9rem 0;font-weight:500;">Collapse that chain to <em>one process that owns the socket, the TLS state, the parser and the file table</em>, and the CPU cost per request shrinks until a single Arm core at modest clock can saturate a one-gigabit pipe.</p>
+                <p style="margin:0;color:var(--wf-muted);font-size:1rem;">You haven't optimised anything. You've just stopped paying tax.</p>
+            </div>
 
             <p>This is the opposite of the usual scaling story. The usual story says: add a cache, add a CDN, add another replica, add a queue, add a worker pool, add a service mesh, add an observability sidecar. Each addition buys throughput at the cost of more moving parts, more failure modes, more cognitive load, more bill. Subtraction buys the same throughput for <em>nothing</em>. Less surface to break. Less to monitor. Less to upgrade. Less to misconfigure. Less to pay for.</p>
 

@@ -69,7 +69,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p10f-essay
+          image: tileforgeacr.azurecr.io/wfl-www:p10g-essay
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 443
