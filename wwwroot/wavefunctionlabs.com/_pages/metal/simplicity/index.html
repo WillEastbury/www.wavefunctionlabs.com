@@ -5,9 +5,21 @@
         <div class="wf-article-tags">simplicity · throughput · TLS · cloud · engineering principles</div>
         <div class="wf-article-body">
 
+            <div style="border:1px solid var(--wf-cyan);border-left-width:4px;border-radius:6px;padding:1.4rem 1.6rem;margin:0 0 1.6rem 0;background:linear-gradient(90deg,rgba(0,200,255,0.07),rgba(0,200,255,0.02));">
+                <div style="color:var(--wf-cyan);font-size:.7rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.55rem;">Wait… what?</div>
+                <p style="font-size:1.45rem;line-height:1.4;margin:0 0 .7rem 0;font-weight:500;">The entire production HTTPS stack serving this site &mdash; TLS&nbsp;1.3, HTTP, every header, every body, every compressed variant, the metrics endpoint &mdash; uses <span style="color:var(--wf-cyan);">less RAM than an empty Python interpreter sitting at a blank prompt</span>.</p>
+                <p style="margin:0 0 1rem 0;color:var(--wf-muted);font-size:.95rem;">No Flask. No Django. No app. Just <code>python3</code>, doing nothing. That's the bar this entire site clears, while saturating a one-gigabit pipe at 20,000+ requests per second.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:1.8rem;margin-top:.5rem;padding-top:.9rem;border-top:1px solid rgba(0,200,255,0.18);">
+                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">~3&nbsp;MiB</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">whole container, in cgroup memory</div></div>
+                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">2.6&nbsp;MiB</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">picoweb process RSS</div></div>
+                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">20k+</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">requests / sec on one Arm core</div></div>
+                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">1&nbsp;Gb/s</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">NIC saturated before CPU broke a sweat</div></div>
+                </div>
+            </div>
+
             <div style="border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(99,102,241,.06);padding:.9rem 1.1rem;margin-bottom:1.6rem;border-radius:4px;">
                 <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.08em;font-weight:500;margin-bottom:.4rem;">TL;DR</div>
-                <p style="margin:0;font-size:.92rem;line-height:1.55;">We rebuilt this site to serve TLS itself, with no proxy in front of it. One process. One core. It now does 20,000+ requests per second and the network runs out before the CPU does. We didn't make anything faster — we just deleted the layers that were getting in the way. Less code, less cost, less to break. Speed came for free.</p>
+                <p style="margin:0;font-size:.92rem;line-height:1.55;">We rebuilt this site to serve TLS itself, with no proxy in front of it. One process. One core. It now does 20,000+ requests per second, the network runs out before the CPU does, and the whole container lives in about 3&nbsp;MiB of RAM. We didn't make anything faster — we just deleted the layers that were getting in the way. Less code, less cost, less to break. Speed came for free.</p>
             </div>
 
             <p>This site you're reading is served by a single process. One epoll loop. One worker thread. One core on an Arm machine in a managed Kubernetes cluster. There's no reverse proxy in front of it. No separate TLS terminator. No application server behind it. The same program accepts the TCP connection, does the TLS handshake, parses the HTTP request, looks up the file, and writes the response back to the socket. That's the whole stack.</p>
@@ -59,9 +71,11 @@
 
             <p><strong>What does that actually cost?</strong></p>
 
-            <p>The whole production site — TLS&nbsp;1.3 engine, every header, every body, every pre-compressed Brotli and gzip variant, the metrics page, the lot — runs in <strong>under 6&nbsp;MiB of RAM</strong>. Resident set is 4.9&nbsp;MiB for the picoweb process; the whole container cgroup sits at 5.9&nbsp;MiB. The nginx pod it replaced used 44&nbsp;MiB to do less. The Kubernetes memory limit is 128&nbsp;MiB and is roughly 20× more than the site will ever touch.</p>
+            <p>The whole production site — TLS&nbsp;1.3 engine, every header, every body, every pre-compressed Brotli variant, the metrics page, the lot — runs in <strong>about 2.6&nbsp;MiB of process RSS</strong>, inside a container cgroup that sits at <strong>~3&nbsp;MiB total</strong>. The nginx pod it replaced used <strong>44&nbsp;MiB</strong> to do less. The Kubernetes memory limit on the pod is 128&nbsp;MiB and is roughly 40× more than the site will ever touch.</p>
 
-            <p>The shocking part isn't that picoweb is small. It's that the <em>useful-work density</em> is so high that a real, production-grade, interactive TLS site fits into ~6&nbsp;MiB — while heavier stacks spend most of their memory preserving architectural flexibility nobody is using on the hot path.</p>
+            <p>To put that into perspective: an empty Python interpreter sat at a bare REPL prompt — no Flask, no Django, no app of any kind — uses about the same amount of RAM. The entire production HTTPS stack for this site has the memory footprint of a language runtime that hasn't yet been asked to do anything.</p>
+
+            <p>The shocking part isn't that picoweb is small. It's that the <em>useful-work density</em> is so high that a real, production-grade, interactive TLS site fits into roughly 3&nbsp;MiB — while heavier stacks spend most of their memory preserving architectural flexibility nobody is using on the hot path.</p>
 
             <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
 
