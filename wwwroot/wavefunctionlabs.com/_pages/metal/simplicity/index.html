@@ -59,7 +59,7 @@
 
             <p><strong>Less waste, more useful work</strong></p>
 
-            <p>Every layer you remove is a CPU cycle, a syscall, a page of memory, a watt of power, a millisecond of latency, a category of failure and a paragraph of documentation that you no longer have to spend. That budget doesn't disappear — it becomes available for the only thing that actually matters: serving a useful response to a real user. Simplicity isn't asceticism. It's a refusal to keep paying for overhead.</p>
+            <p>Every layer you remove is a CPU cycle, a syscall, a page of memory, a watt of power, a millisecond of latency, a category of failure and a paragraph of documentation that you no longer have to spend. That budget doesn't disappear — it becomes available for the only thing that actually matters: serving a useful response to a real user. Simplicity isn't about doing without for its own sake. It's a refusal to keep paying for overhead you never use.</p>
 
             <p><strong>The three laws, from the bottom up</strong></p>
 
@@ -71,11 +71,61 @@
 
             <p><strong>What does that actually cost?</strong></p>
 
-            <p>The whole production site — TLS&nbsp;1.3 engine, every header, every body, every pre-compressed Brotli variant, the metrics page, the lot — runs in <strong>about 2.6&nbsp;MiB of process RSS</strong>, inside a container cgroup that sits at <strong>~3&nbsp;MiB total</strong>. The nginx pod it replaced used <strong>44&nbsp;MiB</strong> to do less. The Kubernetes memory limit on the pod is 128&nbsp;MiB and is roughly 40× more than the site will ever touch.</p>
+            <p>The whole production site — TLS&nbsp;1.3 engine, every header, every body, every pre-compressed Brotli variant, the metrics page, the lot — runs in <strong>about 2.6&nbsp;MiB of process RSS</strong>, inside a container cgroup that sits at <strong>~3&nbsp;MiB total</strong>. The Node.js pod it replaced used <strong>44&nbsp;MiB</strong> to do less. The Kubernetes memory limit on the pod is 128&nbsp;MiB and is roughly 40× more than the site will ever touch.</p>
 
             <p>To put that into perspective: an empty Python interpreter sat at a bare REPL prompt — no Flask, no Django, no app of any kind — uses about the same amount of RAM. The entire production HTTPS stack for this site has the memory footprint of a language runtime that hasn't yet been asked to do anything.</p>
 
             <p>The shocking part isn't that picoweb is small. It's that the <em>useful-work density</em> is so high that a real, production-grade, interactive TLS site fits into roughly 3&nbsp;MiB — while heavier stacks spend most of their memory preserving architectural flexibility nobody is using on the hot path.</p>
+
+            <p><strong>Same hardware, same file, four servers</strong></p>
+
+            <p>To make that claim concrete I deployed four servers side-by-side on the same AKS arm64 node, each given the same wwwroot, the same TLS&nbsp;1.3 cert and the same Kubernetes resource headroom (50m CPU request, 128&nbsp;MiB memory limit). Then I pointed <code>wrk</code> at each one over HTTPS — 4 threads, 50 keep-alive connections, 30 seconds, requesting the same static asset (<code>/css/wf.css</code>, 25&nbsp;KB).</p>
+
+            <div style="overflow-x:auto;margin:1.2rem 0;">
+                <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;">
+                            <th style="padding:.45rem .6rem;">Server</th>
+                            <th style="padding:.45rem .6rem;">Req/sec</th>
+                            <th style="padding:.45rem .6rem;">p50</th>
+                            <th style="padding:.45rem .6rem;">p99</th>
+                            <th style="padding:.45rem .6rem;">Peak RAM (cgroup)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom:1px solid #222;">
+                            <td style="padding:.45rem .6rem;"><strong>picoweb</strong></td>
+                            <td style="padding:.45rem .6rem;"><strong>12,676</strong></td>
+                            <td style="padding:.45rem .6rem;"><strong>3.5&nbsp;ms</strong></td>
+                            <td style="padding:.45rem .6rem;">11.0&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">14.0&nbsp;MiB</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid #222;">
+                            <td style="padding:.45rem .6rem;">nginx 1.27</td>
+                            <td style="padding:.45rem .6rem;">10,620</td>
+                            <td style="padding:.45rem .6rem;">4.4&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;"><strong>8.5&nbsp;ms</strong></td>
+                            <td style="padding:.45rem .6rem;"><strong>10.5&nbsp;MiB</strong></td>
+                        </tr>
+                        <tr style="border-bottom:1px solid #222;">
+                            <td style="padding:.45rem .6rem;">Apache httpd 2.4</td>
+                            <td style="padding:.45rem .6rem;">5,974</td>
+                            <td style="padding:.45rem .6rem;">6.2&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">61.6&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">24.5&nbsp;MiB</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:.45rem .6rem;">.NET 9 Kestrel</td>
+                            <td style="padding:.45rem .6rem;">5,467</td>
+                            <td style="padding:.45rem .6rem;">8.3&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">21.0&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">63.1&nbsp;MiB</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>nginx is genuinely brilliant here — at one-tenth of a century old, it lands within 16% of picoweb on throughput and actually uses <em>less</em> peak RAM, with the tightest p99 of the four. Apache and .NET aren't slow by any normal definition — they're shifting many thousands of TLS-terminated responses per second on a slice of one CPU — but they spend roughly 2× and 4½× more memory respectively, and their per-request latency is two to three times higher than the lean pair. Same hardware. Same cert. Same byte for byte response. The only thing that varies is how many layers each server insists on running.</p>
 
             <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
 
