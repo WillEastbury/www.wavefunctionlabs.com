@@ -1,0 +1,63 @@
+<div class="wf-section">
+        <a href="/metal" class="wf-back">← metal</a>
+        <h1 class="wf-section-hdr">Speed is a side effect</h1>
+        <p class="wf-section-desc">A short essay on what happens when you stop adding layers and start removing them.</p>
+        <div class="wf-article-tags">simplicity · throughput · TLS · cloud · engineering principles</div>
+        <div class="wf-article-body">
+
+            <div style="border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(99,102,241,.06);padding:.9rem 1.1rem;margin-bottom:1.6rem;border-radius:4px;">
+                <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.08em;font-weight:500;margin-bottom:.4rem;">TL;DR</div>
+                <p style="margin:0;font-size:.92rem;line-height:1.55;">We rebuilt this site to serve TLS itself, with no proxy in front of it. One process. One core. It now does 20,000+ requests per second and the network runs out before the CPU does. We didn't make anything faster — we just deleted the layers that were getting in the way. Less code, less cost, less to break. Speed came for free.</p>
+            </div>
+
+            <p>This site you're reading is served by a single process. One epoll loop. One worker thread. One core on an Arm machine in a managed Kubernetes cluster. There's no reverse proxy in front of it. No separate TLS terminator. No application server behind it. The same program accepts the TCP connection, does the TLS handshake, parses the HTTP request, looks up the file, and writes the response back to the socket. That's the whole stack.</p>
+
+            <p>Under load it serves <strong>over 20,000 requests per second</strong> on the home page, and about <strong>26,000 per second</strong> on a small asset like a stylesheet. Zero pod restarts. Zero timeouts. The 99th-percentile latency, including the full TLS handshake, sits around 60&nbsp;ms. When the test finishes, the pod's CPU usage drops back to <strong>one millicore</strong>.</p>
+
+            <p>The interesting part isn't the number. It's what the number means: <strong>we ran out of network before we ran out of CPU</strong>. The pod's network card saturated at about one gigabit per second long before the worker thread broke a sweat. The bottleneck moved out of our software and into the cable.</p>
+
+            <div class="wf-insight">We removed enough layers that the remaining bottleneck was no longer software. It was physics.</div>
+
+            <p><strong>What we actually did</strong></p>
+
+            <p>Almost nothing, in lines of code. The real work was subtractive. We <em>removed</em> things:</p>
+
+            <ul>
+                <li>The nginx TLS terminator that used to sit in front of the app.</li>
+                <li>The custom userspace TCP stack we'd built to bypass the kernel.</li>
+                <li>The AF_XDP fast-path that turned out not to work in cloud pod networking anyway.</li>
+                <li>The Linux capabilities the pod no longer needed (<code>NET_RAW</code>, <code>NET_ADMIN</code>, <code>BPF</code>).</li>
+                <li>The proxy hop between the load balancer and the app.</li>
+                <li>The HTTP-01 certificate-renewal indirection — replaced with DNS-01 talking to the zone directly.</li>
+            </ul>
+
+            <p>What we <em>added</em> was a single file: a small TLS server that owns port 443 directly through normal kernel sockets and feeds the byte-driven TLS engine we already had. Around seven hundred lines. The hard parts had already been written — by the kernel, by Let's Encrypt, by cert-manager, by a TLS engine that didn't care what transport you fed it. Our job was mostly to get out of their way.</p>
+
+            <p><strong>Why simple systems end up fast</strong></p>
+
+            <p>A "normal" web stack handling 20,000 requests per second is doing an enormous amount of plumbing. The kernel receives a packet, hands it to a virtual ethernet pair, which forwards it through a bridge, through connection tracking, through SNAT at the cloud load balancer, into nginx, which terminates TLS, re-parses the HTTP, opens a backend connection, re-serialises the request, sends it over loopback to an application server, which parses it <em>again</em>, dispatches a route, runs middleware, fetches a body from somewhere, serialises a response, and sends the whole thing back, where the chain unwinds in reverse. Every hop copies bytes, makes syscalls, switches contexts, runs allocators, takes locks. Most of the CPU's budget goes on moving the request around rather than on the request itself.</p>
+
+            <p>Collapse that chain to <em>one process that owns the socket, the TLS state, the parser and the file table</em>, and the CPU cost per request shrinks until a single Arm core at modest clock can saturate a one-gigabit pipe. You haven't optimised anything. You've just stopped paying tax.</p>
+
+            <p>This is the opposite of the usual scaling story. The usual story says: add a cache, add a CDN, add another replica, add a queue, add a worker pool, add a service mesh, add an observability sidecar. Each addition buys throughput at the cost of more moving parts, more failure modes, more cognitive load, more bill. Subtraction buys the same throughput for <em>nothing</em>. Less surface to break. Less to monitor. Less to upgrade. Less to misconfigure. Less to pay for.</p>
+
+            <p><strong>Less waste, more useful work</strong></p>
+
+            <p>Every layer you remove is a CPU cycle, a syscall, a page of memory, a watt of power, a millisecond of latency, a category of failure and a paragraph of documentation that you no longer have to spend. That budget doesn't disappear — it becomes available for the only thing that actually matters: serving a useful response to a real user. Simplicity isn't asceticism. It's a refusal to keep paying for overhead.</p>
+
+            <p><strong>The three laws, from the bottom up</strong></p>
+
+            <div style="border-left:2px solid var(--wf-cyan);padding:.6rem 0 .6rem 1rem;margin:1.2rem 0;display:flex;flex-direction:column;gap:.55rem;">
+                <div><span style="color:var(--wf-muted);font-size:.72rem;letter-spacing:.08em;margin-right:.6rem;">L3</span>If software is still the bottleneck, there is still a layer to remove.</div>
+                <div><span style="color:var(--wf-muted);font-size:.72rem;letter-spacing:.08em;margin-right:.6rem;">L2</span>Simple systems do more useful work.</div>
+                <div><span style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.08em;margin-right:.6rem;">L1</span>Speed is a side effect of simplicity.</div>
+            </div>
+
+            <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
+
+            <div class="wf-insight">The fastest system is usually the one that simply does less nonsense.</div>
+
+            <p style="margin-top: 2rem;color:var(--wf-muted);font-size:.85rem;">The system described above is what serves <code>wavefunctionlabs.com</code>. The TLS server has been pushed back to <a href="https://github.com/WillEastbury/picoweb" target="_blank" style="color:var(--wf-cyan);">picoweb</a> upstream.</p>
+
+        </div>
+    </div>
