@@ -16,5 +16,8 @@ COPY --from=builder /build/picoweb .
 COPY wwwroot/ wwwroot/
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
+# Drop gzip variants from the jumptable (keep brotli + identity).
+# Modern browsers all support `br`; saves ~10-15% of arena RAM.
+ENV PICOWEB_NO_GZIP=1
 EXPOSE 443
 ENTRYPOINT ["./entrypoint.sh"]
