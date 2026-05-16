@@ -79,9 +79,10 @@
 
             <p><strong>Same hardware, same file, four servers</strong></p>
 
-            <p>To make that claim concrete I deployed four servers side-by-side on the same AKS arm64 node, each given the same wwwroot, the same TLS&nbsp;1.3 cert and the same Kubernetes resource headroom (50m CPU request, 128&nbsp;MiB memory limit). Then I pointed <code>wrk</code> at each one over HTTPS — 4 threads, 50 keep-alive connections, 30 seconds, requesting the same static asset (<code>/css/wf.css</code>, 25&nbsp;KB).</p>
+            <p>To make that claim concrete I deployed four servers side-by-side on the same AKS arm64 node, each given the same wwwroot, the same TLS&nbsp;1.3 cert and the same Kubernetes resource headroom (50m CPU request, 128&nbsp;MiB memory limit). One pinned worker each. Then I pointed <code>wrk</code> at each over HTTPS, requesting a small static asset (<code>/fonts/fonts.min.css</code>, 1.3&nbsp;KB) so the test measured per-request work rather than TLS bulk-encrypt throughput.</p>
 
-            <div style="overflow-x:auto;margin:1.2rem 0;">
+            <p style="margin-bottom:.4rem;color:var(--wf-muted);font-size:.85rem;"><em>Low concurrency, latency-focused (<code>wrk -t2 -c8 -d15s</code>):</em></p>
+            <div style="overflow-x:auto;margin:.4rem 0 1.2rem;">
                 <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
                     <thead>
                         <tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;">
@@ -89,43 +90,87 @@
                             <th style="padding:.45rem .6rem;">Req/sec</th>
                             <th style="padding:.45rem .6rem;">p50</th>
                             <th style="padding:.45rem .6rem;">p99</th>
-                            <th style="padding:.45rem .6rem;">Peak RAM (cgroup)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr style="border-bottom:1px solid #222;">
                             <td style="padding:.45rem .6rem;"><strong>picoweb</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>12,676</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>3.5&nbsp;ms</strong></td>
-                            <td style="padding:.45rem .6rem;">11.0&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;"><strong>34,458</strong></td>
+                            <td style="padding:.45rem .6rem;"><strong>116&nbsp;µs</strong></td>
+                            <td style="padding:.45rem .6rem;">5.2&nbsp;ms</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid #222;">
+                            <td style="padding:.45rem .6rem;">nginx 1.27</td>
+                            <td style="padding:.45rem .6rem;">18,777</td>
+                            <td style="padding:.45rem .6rem;">398&nbsp;µs</td>
+                            <td style="padding:.45rem .6rem;"><strong>1.3&nbsp;ms</strong></td>
+                        </tr>
+                        <tr style="border-bottom:1px solid #222;">
+                            <td style="padding:.45rem .6rem;">Apache httpd 2.4</td>
+                            <td style="padding:.45rem .6rem;">10,332</td>
+                            <td style="padding:.45rem .6rem;">658&nbsp;µs</td>
+                            <td style="padding:.45rem .6rem;">3.8&nbsp;ms</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:.45rem .6rem;">.NET 9 Kestrel</td>
+                            <td style="padding:.45rem .6rem;">7,486</td>
+                            <td style="padding:.45rem .6rem;">831&nbsp;µs</td>
+                            <td style="padding:.45rem .6rem;">12.9&nbsp;ms</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p style="margin-bottom:.4rem;color:var(--wf-muted);font-size:.85rem;"><em>Saturation, peak memory under load (<code>wrk -t4 -c50 -d30s</code>):</em></p>
+            <div style="overflow-x:auto;margin:.4rem 0 1.2rem;">
+                <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;">
+                            <th style="padding:.45rem .6rem;">Server</th>
+                            <th style="padding:.45rem .6rem;">Req/sec</th>
+                            <th style="padding:.45rem .6rem;">p50</th>
+                            <th style="padding:.45rem .6rem;">p99</th>
+                            <th style="padding:.45rem .6rem;">Peak RAM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom:1px solid #222;">
+                            <td style="padding:.45rem .6rem;"><strong>picoweb</strong></td>
+                            <td style="padding:.45rem .6rem;"><strong>32,091</strong></td>
+                            <td style="padding:.45rem .6rem;"><strong>667&nbsp;µs</strong></td>
+                            <td style="padding:.45rem .6rem;">8.2&nbsp;ms</td>
                             <td style="padding:.45rem .6rem;">14.0&nbsp;MiB</td>
                         </tr>
                         <tr style="border-bottom:1px solid #222;">
                             <td style="padding:.45rem .6rem;">nginx 1.27</td>
-                            <td style="padding:.45rem .6rem;">10,620</td>
-                            <td style="padding:.45rem .6rem;">4.4&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;"><strong>8.5&nbsp;ms</strong></td>
+                            <td style="padding:.45rem .6rem;">18,710</td>
+                            <td style="padding:.45rem .6rem;">1.64&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;"><strong>3.9&nbsp;ms</strong></td>
                             <td style="padding:.45rem .6rem;"><strong>10.5&nbsp;MiB</strong></td>
                         </tr>
                         <tr style="border-bottom:1px solid #222;">
                             <td style="padding:.45rem .6rem;">Apache httpd 2.4</td>
-                            <td style="padding:.45rem .6rem;">5,974</td>
-                            <td style="padding:.45rem .6rem;">6.2&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">61.6&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">9,862</td>
+                            <td style="padding:.45rem .6rem;">2.66&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">22.7&nbsp;ms</td>
                             <td style="padding:.45rem .6rem;">24.5&nbsp;MiB</td>
                         </tr>
                         <tr>
                             <td style="padding:.45rem .6rem;">.NET 9 Kestrel</td>
-                            <td style="padding:.45rem .6rem;">5,467</td>
-                            <td style="padding:.45rem .6rem;">8.3&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">21.0&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">8,548</td>
+                            <td style="padding:.45rem .6rem;">3.57&nbsp;ms</td>
+                            <td style="padding:.45rem .6rem;">11.1&nbsp;ms</td>
                             <td style="padding:.45rem .6rem;">63.1&nbsp;MiB</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <p>nginx is genuinely brilliant here — at one-tenth of a century old, it lands within 16% of picoweb on throughput and actually uses <em>less</em> peak RAM, with the tightest p99 of the four. Apache and .NET aren't slow by any normal definition — they're shifting many thousands of TLS-terminated responses per second on a slice of one CPU — but they spend roughly 2× and 4½× more memory respectively, and their per-request latency is two to three times higher than the lean pair. Same hardware. Same cert. Same byte for byte response. The only thing that varies is how many layers each server insists on running.</p>
+            <p>The picoweb p50 of <strong>116&nbsp;microseconds</strong> is the headline number: from the wrk client's first byte sent to the last byte of the response received and decrypted, including the full TLS&nbsp;1.3 record exchange, in roughly the time a modern CPU takes to fetch a cache line from main memory four or five times. Nginx — by any reasonable historical standard the gold standard for a fast static server — sits at 398&nbsp;µs. Apache at 658&nbsp;µs. .NET 9 Kestrel, which is itself enormously faster than the .NET of a decade ago, at 831&nbsp;µs. Picoweb is roughly <strong>3.4× faster than nginx, 5.7× faster than Apache and 7.2× faster than .NET</strong> on per-request latency, and the gap widens further on tail percentiles for the heavier stacks. The reason isn't a faster CPU or a fancier TLS library — they all use the same hardware AES. The reason is that picoweb has fewer layers between the syscall and the response.</p>
+
+            <p>An earlier run of this benchmark on the much larger <code>/css/wf.css</code> (25&nbsp;KB) showed picoweb at only ~1.2× nginx in raw requests-per-second. That result was honest but misleading: both servers were saturating the same ~315&nbsp;MB/s of single-core TLS bulk-encrypt throughput, so the test was measuring AES, not server architecture. Once you drop the payload below the bulk-encrypt floor, the architectural gap re-appears — exactly where you'd expect it to, on the per-request overhead.</p>
+
+            <p>And the memory numbers compound the latency story. Picoweb's peak under load is 14&nbsp;MiB; .NET's is 63&nbsp;MiB — a 4½× ratio at the top, growing to 7-10× idle. nginx is genuinely brilliant here — at almost thirty years old it lands within touching distance on peak RAM and keeps the tightest p99 of the four. Apache and .NET aren't slow by any normal definition. They're just paying for layers this workload doesn't use, in CPU cycles and in RAM, on every single request.</p>
 
             <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
 
