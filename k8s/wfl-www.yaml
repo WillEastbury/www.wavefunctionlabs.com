@@ -7,6 +7,13 @@ metadata:
     app: wfl-www
     env: prod
 spec:
+  # Single pod, two pinned worker threads, pinned to the dedicated
+  # server node (vmss000005). The nodepool has a hard 2-node cost
+  # limit: vmss000004 hosts load tests plus the low-traffic co-tenants,
+  # vmss000005 hosts picoweb. A 2-pod Azure-LB round-robin layout would
+  # need both pods on clean server nodes, which would require a third
+  # node for the rest of the cluster. Until then, one pod +
+  # SO_REUSEPORT inside the kernel does the cross-core distribution.
   replicas: 1
   strategy:
     # Inline kernel-socket TLS (no AF_XDP map contention any more), so
@@ -26,10 +33,23 @@ spec:
         app: wfl-www
         env: prod
     spec:
+      # Dedicated server node: vmss000005 carries the hard taint
+      # `dedicated=server:NoSchedule` and the label `role=server`.
+      # Only picoweb tolerates that taint, and nodeSelector pins it to
+      # that node. The rest of the low-traffic apps have tiny CPU
+      # requests and bin-pack onto vmss000004 with the load-test pod.
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: server
+          effect: NoSchedule
+      nodeSelector:
+        role: server
       # Hardening: non-root + read-only rootfs + minimal caps. picoweb
-      # binds :443 directly so it needs CAP_NET_BIND_SERVICE; everything
-      # else is dropped (no NET_RAW/NET_ADMIN/BPF — kernel-socket TLS
-      # has no use for them; they were left over from the AF_XDP era).
+      # binds :443 directly so it needs CAP_NET_BIND_SERVICE, and pins
+      # its preallocated pool/arena/metrics via mlock so it needs
+      # CAP_IPC_LOCK. NET_RAW/NET_ADMIN/BPF stay dropped — kernel-socket
+      # TLS has no use for them; they were left over from the AF_XDP era.
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -39,17 +59,56 @@ spec:
           type: RuntimeDefault
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p15-essay
+          image: tileforgeacr.azurecr.io/wfl-www:p26-docs-1900
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 443
               name: https
+          # Override the image entrypoint so the tuning knobs live in
+          # git instead of drifting on the cluster.
+          # Positional CLI: port wwwroot workers max_reqs zc_min pool_cap
+          #   workers=2     — one per vCPU on the dedicated server node.
+          #                   With nothing else competing for cores
+          #                   (taint+nodeSelector keep co-tenants off
+          #                   this node), each worker gets its own
+          #                   SO_REUSEPORT accept queue and the kernel
+          #                   hashes connections across both. Removes
+          #                   the single-accept-loop head-of-line stall
+          #                   that capped the colocated config at 42k.
+          #   max_reqs=100  — per-connection request cap before close
+          #                   (mild defence vs ticket-store growth).
+          #   zc_min=0      — MSG_ZEROCOPY off; bodies fit in L2 so the
+          #                   bookkeeping overhead would cost more than
+          #                   the avoided memcpy.
+          #   pool_cap=64   — preallocated per-worker conn table size.
+          #                   64 × ~154 KiB ≈ 10 MiB resident per worker.
+          #                   With 2 workers, total kconn allocation
+          #                   is ~20 MiB resident.
+          command: ["./picoweb"]
+          args:
+            - "--tls"
+            - "--tls-cert=/certs/tls.crt"
+            - "--tls-key=/certs/tls.key"
+            - "--http-early-hints"
+            - "443"
+            - "wwwroot"
+            - "2"
+            - "100"
+            - "0"
+            - "64"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-              add: ["NET_BIND_SERVICE"]
+              # NET_BIND_SERVICE: picoweb binds :443 directly.
+              # IPC_LOCK: picoweb mlock()s the connection pool, response
+              #   arena and metrics counters at startup so the working
+              #   set is pinned (no swap, no reclaim, no minor faults on
+              #   the hot path). Without this the mlock calls EPERM
+              #   against the default 64KB RLIMIT_MEMLOCK and pages stay
+              #   pageable — residency without pinning.
+              add: ["NET_BIND_SERVICE", "IPC_LOCK"]
           volumeMounts:
             - name: tls-certs
               mountPath: /certs
@@ -77,12 +136,14 @@ spec:
           resources:
             # Kernel-socket TLS is epoll-driven, not busy-polling, so
             # CFS throttling is no longer a hazard. CPU limit deliberately
-            # left unset to preserve burst headroom (memory limit retained).
+            # left unset to preserve burst headroom. Memory covers
+            # 2 workers × pool_cap=64 × ~154 KiB kconn_t (~20 MiB of
+            # preallocated conn tables) + arena + crypto state.
             requests:
               cpu: 200m
-              memory: 32Mi
+              memory: 96Mi
             limits:
-              memory: 128Mi
+              memory: 192Mi
         # ---- HTTP -> HTTPS redirect sidecar -----------------------------
         # picoweb only listens on :443. Without something on :80, anyone
         # typing 'wavefunctionlabs.com' in a browser hits a 5+ second TCP

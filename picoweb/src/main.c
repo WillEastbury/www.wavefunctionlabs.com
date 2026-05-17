@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
@@ -297,11 +298,18 @@ int main(int argc, char** argv) {
      * to the inline RFC 6979 path. Only meaningful for the TLS
      * backend, but cheap enough to start unconditionally. */
     if (backend == PICOWEB_BACKEND_TLS) {
-        if (ecdsa_p256_precomp_init(64) != 0) {
+        /* Pool size matters under sustained TLS-handshake bursts: each
+         * tuple is consumed by one handshake and the producer thread
+         * needs time (~5-50 ms) to mint a replacement. A small pool
+         * starves under load and forces the slow inline path on the
+         * tail of every burst, which directly shows up as p99 latency.
+         * 256 ≈ a worst-case handshake burst on a 2-vCPU node while
+         * still costing only ~24 KiB of state. */
+        if (ecdsa_p256_precomp_init(256) != 0) {
             metal_log("warning: ecdsa precompute pool init failed; "
                       "sign() will use inline path");
         } else {
-            metal_log("ecdsa precompute pool: cap=64, producer thread started");
+            metal_log("ecdsa precompute pool: cap=256, producer thread started");
         }
     }
 
@@ -309,6 +317,32 @@ int main(int argc, char** argv) {
     static jumptable_t jt;
     if (!jumptable_build(&jt, wwwroot)) {
         return 2;
+    }
+    /* Walk every reachable response head/body/variant/chrome so the
+     * kernel faults in every arena page before traffic arrives. The
+     * arena is already MAP_POPULATE'd and pinned, so this is mostly
+     * insurance — but it also fault-checks the table itself and warms
+     * the L1/L2 lines for the first burst of requests. */
+    jumptable_prewarm(&jt);
+
+    /* Pin everything mapped so far: code, .data/.bss, every mmap done
+     * during startup (jumptable arena, metrics counters). We DO NOT use
+     * MCL_FUTURE here: libc malloc can transparently use mmap for
+     * larger allocations (musl on Alpine does this for the per-worker
+     * conn tables), and auto-locking every future mapping silently
+     * blows past RLIMIT_MEMLOCK on calloc-sized allocations and turns
+     * into EAGAIN from the libc allocator. The pool, arena and metrics
+     * buffers already mlock themselves explicitly in their own init
+     * paths, so MCL_CURRENT here covers everything that matters
+     * without booby-trapping later allocations. Best-effort: without
+     * CAP_IPC_LOCK we log and continue; the per-mmap pinning will
+     * have logged the same EPERM, giving a consistent
+     * "residency without pinning" mode. */
+    if (mlockall(MCL_CURRENT) != 0) {
+        metal_log("mlockall: %s (add CAP_IPC_LOCK to pin all pages)",
+                  strerror(errno));
+    } else {
+        metal_log("mlockall: pinned current pages");
     }
 
     /* Spawn workers. */

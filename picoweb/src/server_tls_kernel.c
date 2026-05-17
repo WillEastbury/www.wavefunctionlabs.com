@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
+#include <sys/mman.h>
 #include <sys/random.h>
 #include <sys/socket.h>
 #include <time.h>
@@ -772,9 +773,36 @@ void* tls_worker_main(void* arg) {
     if (!w) metal_die("tls_worker_main: OOM allocating worker context");
     w->cfg = cfg;
     w->conns_cap = cfg->pool_cap ? cfg->pool_cap : MAX_CONNS_DEFAULT;
-    w->conns = (kconn_t*)calloc(w->conns_cap, sizeof(kconn_t));
-    if (!w->conns) metal_die("tls_worker_main: OOM allocating conn table (cap=%zu)",
-                             w->conns_cap);
+    /* kconn_t carries an inline 8 KiB plain-text scratch plus the full
+     * TLS engine state, so the per-conn slot is well past one page.
+     * calloc would only fault page 0 of each slot on construction,
+     * leaving the tail of every slot to fault lazily on the first
+     * burst of real traffic — that's where the post-load RSS climb
+     * we measured was coming from. mmap + POPULATE + memset + mlock
+     * makes the whole conn table resident and pinned at startup, so
+     * RSS at idle equals RSS at peak. */
+    size_t conn_bytes = w->conns_cap * sizeof(kconn_t);
+    void* conn_mem = mmap(NULL, conn_bytes, PROT_READ | PROT_WRITE,
+                          MAP_PRIVATE | MAP_ANONYMOUS
+#ifdef MAP_POPULATE
+                          | MAP_POPULATE
+#endif
+                          , -1, 0);
+    if (conn_mem == MAP_FAILED)
+        metal_die("tls_worker_main: OOM allocating conn table (cap=%zu): %s",
+                  w->conns_cap, strerror(errno));
+#ifdef MADV_HUGEPAGE
+    (void)madvise(conn_mem, conn_bytes, MADV_HUGEPAGE);
+#endif
+#ifdef MADV_POPULATE_WRITE
+    (void)madvise(conn_mem, conn_bytes, MADV_POPULATE_WRITE);
+#endif
+    memset(conn_mem, 0, conn_bytes);
+    if (mlock(conn_mem, conn_bytes) != 0) {
+        metal_log("tls_worker: mlock conn table (%zu B) failed: %s "
+                  "(add CAP_IPC_LOCK to pin)", conn_bytes, strerror(errno));
+    }
+    w->conns = (kconn_t*)conn_mem;
 
     pw_tls_ticket_store_init(&w->ticket_store);
 
