@@ -10,6 +10,7 @@
                 <p style="font-size:1.38rem;line-height:1.42;margin:0 0 .85rem 0;font-weight:500;">One process owns port 443. Two pinned worker threads terminate TLS&nbsp;1.3 inline, parse HTTP/1.1, dispatch through a precompiled jump table, and send prebuilt response bytes straight back to the kernel.</p>
                 <div style="display:flex;flex-wrap:wrap;gap:1.6rem;padding-top:.85rem;border-top:1px solid rgba(0,200,255,0.18);">
                     <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">65.6k</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">req/sec cross-node</div></div>
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">3.2×</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">vs Blob's current path</div></div>
                     <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">23.0&nbsp;MiB</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">resident set</div></div>
                     <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">9.0&nbsp;ms</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">p99 at c=50</div></div>
                     <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">0</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">hot-path allocations</div></div>
@@ -91,6 +92,10 @@
             </div>
 
             <p>The production and Blob rows are fresh cross-node runs from the load-test node. The harness rows are controlled one-worker comparisons on the same AKS Arm hardware. The current site runs on vmss000005, hard-tainted for picoweb, while vmss000004 carries the load-test pod and the low-traffic co-tenants. The nodepool stays at two nodes because that is the cost limit.</p>
+
+            <p>The wild row is picoweb Brotli versus the current Azure Blob static website path: <strong>65,616 requests/sec from one tiny picoweb pod</strong> versus <strong>20,462 requests/sec from Blob</strong>. That is not a claim that picoweb beats Azure's storage platform on every axis. Identity versus identity is roughly tied. The win is that picoweb made the browser-native Brotli representation the resident wire form, while the Blob static website path is serving the larger identity HTML.</p>
+
+            <div class="wf-insight">We did not make a bigger cluster. We made the work smaller.</div>
 
             <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
 
