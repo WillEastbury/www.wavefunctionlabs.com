@@ -5,7 +5,7 @@ WORKDIR /build
 COPY picoweb/src/ src/
 COPY picoweb/userspace/ userspace/
 COPY picoweb/Makefile .
-# v26-docs: final 2-node topology + dedicated-server benchmark numbers
+# v28-distilled: visual comparison + compact picoweb article
 RUN find . -name '*.o' -delete && make CFLAGS="-O3 -Wall -Wextra -std=c11 -D_GNU_SOURCE -fno-strict-aliasing -fstack-protector-strong -fomit-frame-pointer" LDFLAGS="-O3"
 
 # Stage 2: Runtime

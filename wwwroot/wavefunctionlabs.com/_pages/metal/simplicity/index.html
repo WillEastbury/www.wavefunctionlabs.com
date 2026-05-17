@@ -1,303 +1,119 @@
 <div class="wf-section">
         <a href="/metal" class="wf-back">← metal</a>
         <h1 class="wf-section-hdr">Picoweb: how to build a really fast web server</h1>
-        <p class="wf-section-desc">The eleven design choices inside picoweb, the production numbers vs nginx, Apache and .NET on the same hardware, and how this site pairs picoweb with BareMetalJsTools on the client.</p>
-        <div class="wf-article-tags">picoweb · BareMetalJsTools · TLS 1.3 · zero-copy · SIMD · engineering principles</div>
+        <p class="wf-section-desc">A tiny C HTTPS server, a precompiled jump table, resident buffers, zero-copy sends, and the production numbers from this site.</p>
+        <div class="wf-article-tags">picoweb · TLS 1.3 · jump table · zero-copy · SIMD · BareMetalJsTools</div>
         <div class="wf-article-body">
 
-            <div style="border:1px solid var(--wf-cyan);border-left-width:4px;border-radius:6px;padding:1.4rem 1.6rem;margin:0 0 1.6rem 0;background:linear-gradient(90deg,rgba(0,200,255,0.07),rgba(0,200,255,0.02));">
-                <div style="color:var(--wf-cyan);font-size:.7rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.55rem;">Wait… what?</div>
-                <p style="font-size:1.45rem;line-height:1.4;margin:0 0 .7rem 0;font-weight:500;">The entire production HTTPS stack serving this site &mdash; TLS&nbsp;1.3, HTTP, every header, every body, every compressed variant, the metrics endpoint &mdash; fits in <span style="color:var(--wf-cyan);">23.3&nbsp;MiB of resident memory</span>.</p>
-                <p style="margin:0 0 1rem 0;color:var(--wf-muted);font-size:.95rem;">No Flask. No Django. No app server. Two pinned C worker threads on a dedicated 2-vCPU Arm node, serving 50,000+ HTTPS requests per second from a sibling load-test node.</p>
-                <div style="display:flex;flex-wrap:wrap;gap:1.8rem;margin-top:.5rem;padding-top:.9rem;border-top:1px solid rgba(0,200,255,0.18);">
-                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">23.3&nbsp;MiB</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">picoweb process RSS</div></div>
-                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">50k+</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">requests / sec cross-node</div></div>
-                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">2</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">pinned worker threads</div></div>
-                    <div><div style="font-size:1.6rem;font-weight:600;color:var(--wf-cyan);line-height:1;">13.8&nbsp;ms</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">p99 at 100 concurrency</div></div>
+            <div style="border:1px solid var(--wf-cyan);border-left-width:4px;border-radius:6px;padding:1.35rem 1.5rem;margin:0 0 1.4rem 0;background:linear-gradient(90deg,rgba(0,200,255,0.08),rgba(0,200,255,0.025));">
+                <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.55rem;">The current production shape</div>
+                <p style="font-size:1.38rem;line-height:1.42;margin:0 0 .85rem 0;font-weight:500;">One process owns port 443. Two pinned worker threads terminate TLS&nbsp;1.3 inline, parse HTTP/1.1, dispatch through a precompiled jump table, and send prebuilt response bytes straight back to the kernel.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:1.6rem;padding-top:.85rem;border-top:1px solid rgba(0,200,255,0.18);">
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">50.6k</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">req/sec cross-node</div></div>
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">23.3&nbsp;MiB</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">resident set</div></div>
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">7.9&nbsp;ms</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">p99 at c=50</div></div>
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">0</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">hot-path allocations</div></div>
                 </div>
             </div>
 
-            <div style="border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(99,102,241,.06);padding:.9rem 1.1rem;margin-bottom:1.6rem;border-radius:4px;">
-                <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.08em;font-weight:500;margin-bottom:.4rem;">TL;DR — the recipe</div>
-                <p style="margin:0 0 .6rem 0;font-size:.92rem;line-height:1.55;">Two pieces, both small, both upstream:</p>
-                <ul style="margin:0 0 .6rem 0;padding-left:1.2rem;font-size:.92rem;line-height:1.55;">
-                    <li><a href="https://github.com/WillEastbury/picoweb" target="_blank" style="color:var(--wf-cyan);"><strong>picoweb</strong></a> — a single-process C server that owns port 443, terminates TLS&nbsp;1.3 inline, and serves the wwwroot. Two epoll loops, two pinned workers, arena allocation, zero-copy writes, hardware-accelerated crypto. The production server process lives in 23.3&nbsp;MiB.</li>
-                    <li><a href="https://github.com/WillEastbury/BareMetalJsTools" target="_blank" style="color:var(--wf-cyan);"><strong>BareMetalJsTools</strong></a> — the client-side companion. The CSS and JS shipped to the browser. No bundler, no framework, no runtime tax on either end of the wire.</li>
-                </ul>
-                <p style="margin:0;font-size:.92rem;line-height:1.55;">Below: the eleven concrete design choices inside picoweb, the production two-node layout, and the numbers vs nginx, Apache and .NET Kestrel on the same hardware.</p>
-            </div>
+            <p>Picoweb is not faster because it has a clever router. It is faster because the usual route is gone. There is no nginx terminator in front, no app server behind, no second parser, no middleware chain, no runtime allocator on the serving path.</p>
 
-            <p>This site you're reading is served by a single process. Two epoll loops. Two worker threads, each pinned to one vCPU on a dedicated Arm node in a managed Kubernetes cluster. There's no reverse proxy in front of it. No separate TLS terminator. No application server behind it. The same program accepts the TCP connection, does the TLS handshake, parses the HTTP request, looks up the file, and writes the response back to the socket. That's the whole stack.</p>
+            <figure style="margin:1.35rem 0;border:1px solid var(--wf-border);border-left:4px solid var(--wf-cyan);border-radius:6px;background:rgba(0,200,255,0.035);padding:1rem;">
+                <figcaption style="color:var(--wf-cyan);font-size:.74rem;letter-spacing:.12em;font-weight:600;text-transform:uppercase;margin-bottom:.8rem;">Typical static web stack vs picoweb</figcaption>
+                <svg role="img" aria-label="Comparison of a typical reverse-proxy web stack with picoweb's single-process pipeline" viewBox="0 0 1040 360" style="width:100%;height:auto;display:block;">
+                    <defs><marker id="wfArrowA" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,4 L0,8 Z" fill="#00c8ff"/></marker><style>.boxA{fill:rgba(15,23,42,.74);stroke:rgba(255,255,255,.28);stroke-width:1.2;rx:9}.boxB{fill:rgba(0,200,255,.12);stroke:#00c8ff;stroke-width:1.4;rx:9}.lab{fill:#e5faff;font:600 16px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.small{fill:#9fb6c4;font:12px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.arrow{stroke:#00c8ff;stroke-width:2;fill:none;marker-end:url(#wfArrowA)}.waste{stroke:rgba(255,255,255,.28);stroke-width:1.5;fill:none;marker-end:url(#wfArrowA)}</style></defs>
+                    <text x="24" y="34" class="small">normal path: multiple ownership boundaries, repeated parsing, allocator/runtime tax</text>
+                    <rect x="24" y="58" width="116" height="64" class="boxA"/><text x="44" y="86" class="lab">LB</text><text x="44" y="106" class="small">NAT / health</text>
+                    <path d="M146 90 H184" class="waste"/><rect x="196" y="58" width="132" height="64" class="boxA"/><text x="216" y="86" class="lab">nginx</text><text x="216" y="106" class="small">TLS + parse</text>
+                    <path d="M334 90 H372" class="waste"/><rect x="384" y="58" width="132" height="64" class="boxA"/><text x="404" y="86" class="lab">proxy hop</text><text x="404" y="106" class="small">serialize again</text>
+                    <path d="M522 90 H560" class="waste"/><rect x="572" y="58" width="150" height="64" class="boxA"/><text x="592" y="86" class="lab">app server</text><text x="592" y="106" class="small">parse + route</text>
+                    <path d="M728 90 H766" class="waste"/><rect x="778" y="58" width="160" height="64" class="boxA"/><text x="798" y="86" class="lab">framework</text><text x="798" y="106" class="small">middleware + alloc</text>
+                    <text x="24" y="156" class="small">picoweb path: one owner from accept() to response bytes</text>
+                    <rect x="24" y="182" width="134" height="76" class="boxB"/><text x="44" y="214" class="lab">kernel TCP</text><text x="44" y="235" class="small">accept / epoll</text>
+                    <path d="M164 220 H204" class="arrow"/><rect x="216" y="182" width="134" height="76" class="boxB"/><text x="236" y="214" class="lab">TLS 1.3</text><text x="236" y="235" class="small">inline engine</text>
+                    <path d="M356 220 H396" class="arrow"/><rect x="408" y="182" width="134" height="76" class="boxB"/><text x="428" y="214" class="lab">HTTP parse</text><text x="428" y="235" class="small">SIMD scan</text>
+                    <path d="M548 220 H588" class="arrow"/><rect x="600" y="182" width="150" height="76" class="boxB"/><text x="620" y="214" class="lab">jump table</text><text x="620" y="235" class="small">hash → slot</text>
+                    <path d="M756 220 H796" class="arrow"/><rect x="808" y="182" width="154" height="76" class="boxB"/><text x="828" y="214" class="lab">wire bytes</text><text x="828" y="235" class="small">prebuilt response</text>
+                    <text x="24" y="310" class="small">The win is not one micro-optimisation; it is fewer places for bytes to wait, copy, allocate, or be parsed twice.</text>
+                </svg>
+            </figure>
 
-            <p>Under cross-node load it serves about <strong>50,000 requests per second</strong> on a small asset like a stylesheet. Zero pod restarts. Zero timeouts. The 99th-percentile latency, including TLS work and the Kubernetes hop from the load-test node, is <strong>7.9&nbsp;ms at 50 concurrency</strong> and <strong>13.8&nbsp;ms at 100 concurrency</strong>. When the test finishes, the pod's CPU usage drops back to idle.</p>
+            <figure style="margin:1.35rem 0;border:1px solid var(--wf-border);border-left:4px solid var(--wf-cyan);border-radius:6px;background:rgba(0,200,255,0.035);padding:1rem;">
+                <figcaption style="color:var(--wf-cyan);font-size:.74rem;letter-spacing:.12em;font-weight:600;text-transform:uppercase;margin-bottom:.8rem;">Picoweb hot path: one dispatch, prebuilt bytes out</figcaption>
+                <svg role="img" aria-label="Picoweb request pipeline: startup builds the jump table, hot path dispatches to resident response buffers, send path can use NIC DMA" viewBox="0 0 1040 360" style="width:100%;height:auto;display:block;">
+                    <defs><marker id="wfArrowB" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,4 L0,8 Z" fill="#00c8ff"/></marker><style>.hot{fill:rgba(0,200,255,.12);stroke:#00c8ff;stroke-width:1.4;rx:10}.cold{fill:rgba(15,23,42,.72);stroke:rgba(0,200,255,.55);stroke-width:1.2;rx:10}.txt{fill:#e5faff;font:600 17px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.sub{fill:#9fb6c4;font:12px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.arr{stroke:#00c8ff;stroke-width:2.1;fill:none;marker-end:url(#wfArrowB)}.dash{stroke:rgba(255,255,255,.3);stroke-width:1.4;stroke-dasharray:6 6;fill:none}</style></defs>
+                    <text x="22" y="34" class="sub">startup: build once, fault once, then never allocate on request</text>
+                    <rect x="24" y="52" width="210" height="66" class="cold"/><text x="44" y="81" class="txt">wwwroot scan</text><text x="44" y="101" class="sub">files, aliases, vhosts</text>
+                    <path d="M240 85 H292" class="dash"/><rect x="304" y="52" width="230" height="66" class="cold"/><text x="324" y="81" class="txt">compile jump table</text><text x="324" y="101" class="sub">hash slots + wire heads</text>
+                    <path d="M542 85 H594" class="dash"/><rect x="606" y="52" width="210" height="66" class="cold"/><text x="626" y="81" class="txt">prewarm pages</text><text x="626" y="101" class="sub">mmap + populate + mlock</text>
+                    <text x="22" y="158" class="sub">request: TLS → SIMD parse → hash(path) → resource → send</text>
+                    <rect x="24" y="180" width="142" height="82" class="hot"/><text x="45" y="212" class="txt">kernel</text><text x="45" y="233" class="sub">TCP socket</text>
+                    <path d="M172 221 H214" class="arr"/><rect x="226" y="180" width="142" height="82" class="hot"/><text x="247" y="212" class="txt">TLS 1.3</text><text x="247" y="233" class="sub">inline records</text>
+                    <path d="M374 221 H416" class="arr"/><rect x="428" y="180" width="142" height="82" class="hot"/><text x="449" y="212" class="txt">HTTP/1.1</text><text x="449" y="233" class="sub">SIMD parser</text>
+                    <path d="M576 221 H618" class="arr"/><rect x="630" y="180" width="142" height="82" class="hot"/><text x="651" y="212" class="txt">jump slot</text><text x="651" y="233" class="sub">single dispatch</text>
+                    <path d="M778 221 H820" class="arr"/><rect x="832" y="180" width="160" height="82" class="hot"/><text x="853" y="212" class="txt">wire bytes</text><text x="853" y="233" class="sub">head + brotli body</text>
+                    <path d="M912 268 C912 304 780 318 672 318 H112" class="arr"/><circle cx="92" cy="318" r="18" fill="rgba(0,200,255,.15)" stroke="#00c8ff"/><text x="79" y="323" class="sub">NIC</text><text x="126" y="323" class="sub">large bodies can use MSG_ZEROCOPY; NIC DMA moves resident bytes onto the wire</text>
+                </svg>
+            </figure>
 
-            <p>The interesting part isn't the number. It's what the number means: <strong>we removed enough layers that the remaining bottleneck moved out of the web stack</strong>. At this point the shape of the AKS nodepool, the benchmark client, the virtual network and the kernel scheduler matter more than framework overhead, because there is no framework overhead left to measure.</p>
+            <p><strong>The recipe, distilled:</strong></p>
 
-            <div class="wf-insight">We removed enough layers that the remaining bottleneck is network bandwidth, not software.</div>
-
-            <p><strong>Step one — delete the standard layers</strong></p>
-
-            <p>Before the additive work, the subtractive work. A "normal" web stack handling 20k req/s spends most of its CPU moving the request between processes that re-parse it. The recipe starts by deleting those hops:</p>
-
-            <ul>
-                <li>The nginx TLS terminator that used to sit in front of the app.</li>
-                <li>The proxy hop between the load balancer and the app.</li>
-                <li>The separate application server behind the terminator.</li>
-                <li>The HTTP-01 certificate-renewal indirection — replaced with DNS-01 talking to the zone directly.</li>
-            </ul>
-
-            <p>In place of all of that: one process that owns port 443, around seven hundred lines of glue around a byte-driven TLS&nbsp;1.3 engine. The hard parts were already written — by the kernel, by Let's Encrypt, by cert-manager, by a TLS engine that didn't care what transport you fed it. The job was mostly to get out of their way.</p>
-
-            <p><strong>Step two — the eleven design choices inside picoweb</strong></p>
-
-            <p>The speed isn't one clever trick. It's a handful of small design choices that each remove a category of per-request work, and they compound because they all live in the same process:</p>
-
-            <ol>
-                <li><strong>The wwwroot is compiled into a jump table at startup.</strong> Every file (and every alias — clean URLs, host-vhosting, index-html collapsing) is inserted once into a flat, power-of-two-sized hash slot table. Request dispatch is a hash and an array index. No router framework, no regex, no trie walk, no middleware chain.</li>
-
-                <li><strong>Brotli variants are pre-compressed at build time.</strong> Every compressible asset is compressed once, into the container image. The hot path picks the right pre-compressed file based on <code>Accept-Encoding</code> and writes it. The most expensive thing a "fast" web server normally does on text payloads — re-compressing every response — simply doesn't happen here.</li>
-
-                <li><strong>Response heads and 304 buffers are pre-rendered.</strong> For every resource, the full HTTP response head — status line, <code>Content-Type</code>, <code>Content-Length</code>, <code>ETag</code>, cache headers — is built once into a wire-ready buffer at jump-table compile time, along with its matching pre-rendered <code>304 Not Modified</code>. The hot path picks one of the two buffers and writes it. No header formatting per request.</li>
-
-                <li><strong>Dynamic responses use template holes.</strong> Endpoints like <code>/stats</code> hold a single fixed-layout wire buffer with known byte offsets for each digit field. The updater overwrites the digits in place; the hot path just writes the buffer. No <code>sprintf</code>, no allocation, no formatting on the hot path.</li>
-
-                <li><strong>HTTP/1.1 only, with an inline minimal TLS 1.3.</strong> No HTTP/2, no HTTP/3, no general-purpose TLS library — only the records, extensions and ciphersuites actually needed to serve bytes to a modern browser. The TLS state machine is byte-driven and transport-agnostic, so it sits directly on the kernel socket with no buffering layer in between.</li>
-
-                <li><strong>One process owns the whole pipeline.</strong> Kernel socket → TLS record layer → HTTP parser → jump table → response, all in the same address space. The request never crosses a process boundary, a loopback hop, or a second parser between <code>accept()</code> and the closing TCP FIN.</li>
-
-                <li><strong>One event loop per core, each pinned.</strong> The production pod runs two worker threads on a 2-vCPU node. Each worker has its own epoll loop, its own <code>SO_REUSEPORT</code> listen socket and its own connection table; the kernel hashes new flows across them. No thread pool, no work-stealing queue, no locks on the hot path. The L1/L2 caches stay warm for the code that actually serves bytes.</li>
-
-                <li><strong>No allocation on the hot path. Ever.</strong> Connection state is a fixed-size <code>conn_t</code> / <code>kconn_t</code> struct with its 8&nbsp;KiB read buffer and TLS scratch inline. The whole table is <code>mmap</code>'d <em>once</em> at startup, then <code>MADV_HUGEPAGE</code>'d (TLB-resident), <code>MADV_POPULATE_WRITE</code>'d and <code>memset</code>-walked (every page faulted in), then <code>mlock</code>'d (pinned against reclaim). <code>accept()</code> picks a free slot; close marks it free. Long-lived structures — jump table, response heads, vhost tables, compressed bodies — are bump-allocated out of arenas sized once at boot, then <code>MAP_POPULATE</code>'d and locked the same way. On startup picoweb walks the entire jump table and reads one byte from every response head, body, brotli variant and chrome buffer, so the kernel has faulted every page that the hot path will ever touch <em>before</em> the listen socket comes up. After that point the static-serving path does zero <code>malloc</code>/<code>free</code> and zero minor faults: no allocator lock contention, no fragmentation, no GC pauses, no first-touch latency on the first burst. Resident memory at idle equals resident memory at peak load — the working set is the resident set, and it is the same number whether you've just booted or you're 19,000 requests into a benchmark.</li>
-
-                <li><strong>Zero-copy writes straight to the NIC.</strong> Above a configurable size threshold, picoweb hands the kernel <code>MSG_ZEROCOPY</code> on <code>send()</code>: the kernel DMAs the response body directly from the user-space buffer into the network card, without copying it into a kernel skbuff first. Below the threshold (where the copy is cheaper than the page-pinning bookkeeping) it falls back to a normal write. There is no userspace memcpy of the response body. Ever.</li>
-
-                <li><strong>Hardware-accelerated crypto, hand-vendored.</strong> The TLS engine ships its own crypto primitives wired to whatever the CPU actually exposes: SHA-256 via ARMv8 SHA-2 instructions (<code>vsha256hq_u32</code> / <code>vsha256su1q_u32</code>) on the Arm node it runs on, SHA-NI on x86-64, ChaCha20 with SSE2 / NEON vector paths, AES-GCM with the platform's AES intrinsics, Ed25519 / ECDSA-P256 / RSA-PSS for handshake signing. Detection is runtime via <code>getauxval(AT_HWCAP)</code>; the fastest available path wins. No OpenSSL, no libsodium, no FFI hop — the cipher kernels are linked straight into the same binary that owns the socket.</li>
-
-                <li><strong>SIMD on the parsing hot paths.</strong> Header lowercasing, ASCII scanning, and similar byte-bashing in the HTTP parser use 16-byte NEON on aarch64 and SSE2 on x86-64, with a scalar fallback compiled in for portability. The detected variant is logged at startup so you can see, on any given pod, exactly which path is live.</li>
-            </ol>
-
-            <p>None of those are novel on their own. The novel part is that they all live in the same process, so the savings <em>compound</em> instead of being eaten by the next layer down.</p>
-
-            <p><strong>Step three — prove it on the same hardware</strong></p>
-
-            <p>To make the recipe concrete I deployed four servers side-by-side on the same AKS arm64 node, each given the same wwwroot, the same TLS&nbsp;1.3 cert and the same Kubernetes resource headroom (50m CPU request, 128&nbsp;MiB memory limit). One pinned worker each. Then I pointed <code>wrk</code> at each over HTTPS, requesting a small static asset (<code>/fonts/fonts.min.css</code>, 1.3&nbsp;KB) so the test measured per-request work rather than TLS bulk-encrypt throughput.</p>
-
-            <p>This is the same site, the same content, the same node it used to run on as a Node.js app behind nginx. The only thing that changed is the server.</p>
-
-            <p style="margin-bottom:.4rem;color:var(--wf-muted);font-size:.85rem;"><em>Low concurrency, latency-focused (<code>wrk -t2 -c8 -d15s</code>):</em></p>
-            <div style="overflow-x:auto;margin:.4rem 0 1.2rem;">
+            <div style="overflow-x:auto;margin:.5rem 0 1.3rem;">
                 <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
-                    <thead>
-                        <tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;">
-                            <th style="padding:.45rem .6rem;">Server</th>
-                            <th style="padding:.45rem .6rem;">Req/sec</th>
-                            <th style="padding:.45rem .6rem;">p50</th>
-                            <th style="padding:.45rem .6rem;">p99</th>
-                        </tr>
-                    </thead>
                     <tbody>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;"><strong>picoweb</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>34,458</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>116&nbsp;µs</strong></td>
-                            <td style="padding:.45rem .6rem;">5.2&nbsp;ms</td>
-                        </tr>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;">nginx 1.27</td>
-                            <td style="padding:.45rem .6rem;">18,777</td>
-                            <td style="padding:.45rem .6rem;">398&nbsp;µs</td>
-                            <td style="padding:.45rem .6rem;"><strong>1.3&nbsp;ms</strong></td>
-                        </tr>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;">Apache httpd 2.4</td>
-                            <td style="padding:.45rem .6rem;">10,332</td>
-                            <td style="padding:.45rem .6rem;">658&nbsp;µs</td>
-                            <td style="padding:.45rem .6rem;">3.8&nbsp;ms</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:.45rem .6rem;">.NET 9 Kestrel</td>
-                            <td style="padding:.45rem .6rem;">7,486</td>
-                            <td style="padding:.45rem .6rem;">831&nbsp;µs</td>
-                            <td style="padding:.45rem .6rem;">12.9&nbsp;ms</td>
-                        </tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Compile the wwwroot</strong></td><td style="padding:.45rem .6rem;">Hash every route into a flat jump table at startup. Dispatch is <code>hash(path) → slot</code>.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Prebuild the response</strong></td><td style="padding:.45rem .6rem;">Headers, 304s, ETags and Brotli bodies are wire-ready before the listen socket opens.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Keep TLS inline</strong></td><td style="padding:.45rem .6rem;">Kernel socket → TLS records → HTTP parser in one address space. No terminator hop.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Shard by core</strong></td><td style="padding:.45rem .6rem;">Two pinned workers, each with its own epoll loop, <code>SO_REUSEPORT</code> listener and connection table.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Never allocate hot</strong></td><td style="padding:.45rem .6rem;">Connection tables and arenas are mmap'd, populated, touched and kept resident at startup.</td></tr>
+                        <tr><td style="padding:.45rem .6rem;"><strong>Send resident bytes</strong></td><td style="padding:.45rem .6rem;">Small bodies use cheap writes; large bodies can use <code>MSG_ZEROCOPY</code> so DMA does the copy-free transfer.</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <p style="margin-bottom:.4rem;color:var(--wf-muted);font-size:.85rem;"><em>Saturation, peak memory under load (<code>wrk -t4 -c50 -d30s</code>):</em></p>
-            <div style="overflow-x:auto;margin:.4rem 0 1.2rem;">
+            <p>The result is not a general application platform. It is a static HTTPS serving machine: minimal HTTP/1.1, a byte-driven TLS&nbsp;1.3 engine, NEON/SHA/AES acceleration, SIMD parsing where it matters, and no dynamic work that can be done once at boot.</p>
+
+            <p><strong>Numbers</strong></p>
+
+            <div style="overflow-x:auto;margin:.5rem 0 1.3rem;">
                 <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
-                    <thead>
-                        <tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;">
-                            <th style="padding:.45rem .6rem;">Server</th>
-                            <th style="padding:.45rem .6rem;">Req/sec</th>
-                            <th style="padding:.45rem .6rem;">p50</th>
-                            <th style="padding:.45rem .6rem;">p99</th>
-                            <th style="padding:.45rem .6rem;">Peak RAM</th>
-                        </tr>
-                    </thead>
+                    <thead><tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;"><th style="padding:.45rem .6rem;">Run</th><th style="padding:.45rem .6rem;">Req/sec</th><th style="padding:.45rem .6rem;">p50</th><th style="padding:.45rem .6rem;">p99</th><th style="padding:.45rem .6rem;">RSS / RAM</th></tr></thead>
                     <tbody>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;"><strong>picoweb</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>32,091</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>667&nbsp;µs</strong></td>
-                            <td style="padding:.45rem .6rem;">8.2&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;"><strong>13.3&nbsp;MiB</strong></td>
-                        </tr>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;">nginx 1.27</td>
-                            <td style="padding:.45rem .6rem;">18,710</td>
-                            <td style="padding:.45rem .6rem;">1.64&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;"><strong>3.9&nbsp;ms</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>10.5&nbsp;MiB</strong></td>
-                        </tr>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;">Apache httpd 2.4</td>
-                            <td style="padding:.45rem .6rem;">9,862</td>
-                            <td style="padding:.45rem .6rem;">2.66&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">22.7&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">24.5&nbsp;MiB</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:.45rem .6rem;">.NET 9 Kestrel</td>
-                            <td style="padding:.45rem .6rem;">8,548</td>
-                            <td style="padding:.45rem .6rem;">3.57&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">11.1&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">63.1&nbsp;MiB</td>
-                        </tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Production picoweb, c=50</strong></td><td style="padding:.45rem .6rem;"><strong>49,975</strong></td><td style="padding:.45rem .6rem;">1.90&nbsp;ms</td><td style="padding:.45rem .6rem;"><strong>7.94&nbsp;ms</strong></td><td style="padding:.45rem .6rem;"><strong>23.3&nbsp;MiB RSS</strong></td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Production picoweb, c=100</strong></td><td style="padding:.45rem .6rem;"><strong>50,649</strong></td><td style="padding:.45rem .6rem;">3.44&nbsp;ms</td><td style="padding:.45rem .6rem;">13.8&nbsp;ms</td><td style="padding:.45rem .6rem;">23.3&nbsp;MiB RSS</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">One-worker picoweb comparison</td><td style="padding:.45rem .6rem;">32,091</td><td style="padding:.45rem .6rem;"><strong>667&nbsp;µs</strong></td><td style="padding:.45rem .6rem;">8.2&nbsp;ms</td><td style="padding:.45rem .6rem;">13.3&nbsp;MiB</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">nginx 1.27 comparison</td><td style="padding:.45rem .6rem;">18,710</td><td style="padding:.45rem .6rem;">1.64&nbsp;ms</td><td style="padding:.45rem .6rem;"><strong>3.9&nbsp;ms</strong></td><td style="padding:.45rem .6rem;">10.5&nbsp;MiB</td></tr>
+                        <tr><td style="padding:.45rem .6rem;">.NET 9 Kestrel comparison</td><td style="padding:.45rem .6rem;">8,548</td><td style="padding:.45rem .6rem;">3.57&nbsp;ms</td><td style="padding:.45rem .6rem;">11.1&nbsp;ms</td><td style="padding:.45rem .6rem;">63.1&nbsp;MiB</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <p>The picoweb p50 of <strong>116&nbsp;microseconds</strong> is the headline number: from the wrk client's first byte sent to the last byte of the response received and decrypted, including the full TLS&nbsp;1.3 record exchange, in roughly the time a modern CPU takes to fetch a cache line from main memory four or five times. Nginx — by any reasonable historical standard the gold standard for a fast static server — sits at 398&nbsp;µs. Apache at 658&nbsp;µs. .NET 9 Kestrel, which is itself enormously faster than the .NET of a decade ago, at 831&nbsp;µs. Picoweb is roughly <strong>3.4× faster than nginx, 5.7× faster than Apache and 7.2× faster than .NET</strong> on per-request latency. The reason isn't a faster CPU or a fancier TLS library — they all use the same hardware AES. The reason is that picoweb has fewer layers between the syscall and the response.</p>
-
-            <p><strong>About those percentiles.</strong> p50 is the median request — what a typical user actually experiences. p99 is the unlucky 1% — the long tail, the request that arrived at a bad moment. In the one-worker comparison above, picoweb wins p50 by a wide margin because the median request hits a hot path with zero allocation, zero copy and one worker doing one thing at a time. nginx edges picoweb on saturation p99 there (3.9&nbsp;ms vs 8.2&nbsp;ms) because nginx spreads collisions across workers while the one-worker picoweb harness queues behind one accept loop. Production now runs two pinned workers on a dedicated 2-vCPU node, so the same idea scales across both cores without adding a proxy hop.</p>
-
-            <p>An earlier run of this benchmark on the much larger <code>/css/wf.css</code> (25&nbsp;KB) showed picoweb at only ~1.2× nginx in raw requests-per-second. That result was honest but misleading: both servers were saturating the same ~315&nbsp;MB/s of single-core TLS bulk-encrypt throughput, so the test was measuring AES, not server architecture. Once you drop the payload below the bulk-encrypt floor, the architectural gap re-appears — exactly where you'd expect it to, on the per-request overhead.</p>
-
-            <p>And the memory numbers compound the latency story. The one-worker comparison harness sits at 13.3&nbsp;MiB. The current production pod runs two pinned workers, so it pays for two preallocated TLS connection tables and sits at <strong>23.3&nbsp;MiB RSS</strong> (VmRSS 23,856&nbsp;KB, VmHWM 23,856&nbsp;KB, re-measured on 2026-05-17). The useful invariant is unchanged: memory is allocated, faulted and warmed at startup; under load it stays flat instead of climbing. .NET's peak is 63&nbsp;MiB — a 3× ratio even against the two-worker production build, and much higher at idle. nginx is genuinely brilliant here — at almost thirty years old it lands within touching distance on peak RAM and keeps the tightest p99 in the single-worker comparison. Apache and .NET aren't slow by any normal definition. They're just paying for layers this workload doesn't use, in CPU cycles and in RAM, on every single request.</p>
-
-            <p><strong>Knowing when to stop tuning.</strong> The cluster has a hard cost limit: two AKS nodes, each 2-vCPU Arm. That rules out the luxurious shape — two picoweb pods on two clean server nodes plus a third node for the load generator and the rest of the cluster. So the final layout is deliberately simple: vmss000005 is labelled <code>role=server</code> and hard-tainted <code>dedicated=server:NoSchedule</code>; only picoweb tolerates it. vmss000004 is the load-test / co-tenant node. All the low-traffic apps have tiny requests and bin-pack there. Picoweb gets one pod, two pinned workers, and the kernel's <code>SO_REUSEPORT</code> hash does the per-core distribution inside the pod. Azure's load balancer still has <code>sessionAffinity: None</code>; there is just one production endpoint because, on two nodes, a second endpoint would have to share the load-test/co-tenant node.</p>
-
-            <p>The honest in-cluster numbers on the final build, measured from a <code>wrk</code> pod pinned to vmss000004 and hitting picoweb on the hard-tainted vmss000005 server node:</p>
-
-            <div style="overflow-x:auto;margin:.4rem 0 1.2rem;">
-                <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
-                    <thead>
-                        <tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;">
-                            <th style="padding:.45rem .6rem;">Concurrency</th>
-                            <th style="padding:.45rem .6rem;">Req/sec</th>
-                            <th style="padding:.45rem .6rem;">p50</th>
-                            <th style="padding:.45rem .6rem;">p99</th>
-                            <th style="padding:.45rem .6rem;">Max</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;">c=20</td>
-                            <td style="padding:.45rem .6rem;">44,733</td>
-                            <td style="padding:.45rem .6rem;"><strong>1.02&nbsp;ms</strong></td>
-                            <td style="padding:.45rem .6rem;"><strong>5.54&nbsp;ms</strong></td>
-                            <td style="padding:.45rem .6rem;">23.3&nbsp;ms</td>
-                        </tr>
-                        <tr style="border-bottom:1px solid #222;">
-                            <td style="padding:.45rem .6rem;">c=50</td>
-                            <td style="padding:.45rem .6rem;">49,975</td>
-                            <td style="padding:.45rem .6rem;">1.90&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">7.94&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">55.5&nbsp;ms</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:.45rem .6rem;">c=100</td>
-                            <td style="padding:.45rem .6rem;"><strong>50,649</strong></td>
-                            <td style="padding:.45rem .6rem;">3.44&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">13.8&nbsp;ms</td>
-                            <td style="padding:.45rem .6rem;">110&nbsp;ms</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <p>That is the shape I wanted: about 50k req/s, p99 single-digit milliseconds at c=50, and no hidden proxy layer. To move the p99 lower from here you change the physics around the server — bigger nodes, a third node for the load generator, or a real external client — not the web stack itself. The remaining bottleneck has stopped being software.</p>
-
-            <p><strong>Why simple systems end up fast</strong></p>
-
-            <p>A "normal" web stack handling 50,000 requests per second is doing an enormous amount of plumbing. The kernel receives a packet, hands it to a virtual ethernet pair, which forwards it through a bridge, through connection tracking, through SNAT at the cloud load balancer, into nginx, which terminates TLS, re-parses the HTTP, opens a backend connection, re-serialises the request, sends it over loopback to an application server, which parses it <em>again</em>, dispatches a route, runs middleware, fetches a body from somewhere, serialises a response, and sends the whole thing back, where the chain unwinds in reverse. Every hop copies bytes, makes syscalls, switches contexts, runs allocators, takes locks. Most of the CPU's budget goes on moving the request around rather than on the request itself.</p>
-
-            <div style="border:1px solid var(--wf-cyan);border-left-width:4px;border-radius:6px;padding:1.4rem 1.6rem;margin:1.8rem 0;background:rgba(0,200,255,0.04);">
-                <div style="color:var(--wf-cyan);font-size:.7rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.7rem;">The whole enchilada</div>
-                <p style="font-size:1.35rem;line-height:1.45;margin:0 0 .9rem 0;font-weight:500;">Collapse that chain to <em>one process that owns the socket, the TLS state, the parser and the file table</em>, and the CPU cost per request shrinks until two modest Arm cores can push roughly 50k HTTPS requests per second.</p>
-                <p style="margin:0;color:var(--wf-muted);font-size:1rem;">Most of the saving is from deletion. The optimisation on top compounds because the layers it would have had to fight are gone.</p>
-            </div>
-
-            <p>This is the opposite of the usual scaling story. The usual story says: add a cache, add a CDN, add another replica, add a queue, add a worker pool, add a service mesh, add an observability sidecar. Each addition buys throughput at the cost of more moving parts, more failure modes, more cognitive load, more bill. Subtraction buys the same throughput for <em>nothing</em>. Less surface to break. Less to monitor. Less to upgrade. Less to misconfigure. Less to pay for.</p>
-
-            <p><strong>Less waste, more useful work</strong></p>
-
-            <p>Every layer you remove is a CPU cycle, a syscall, a page of memory, a watt of power, a millisecond of latency, a category of failure and a paragraph of documentation that you no longer have to spend. That budget doesn't disappear — it becomes available for the only thing that actually matters: serving a useful response to a real user. Simplicity isn't about doing without for its own sake. It's a refusal to keep paying for overhead you never use.</p>
-
-            <p><strong>The three laws, from the bottom up</strong></p>
-
-            <div style="border-left:2px solid var(--wf-cyan);padding:.6rem 0 .6rem 1rem;margin:1.2rem 0;display:flex;flex-direction:column;gap:.55rem;">
-                <div><span style="color:var(--wf-muted);font-size:.72rem;letter-spacing:.08em;margin-right:.6rem;">L3</span>If software is still the bottleneck, there is still a layer to remove.</div>
-                <div><span style="color:var(--wf-muted);font-size:.72rem;letter-spacing:.08em;margin-right:.6rem;">L2</span>Simple systems do more useful work.</div>
-                <div><span style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.08em;margin-right:.6rem;">L1</span>Speed is a side effect of simplicity.</div>
-            </div>
-
-            <p><strong>What does that actually cost?</strong></p>
-
-            <p>The whole production site — TLS&nbsp;1.3 engine, every header, every body, every pre-compressed Brotli variant, the metrics page, two worker threads, two preallocated connection tables, the lot — runs in <strong>23.3&nbsp;MiB of process RSS</strong>. The Node.js pod it replaced used <strong>44&nbsp;MiB</strong> to do less. The Kubernetes memory limit on the pod is 192&nbsp;MiB, mostly there as burst headroom rather than expected working set.</p>
-
-            <p>To put that into perspective: this is not just the web server binary. It is the TLS engine, all response metadata, all compressed variants, all connection state and all hot-path scratch space, already faulted resident at startup so the first burst of traffic doesn't page the working set in lazily.</p>
-
-            <p>The shocking part isn't that picoweb is small. It's that the <em>useful-work density</em> is so high that a real, production-grade, interactive TLS site fits into a few dozen MiB while serving about 50k HTTPS requests per second — while heavier stacks spend most of their memory preserving architectural flexibility nobody is using on the hot path.</p>
+            <p>The comparison rows are the controlled one-worker harness on the same AKS Arm hardware. The production rows are the current site: vmss000005 hard-tainted for picoweb, vmss000004 carrying the load-test pod and the low-traffic co-tenants. The nodepool stays at two nodes because that is the cost limit.</p>
 
             <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
 
-            <p style="margin-top:2.5rem;"><strong>How the site is split — picoweb on the server, BareMetalJsTools in the browser</strong></p>
+            <p><strong>Why this matters</strong></p>
 
-            <p>The recipe above is the server half. The other half lives on the client. Both pieces are small, both are upstream, and both follow the same rule: ship only what runs on the hot path.</p>
+            <p>A typical stack buys flexibility by keeping layers alive: proxy, TLS terminator, app server, framework, router, allocator, compressor. Picoweb buys speed by refusing those layers on the serving path. The bytes are known, resident, compressed and indexed before traffic arrives.</p>
 
-            <div style="display:flex;flex-wrap:wrap;gap:1rem;margin:1.2rem 0 1.6rem;">
-                <div style="flex:1 1 320px;border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(0,200,255,0.04);padding:1rem 1.1rem;border-radius:4px;">
+            <p>That does not make nginx, Apache or Kestrel bad. It means they are solving a larger problem than this page needs solved. For this site, the useful work is narrower: accept HTTPS, find a static resource, return it quickly and consistently.</p>
+
+            <p style="margin-top:2rem;"><strong>The split: picoweb on the server, BareMetalJsTools in the browser</strong></p>
+
+            <div style="display:flex;flex-wrap:wrap;gap:1rem;margin:1rem 0 1.4rem;">
+                <div style="flex:1 1 300px;border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(0,200,255,0.04);padding:1rem 1.1rem;border-radius:4px;">
                     <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.1em;font-weight:600;text-transform:uppercase;margin-bottom:.4rem;">Server side</div>
                     <div style="font-size:1.05rem;font-weight:600;margin-bottom:.35rem;"><a href="https://github.com/WillEastbury/picoweb" target="_blank" style="color:var(--wf-cyan);">picoweb</a></div>
-                    <p style="margin:0;font-size:.9rem;line-height:1.5;color:var(--wf-muted);">Single-process C server. Owns port 443, terminates TLS&nbsp;1.3 inline, serves the wwwroot. Jump-table routing, pre-rendered heads, pre-compressed Brotli, arena allocation, <code>MSG_ZEROCOPY</code> writes, NEON / ARMv8 SHA-2 / AES-GCM hand-vendored crypto. The eleven choices above, in one binary.</p>
+                    <p style="margin:0;font-size:.9rem;line-height:1.5;color:var(--wf-muted);">TLS&nbsp;1.3 inline, jump-table routing, pre-rendered heads, pre-compressed Brotli, arena allocation, zero-copy sends, NEON/SHA/AES crypto.</p>
                 </div>
-                <div style="flex:1 1 320px;border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(0,200,255,0.04);padding:1rem 1.1rem;border-radius:4px;">
+                <div style="flex:1 1 300px;border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(0,200,255,0.04);padding:1rem 1.1rem;border-radius:4px;">
                     <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.1em;font-weight:600;text-transform:uppercase;margin-bottom:.4rem;">Client side</div>
                     <div style="font-size:1.05rem;font-weight:600;margin-bottom:.35rem;"><a href="https://github.com/WillEastbury/BareMetalJsTools" target="_blank" style="color:var(--wf-cyan);">BareMetalJsTools</a></div>
-                    <p style="margin:0;font-size:.9rem;line-height:1.5;color:var(--wf-muted);">The CSS and JS shipped to the browser. No bundler, no framework, no virtual DOM, no runtime. Plain modules and plain stylesheets — the same subtractive rules applied on the other side of the wire. Pre-compressed Brotli by picoweb at build time, served as a static asset.</p>
+                    <p style="margin:0;font-size:.9rem;line-height:1.5;color:var(--wf-muted);">Plain CSS and JavaScript primitives. No framework, no bundler runtime, no virtual DOM. The same subtractive rule on the browser side.</p>
                 </div>
             </div>
 
-            <p>The split matters. Most "fast" sites move the cost from one side to the other: a tiny server feeding a heavy SPA, or a heavy server feeding a tiny page. This site is small on <em>both</em> ends because the same rule was applied in both places — every layer has to justify the cycles, memory and milliseconds it costs. The pieces are independent (picoweb will serve anything; BareMetalJsTools will run behind any server), but together they're the whole production stack.</p>
-
-            <p style="margin-top:2.5rem;"><strong>People who built things for a living, on the same point</strong></p>
-
-            <p>This isn't a new idea. It's been the working philosophy of more or less every operator who ever shipped a serious system.</p>
-
-            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
-                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"That's been one of my mantras — focus and simplicity. Simple can be harder than complex: you have to work hard to get your thinking clean to make it simple. But it's worth it in the end because once you get there, you can move mountains."</blockquote>
-                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Steve Jobs, <em>BusinessWeek</em>, 25 May 1998. The same year Apple ran <a href="https://en.wikipedia.org/wiki/Think_different" target="_blank" style="color:var(--wf-cyan);">"Think Different"</a>.</figcaption>
-            </figure>
-
-            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
-                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"The best part is no part. The best process is no process. It weighs nothing, costs nothing, can't go wrong."</blockquote>
-                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Elon Musk, <a href="https://en.wikiquote.org/wiki/Elon_Musk" target="_blank" style="color:var(--wf-cyan);">five-step engineering algorithm</a>, Starbase tour with Tim Dodd, 2021. Step 2 of 5 is <em>delete the part or process</em>; if you're not putting at least 10% back in, you didn't delete enough.</figcaption>
-            </figure>
-
-            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
-                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"Hitting refresh is about seeing things with a beginner's mind … a culture of deep technical excellence, and making things simpler and easier for everyone."</blockquote>
-                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Satya Nadella, <em><a href="https://www.goodreads.com/work/quotes/51432387" target="_blank" style="color:var(--wf-cyan);">Hit Refresh</a></em> (2017). Simpler and easier is the deliverable; technical excellence is what makes it possible.</figcaption>
-            </figure>
-
-            <figure style="border-left:2px solid var(--wf-cyan);margin:1.4rem 0;padding:.1rem 0 .1rem 1.1rem;">
-                <blockquote style="margin:0;font-size:1.05rem;line-height:1.55;">"The computer industry is the only industry that is more fashion-driven than women's fashion. … What is it? It's complete gibberish. When is this idiocy going to stop?"</blockquote>
-                <figcaption style="margin-top:.55rem;color:var(--wf-muted);font-size:.85rem;">— Larry Ellison on the cloud-computing hype cycle, <a href="https://en.wikiquote.org/wiki/Larry_Ellison" target="_blank" style="color:var(--wf-cyan);">Oracle OpenWorld</a>, 2008. Most layers exist because they were fashionable, not because they were needed.</figcaption>
-            </figure>
-
-            <p style="margin-top: 2rem;color:var(--wf-muted);font-size:.85rem;">The system described above is what serves <code>wavefunctionlabs.com</code>. Both halves are upstream: <a href="https://github.com/WillEastbury/picoweb" target="_blank" style="color:var(--wf-cyan);">picoweb</a> on the server, <a href="https://github.com/WillEastbury/BareMetalJsTools" target="_blank" style="color:var(--wf-cyan);">BareMetalJsTools</a> in the browser. Take either, take both, ignore the rest.</p>
+            <p style="margin-top:2rem;color:var(--wf-muted);font-size:.9rem;">The system described above is what serves <code>wavefunctionlabs.com</code>. Take the pieces, ignore the philosophy, or steal the diagram. The whole trick is visible: remove every layer that is not doing useful work for this request.</p>
 
         </div>
     </div>
