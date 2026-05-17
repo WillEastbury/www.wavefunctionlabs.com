@@ -1,7 +1,7 @@
 <div class="wf-section">
         <a href="/metal" class="wf-back">← metal</a>
         <h1 class="wf-section-hdr">Picoweb: how to build a really fast web server</h1>
-        <p class="wf-section-desc">A tiny C HTTPS server, a precompiled jump table, resident buffers, zero-copy sends, and the production numbers from this site.</p>
+        <p class="wf-section-desc">A tiny C HTTPS server, a precompiled jump table, Brotli-primary resident buffers, zero-copy sends, and the production numbers from this site.</p>
         <div class="wf-article-tags">picoweb · TLS 1.3 · jump table · zero-copy · SIMD · BareMetalJsTools</div>
         <div class="wf-article-body">
 
@@ -9,9 +9,9 @@
                 <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.55rem;">The current production shape</div>
                 <p style="font-size:1.38rem;line-height:1.42;margin:0 0 .85rem 0;font-weight:500;">One process owns port 443. Two pinned worker threads terminate TLS&nbsp;1.3 inline, parse HTTP/1.1, dispatch through a precompiled jump table, and send prebuilt response bytes straight back to the kernel.</p>
                 <div style="display:flex;flex-wrap:wrap;gap:1.6rem;padding-top:.85rem;border-top:1px solid rgba(0,200,255,0.18);">
-                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">50.6k</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">req/sec cross-node</div></div>
-                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">23.3&nbsp;MiB</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">resident set</div></div>
-                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">7.9&nbsp;ms</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">p99 at c=50</div></div>
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">65.6k</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">req/sec cross-node</div></div>
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">23.0&nbsp;MiB</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">resident set</div></div>
+                    <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">9.0&nbsp;ms</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">p99 at c=50</div></div>
                     <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">0</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">hot-path allocations</div></div>
                 </div>
             </div>
@@ -62,7 +62,7 @@
                 <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
                     <tbody>
                         <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Compile the wwwroot</strong></td><td style="padding:.45rem .6rem;">Hash every route into a flat jump table at startup. Dispatch is <code>hash(path) → slot</code>.</td></tr>
-                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Prebuild the response</strong></td><td style="padding:.45rem .6rem;">Headers, 304s, ETags and Brotli bodies are wire-ready before the listen socket opens.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Store the wire form</strong></td><td style="padding:.45rem .6rem;">Headers, 304s, ETags and Brotli bodies are wire-ready before the listen socket opens; rare identity clients decode from Brotli through worker scratch.</td></tr>
                         <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Keep TLS inline</strong></td><td style="padding:.45rem .6rem;">Kernel socket → TLS records → HTTP parser in one address space. No terminator hop.</td></tr>
                         <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Shard by core</strong></td><td style="padding:.45rem .6rem;">Two pinned workers, each with its own epoll loop, <code>SO_REUSEPORT</code> listener and connection table.</td></tr>
                         <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Never allocate hot</strong></td><td style="padding:.45rem .6rem;">Connection tables and arenas are mmap'd, populated, touched and kept resident at startup.</td></tr>
@@ -79,22 +79,24 @@
                 <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
                     <thead><tr style="border-bottom:1px solid var(--wf-cyan);text-align:left;"><th style="padding:.45rem .6rem;">Run</th><th style="padding:.45rem .6rem;">Req/sec</th><th style="padding:.45rem .6rem;">p50</th><th style="padding:.45rem .6rem;">p99</th><th style="padding:.45rem .6rem;">RSS / RAM</th></tr></thead>
                     <tbody>
-                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Production picoweb, c=50</strong></td><td style="padding:.45rem .6rem;"><strong>49,975</strong></td><td style="padding:.45rem .6rem;">1.90&nbsp;ms</td><td style="padding:.45rem .6rem;"><strong>7.94&nbsp;ms</strong></td><td style="padding:.45rem .6rem;"><strong>23.3&nbsp;MiB RSS</strong></td></tr>
-                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Production picoweb, c=100</strong></td><td style="padding:.45rem .6rem;"><strong>50,649</strong></td><td style="padding:.45rem .6rem;">3.44&nbsp;ms</td><td style="padding:.45rem .6rem;">13.8&nbsp;ms</td><td style="padding:.45rem .6rem;">23.3&nbsp;MiB RSS</td></tr>
-                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">One-worker picoweb comparison</td><td style="padding:.45rem .6rem;">32,091</td><td style="padding:.45rem .6rem;"><strong>667&nbsp;µs</strong></td><td style="padding:.45rem .6rem;">8.2&nbsp;ms</td><td style="padding:.45rem .6rem;">13.3&nbsp;MiB</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Production picoweb Brotli, c=50</strong></td><td style="padding:.45rem .6rem;"><strong>62,761</strong></td><td style="padding:.45rem .6rem;">1.19&nbsp;ms</td><td style="padding:.45rem .6rem;"><strong>9.00&nbsp;ms</strong></td><td style="padding:.45rem .6rem;"><strong>23.0&nbsp;MiB RSS</strong></td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>Production picoweb Brotli, c=100</strong></td><td style="padding:.45rem .6rem;"><strong>65,616</strong></td><td style="padding:.45rem .6rem;">2.25&nbsp;ms</td><td style="padding:.45rem .6rem;">12.55&nbsp;ms</td><td style="padding:.45rem .6rem;">23.0&nbsp;MiB RSS</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">Production picoweb identity, c=100</td><td style="padding:.45rem .6rem;">21,468</td><td style="padding:.45rem .6rem;">4.85&nbsp;ms</td><td style="padding:.45rem .6rem;">21.47&nbsp;ms</td><td style="padding:.45rem .6rem;">23.0&nbsp;MiB RSS</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">Azure Blob static website, c=100</td><td style="padding:.45rem .6rem;">20,462</td><td style="padding:.45rem .6rem;">4.23&nbsp;ms</td><td style="padding:.45rem .6rem;">13.18&nbsp;ms</td><td style="padding:.45rem .6rem;">managed service</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">One-worker picoweb harness</td><td style="padding:.45rem .6rem;">32,091</td><td style="padding:.45rem .6rem;"><strong>667&nbsp;µs</strong></td><td style="padding:.45rem .6rem;">8.2&nbsp;ms</td><td style="padding:.45rem .6rem;">13.3&nbsp;MiB</td></tr>
                         <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">nginx 1.27 comparison</td><td style="padding:.45rem .6rem;">18,710</td><td style="padding:.45rem .6rem;">1.64&nbsp;ms</td><td style="padding:.45rem .6rem;"><strong>3.9&nbsp;ms</strong></td><td style="padding:.45rem .6rem;">10.5&nbsp;MiB</td></tr>
                         <tr><td style="padding:.45rem .6rem;">.NET 9 Kestrel comparison</td><td style="padding:.45rem .6rem;">8,548</td><td style="padding:.45rem .6rem;">3.57&nbsp;ms</td><td style="padding:.45rem .6rem;">11.1&nbsp;ms</td><td style="padding:.45rem .6rem;">63.1&nbsp;MiB</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <p>The comparison rows are the controlled one-worker harness on the same AKS Arm hardware. The production rows are the current site: vmss000005 hard-tainted for picoweb, vmss000004 carrying the load-test pod and the low-traffic co-tenants. The nodepool stays at two nodes because that is the cost limit.</p>
+            <p>The production and Blob rows are fresh cross-node runs from the load-test node. The harness rows are controlled one-worker comparisons on the same AKS Arm hardware. The current site runs on vmss000005, hard-tainted for picoweb, while vmss000004 carries the load-test pod and the low-traffic co-tenants. The nodepool stays at two nodes because that is the cost limit.</p>
 
             <div class="wf-insight">Speed was the side effect. Simplicity was the work.</div>
 
             <p><strong>Why this matters</strong></p>
 
-            <p>A typical stack buys flexibility by keeping layers alive: proxy, TLS terminator, app server, framework, router, allocator, compressor. Picoweb buys speed by refusing those layers on the serving path. The bytes are known, resident, compressed and indexed before traffic arrives.</p>
+            <p>A typical stack buys flexibility by keeping layers alive: proxy, TLS terminator, app server, framework, router, allocator, compressor. Picoweb buys speed by refusing those layers on the serving path. The bytes are known, resident, compressed and indexed before traffic arrives; Brotli is the stored representation, not a sidecar duplicate.</p>
 
             <p>That does not make nginx, Apache or Kestrel bad. It means they are solving a larger problem than this page needs solved. For this site, the useful work is narrower: accept HTTPS, find a static resource, return it quickly and consistently.</p>
 
@@ -104,7 +106,7 @@
                 <div style="flex:1 1 300px;border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(0,200,255,0.04);padding:1rem 1.1rem;border-radius:4px;">
                     <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.1em;font-weight:600;text-transform:uppercase;margin-bottom:.4rem;">Server side</div>
                     <div style="font-size:1.05rem;font-weight:600;margin-bottom:.35rem;"><a href="https://github.com/WillEastbury/picoweb" target="_blank" style="color:var(--wf-cyan);">picoweb</a></div>
-                    <p style="margin:0;font-size:.9rem;line-height:1.5;color:var(--wf-muted);">TLS&nbsp;1.3 inline, jump-table routing, pre-rendered heads, pre-compressed Brotli, arena allocation, zero-copy sends, NEON/SHA/AES crypto.</p>
+                    <p style="margin:0;font-size:.9rem;line-height:1.5;color:var(--wf-muted);">TLS&nbsp;1.3 inline, jump-table routing, pre-rendered heads, Brotli-primary bodies, arena allocation, zero-copy sends, NEON/SHA/AES crypto.</p>
                 </div>
                 <div style="flex:1 1 300px;border:1px solid var(--wf-border);border-left:3px solid var(--wf-cyan);background:rgba(0,200,255,0.04);padding:1rem 1.1rem;border-radius:4px;">
                     <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.1em;font-weight:600;text-transform:uppercase;margin-bottom:.4rem;">Client side</div>

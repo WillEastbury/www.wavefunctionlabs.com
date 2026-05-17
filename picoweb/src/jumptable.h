@@ -36,6 +36,7 @@ typedef struct {
 typedef struct {
     const char* head;            size_t head_len;
     const char* body;            size_t body_len;     /* compressed bytes */
+    size_t      decoded_len;     /* identity bytes after decode (0 if unknown) */
     /* ETag + 304 Not Modified support. */
     char        etag[32];        /* W/"<len>-<fnv64>" */
     const char* wire_304;        size_t wire_304_len;
@@ -68,6 +69,8 @@ typedef struct {
     const chrome_t* chrome;      /* NULL if no chrome is applied */
     const resource_compress_t* compressed; /* NULL if no compressed variant */
     const resource_compress_t* brotli;     /* NULL if no Brotli variant */
+    bool        brotli_primary;  /* body is only stored in r->brotli; identity is decoded cold */
+    size_t      identity_len;    /* full identity payload length (chrome included if HTML) */
     /* ETag + 304 Not Modified support. etag[0]=='\0' means no ETag. */
     char        etag[32];        /* W/"<len>-<fnv64>" */
     const char* wire_304;        size_t wire_304_len;
@@ -107,12 +110,14 @@ typedef struct {
     const resource_t* err_409;
     const resource_t* err_413;
     const resource_t* err_414;
+    const resource_t* err_500;
     const resource_t* err_505;
 
     /* Known hostnames for virtual-host validation. Any request whose
      * Host header is not in this set gets 409 Conflict. */
     struct { const char* name; size_t len; } known_hosts[128];
     size_t known_host_count;
+    size_t brotli_identity_scratch_len;
 } jumptable_t;
 
 /* Build the jump table by scanning wwwroot/<host>/...

@@ -40,6 +40,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <brotli/decode.h>
+
 #include "../userspace/tls/cert.h"
 #include "../userspace/tls/engine.h"
 #include "../userspace/tls/pem.h"
@@ -123,6 +125,9 @@ struct tls_kworker {
     uint16_t               cert_sig_scheme;
 
     pw_tls_ticket_store_t  ticket_store;
+
+    uint8_t*               br_identity_scratch;
+    size_t                 br_identity_scratch_len;
 };
 
 /* Marker used to identify the listen-fd event vs per-conn events
@@ -384,9 +389,61 @@ static int build_http_response_iov(kconn_t* c,
         c->req_count >= w->cfg->max_requests_per_conn) close_after = true;
 
     const resource_compress_t* variant = NULL;
-    if (pr == HTTP_OK && !head_only) {
+    if (pr == HTTP_OK) {
         if      (req->accept_br && r->brotli)     variant = r->brotli;
         else if (req->accept_pc && r->compressed) variant = r->compressed;
+    }
+
+    if (pr == HTTP_OK && req->if_none_match &&
+        (req->method == M_GET || req->method == M_HEAD)) {
+        const char* etag = NULL;
+        const char* w304 = NULL;
+        size_t w304_len  = 0;
+        if (variant) {
+            etag = variant->etag; w304 = variant->wire_304; w304_len = variant->wire_304_len;
+        } else if (r->etag[0] != '\0') {
+            etag = r->etag; w304 = r->wire_304; w304_len = r->wire_304_len;
+        }
+        if (etag && w304 && etag_matches(req->if_none_match, req->if_none_match_len, etag)) {
+            unsigned n304 = 0;
+            out[n304++] = (pw_iov_t){ .base = (const uint8_t*)w304, .len = w304_len };
+            out[n304++] = (pw_iov_t){
+                .base = close_after ? (const uint8_t*)CONN_CLOSE : (const uint8_t*)CONN_KA,
+                .len  = close_after ? (sizeof(CONN_CLOSE) - 1) : (sizeof(CONN_KA) - 1)
+            };
+            *out_n = n304;
+            *out_close_after = close_after;
+            return 0;
+        }
+    }
+
+    const uint8_t* decoded_body = NULL;
+    size_t decoded_body_len = 0;
+    if (pr == HTTP_OK && !head_only && !variant &&
+        r->brotli_primary && r->brotli) {
+        size_t need = r->identity_len ? r->identity_len : r->brotli->decoded_len;
+        if (!w->br_identity_scratch || need > w->br_identity_scratch_len) {
+            metal_log("brotli identity scratch too small: need=%zu have=%zu",
+                      need, w->br_identity_scratch_len);
+            r = w->cfg->jt->err_500;
+            close_after = true;
+        } else {
+            size_t out_len = need;
+            BrotliDecoderResult brc = BrotliDecoderDecompress(
+                r->brotli->body_len,
+                (const uint8_t*)r->brotli->body,
+                &out_len,
+                w->br_identity_scratch);
+            if (brc != BROTLI_DECODER_RESULT_SUCCESS || out_len != need) {
+                metal_log("brotli identity decode failed: rc=%d out=%zu need=%zu",
+                          (int)brc, out_len, need);
+                r = w->cfg->jt->err_500;
+                close_after = true;
+            } else {
+                decoded_body = w->br_identity_scratch;
+                decoded_body_len = out_len;
+            }
+        }
     }
 
     unsigned n = 0;
@@ -402,6 +459,8 @@ static int build_http_response_iov(kconn_t* c,
     if (!head_only) {
         if (variant) {
             out[n++] = (pw_iov_t){ .base = (const uint8_t*)variant->body, .len = variant->body_len };
+        } else if (decoded_body) {
+            out[n++] = (pw_iov_t){ .base = decoded_body, .len = decoded_body_len };
         } else {
             if (r->chrome && r->chrome->hdr_len)
                 out[n++] = (pw_iov_t){ .base = (const uint8_t*)r->chrome->hdr, .len = r->chrome->hdr_len };
@@ -409,26 +468,6 @@ static int build_http_response_iov(kconn_t* c,
                 out[n++] = (pw_iov_t){ .base = (const uint8_t*)r->body, .len = r->body_len };
             if (r->chrome && r->chrome->ftr_len)
                 out[n++] = (pw_iov_t){ .base = (const uint8_t*)r->chrome->ftr, .len = r->chrome->ftr_len };
-        }
-    }
-
-    if (pr == HTTP_OK && req->if_none_match &&
-        (req->method == M_GET || req->method == M_HEAD)) {
-        const char* etag = NULL;
-        const char* w304 = NULL;
-        size_t w304_len  = 0;
-        if (variant) {
-            etag = variant->etag; w304 = variant->wire_304; w304_len = variant->wire_304_len;
-        } else if (r->etag[0] != '\0') {
-            etag = r->etag; w304 = r->wire_304; w304_len = r->wire_304_len;
-        }
-        if (etag && w304 && etag_matches(req->if_none_match, req->if_none_match_len, etag)) {
-            n = 0;
-            out[n++] = (pw_iov_t){ .base = (const uint8_t*)w304, .len = w304_len };
-            out[n++] = (pw_iov_t){
-                .base = close_after ? (const uint8_t*)CONN_CLOSE : (const uint8_t*)CONN_KA,
-                .len  = close_after ? (sizeof(CONN_CLOSE) - 1) : (sizeof(CONN_KA) - 1)
-            };
         }
     }
 
@@ -804,6 +843,30 @@ void* tls_worker_main(void* arg) {
     }
     w->conns = (kconn_t*)conn_mem;
 
+    if (cfg->jt->brotli_identity_scratch_len > 0) {
+        size_t scratch_len = cfg->jt->brotli_identity_scratch_len;
+        void* scratch = mmap(NULL, scratch_len, PROT_READ | PROT_WRITE,
+                             MAP_PRIVATE | MAP_ANONYMOUS
+#ifdef MAP_POPULATE
+                             | MAP_POPULATE
+#endif
+                             , -1, 0);
+        if (scratch == MAP_FAILED) {
+            metal_die("tls_worker_main: OOM allocating brotli identity scratch (%zu B): %s",
+                      scratch_len, strerror(errno));
+        }
+#ifdef MADV_POPULATE_WRITE
+        (void)madvise(scratch, scratch_len, MADV_POPULATE_WRITE);
+#endif
+        memset(scratch, 0, scratch_len);
+        if (mlock(scratch, scratch_len) != 0) {
+            metal_log("tls_worker: mlock brotli identity scratch (%zu B) failed: %s",
+                      scratch_len, strerror(errno));
+        }
+        w->br_identity_scratch = (uint8_t*)scratch;
+        w->br_identity_scratch_len = scratch_len;
+    }
+
     pw_tls_ticket_store_init(&w->ticket_store);
 
     if (load_cert_material(w) != 0)
@@ -820,13 +883,13 @@ void* tls_worker_main(void* arg) {
     ep_add(w->epfd, w->listen_fd, &g_listen_marker, EPOLLIN);
 
     metal_log("worker %d ready: listen=:%d backend=tls io=kernel "
-              "cert=%s key=%s key_type=%s conns_cap=%zu",
+              "cert=%s key=%s key_type=%s conns_cap=%zu br_identity_scratch=%zu",
               cfg->worker_index, cfg->port,
               cfg->tls_cert_path, cfg->tls_key_path,
               w->key_type == CERT_KEY_ED25519    ? "ed25519" :
               w->key_type == CERT_KEY_RSA        ? "rsa-pss" :
               w->key_type == CERT_KEY_ECDSA_P256 ? "ecdsa-p256" : "?",
-              w->conns_cap);
+              w->conns_cap, w->br_identity_scratch_len);
 
     int64_t last_sweep_ms = metal_now_ms();
     struct epoll_event evs[EPOLL_BATCH];
