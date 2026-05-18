@@ -5,7 +5,7 @@ WORKDIR /build
 COPY picoweb/src/ src/
 COPY picoweb/userspace/ userspace/
 COPY picoweb/Makefile .
-# v31-blob-claim: store Brotli resident bytes and document the Blob comparison
+# v32-b2pls-stats: Brotli-primary stats from the cheaper B2pls nodepool
 RUN find . -name '*.o' -delete && make CFLAGS="-O3 -Wall -Wextra -std=c11 -D_GNU_SOURCE -fno-strict-aliasing -fstack-protector-strong -fomit-frame-pointer" LDFLAGS="-O3"
 
 # Stage 2: Runtime
