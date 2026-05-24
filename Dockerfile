@@ -21,5 +21,7 @@ ENV PICOWEB_NO_GZIP=1
 # Store Brotli as the resident representation for compressible files.
 # Rare identity clients are decoded through a preallocated worker scratch.
 ENV PICOWEB_BROTLI_PRIMARY=1
+# Emit bounded route-level NDJSON access logs to stderr for first-party ops.
+ENV PICOWEB_ACCESS_LOG=1
 EXPOSE 443
 ENTRYPOINT ["./entrypoint.sh"]
