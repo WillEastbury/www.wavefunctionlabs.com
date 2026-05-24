@@ -13,20 +13,20 @@
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin:2rem 0;">
                 <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-accent);font-size:.88rem;margin-bottom:.6rem;">Looks Like a Duck</h3>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-accent);">Structural recognition.</strong> You matched visual features — shape, colour, texture, proportions — against a learned template. You didn't need it to move or make a sound. The <em>form</em> was enough.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="You knew it was a duck from how it looked. The shape alone was enough." data-psi="Form is the first compression. A mind keeps the invariants and lets the pixels go." data-duck="The pond is not counting feathers. Head, bill, float ratio. Close enough, the bread goes to duck."><strong style="color:var(--wf-accent);">Structural recognition.</strong> You matched visual features — shape, colour, texture, proportions — against a learned template. You didn't need it to move or make a sound. The <em>form</em> was enough.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">Quacks Like a Duck</h3>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Behavioural recognition.</strong> You heard a sound and matched it to an expected behaviour. You didn't need to see it. The <em>action</em> was enough. This is duck typing — identity through interface.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="You knew it from what it did or sounded like, not from seeing it." data-psi="Identity can emerge from outputs alone. If the state transitions match, the hidden machinery becomes secondary." data-duck="The reeds emit a credible quack and the pond opens a duck-shaped interface. Nobody asked for source code."><strong style="color:var(--wf-cyan);">Behavioural recognition.</strong> You heard a sound and matched it to an expected behaviour. You didn't need to see it. The <em>action</em> was enough. This is duck typing — identity through interface.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-gold);font-size:.88rem;margin-bottom:.6rem;">The Word "Duck"</h3>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Symbolic recognition.</strong> Someone used a token — a sound, a word, four letters — that maps to the concept. You didn't need to see it or hear it. The <em>symbol</em> was enough.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="You knew it because someone used the word for it." data-psi="A symbol is shared phase-lock. One token pulls many minds onto the same latent object." data-duck="One duck points with its beak and says duck. Suddenly the whole pond looks at the same bird."><strong style="color:var(--wf-gold);">Symbolic recognition.</strong> Someone used a token — a sound, a word, four letters — that maps to the concept. You didn't need to see it or hear it. The <em>symbol</em> was enough.</p>
                 </div>
             </div>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Three Channels, One Concept</h3>
-            <p>These are three entirely different computational processes. Structure operates on spatial patterns. Behaviour operates on temporal patterns. Symbol operates on agreed conventions. They converge on the same concept from completely different directions.</p>
+            <p data-plain="These are three different routes to the same answer: looks, actions, or language.">These are three entirely different computational processes. Structure operates on spatial patterns. Behaviour operates on temporal patterns. Symbol operates on agreed conventions. They converge on the same concept from completely different directions.</p>
 
             <p>Every system that "knows" things — biological, computational, artificial — uses some combination of these three. And the failures are different for each:</p>
 
@@ -42,7 +42,7 @@
             <p>Every AI architecture is fundamentally a bet on which channel matters most:</p>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;" data-plain="Different AI systems lean on different clues — pictures, words, or both together.">
                     <strong style="color:var(--wf-accent);">Vision models (CNNs, ViT, diffusion)</strong> — bet on structure. They learn spatial feature hierarchies. They know what ducks <em>look like</em>.<br>
                     <strong style="color:var(--wf-cyan);">Language models (Transformers)</strong> — bet on behaviour and co-occurrence. They learn what words appear near "duck." They know what ducks <em>do</em>, what's said about them, what contexts they appear in.<br>
                     <strong style="color:var(--wf-gold);">Multimodal models (CLIP, GPT-4V)</strong> — bridge the channels. They learn that the image of a duck, the word "duck," and descriptions of duck behaviour all point to the same region in a shared representation space.
@@ -52,13 +52,13 @@
             <p>This series explores each channel — how it works, how it's computed, where it breaks, and what happens when you combine them.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Deep Question</h3>
-            <p>Does any system — biological or artificial — actually know what a duck <em>is</em>? Or do they all just have different approximations of duckness, built from whichever channel they have access to?</p>
+            <p data-plain="Maybe no system gets the full thing. Maybe they just build useful guesses from the clues they get.">Does any system — biological or artificial — actually know what a duck <em>is</em>? Or do they all just have different approximations of duckness, built from whichever channel they have access to?</p>
 
             <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
                 <p style="color:var(--wf-gold);font-weight:400;">Structure says: it has the shape of a duck.<br>Behaviour says: it acts like a duck.<br>Symbol says: we agreed to call it a duck.<br><br>None of them say what a duck <em>is</em>. They say what a duck <em>is like</em>. That might be all that knowing ever was.</p>
             </div>
 
-            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The concept of "duck" is a wavefunction. Structure, behaviour, and symbol are three measurement bases. Each collapses the concept differently. None captures it completely.</p>
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;" data-plain="Shape, behaviour, and language each show a different side of the same idea. None gives the whole picture." data-psi="Concepts are stable collapses across multiple measurements. Knowing is what remains when different channels agree." data-duck="No duck gets the whole duck. One sees feathers, one hears quacks, one reads the sign. Then the bread gets shared.">The concept of "duck" is a wavefunction. Structure, behaviour, and symbol are three measurement bases. Each collapses the concept differently. None captures it completely.</p>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <span></span>

@@ -16,7 +16,7 @@
                 </div>
                 <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-accent);font-size:.88rem;margin-bottom:.6rem;">Diffusion</h3>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                    <p data-plain="Diffusion starts from total random static, then gradually narrows that chaos down until one clear image remains." data-psi="Noise is uncommitted information. Denoising is repeated measurement until one image basin captures the probability mass." data-duck="The pond starts as random ripples. Each prompt quack helps the ducks ignore useless splash until one clear duck shape forms." style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
                         <strong>Superposition:</strong> Pure Gaussian noise is the maximum entropy state — every possible image exists as a superposition in the noise.<br><br>
                         <strong>Observation:</strong> The text condition acts as the observer, constraining which images are consistent with the prompt.<br><br>
                         <strong>Collapse:</strong> Each denoising step reduces entropy. The noise field collapses toward a single coherent image. T steps of gradual wavefunction collapse.
@@ -34,12 +34,12 @@
                 </p>
             </div>
 
-            <p>Both start in a high-entropy state (all possibilities). Both apply constraints (attention/conditioning). Both collapse to a single output (token/image). The mechanism differs. The structure is identical.</p>
+            <p data-plain="Both model types begin with many possible outputs and use context to narrow them down to one result." data-psi="Both architectures begin as high-entropy fields and end as a selected state. Intelligence is constraint turning possibility into commitment." data-duck="Both ponds start with bread scattered everywhere. The ducks use quacks and ripples to gather around one winning pattern.">Both start in a high-entropy state (all possibilities). Both apply constraints (attention/conditioning). Both collapse to a single output (token/image). The mechanism differs. The structure is identical.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:2rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Transformer Collapse</h3>
-                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                    <p data-plain="Transformers generate one next piece at a time, using earlier text to guide each choice." data-psi="A transformer collapses the future locally. Each chosen token becomes a new boundary condition for the next collapse." data-duck="One duck looks around the pond, quacks the next move, then every new ripple changes what the next quack should be." style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
                         Discrete. One token at a time.<br>
                         Autoregressive: each collapse feeds the next.<br>
                         Fast collapse — one forward pass per token.<br>
@@ -48,7 +48,7 @@
                 </div>
                 <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-accent);font-size:.85rem;margin-bottom:.6rem;">Diffusion Collapse</h3>
-                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
+                    <p data-plain="Diffusion improves the whole image a little at a time instead of choosing one word-like piece after another." data-psi="Diffusion lowers entropy across the whole field at once. Global structure emerges before fine detail finishes settling." data-duck="Instead of one duck grabbing bread piece by piece, the whole pond settles a little each round until the flock pattern becomes obvious." style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;">
                         Continuous. The entire image at once.<br>
                         Iterative: each step refines the whole field.<br>
                         Slow collapse — 20-50 denoising steps.<br>
@@ -58,7 +58,7 @@
             </div>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Why This Matters</h3>
-            <p>If you see AI models as "clever prediction machines," you'll use them like tools. If you see them as <strong style="color:var(--wf-gold);">constrained collapse systems</strong>, you'll understand:</p>
+            <p data-plain="This framing helps explain why prompts and settings matter: they change how the model narrows many possible answers down to one.">If you see AI models as "clever prediction machines," you'll use them like tools. If you see them as <strong style="color:var(--wf-gold);">constrained collapse systems</strong>, you'll understand:</p>
 
             <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
                 Why prompt engineering works — you're shaping the constraint field<br>
@@ -70,7 +70,7 @@
             </p>
 
             <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2.5rem;">
-                <p style="color:var(--wf-gold);font-weight:400;">A Transformer is a discrete sequential collapse engine.<br>A Diffusion model is a continuous parallel collapse engine.<br>Both are wavefunctions. The prompt is the observer.</p>
+                <p data-plain="Transformers generate step by step, while diffusion models refine everything in parallel. Both turn many possibilities into one final result." data-psi="Sequential collapse and parallel collapse are two phases of the same informational process. The observer selects which latent reality stabilises." data-duck="One duck picks the next breadcrumb one quack at a time. The other settles the whole pond from splash to shape. Same pond rule." style="color:var(--wf-gold);font-weight:400;">A Transformer is a discrete sequential collapse engine.<br>A Diffusion model is a continuous parallel collapse engine.<br>Both are wavefunctions. The prompt is the observer.</p>
             </div>
 
             <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The architecture is different. The computation is different. The maths is different. But the shape is the same: a field of possibilities, constrained by observation, collapsing into reality.</p>

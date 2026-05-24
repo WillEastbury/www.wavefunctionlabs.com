@@ -4,14 +4,14 @@
         <p class="wf-section-desc">Every index is a bet on how you'll ask the question. Choose wrong, and you pay on every query.</p>
 
         <div class="wf-article-body">
-            <p>An index is not a feature. It's a <strong style="color:var(--wf-gold);">precomputed answer to a class of question</strong>. The structure you choose determines which questions are cheap and which are catastrophic.</p>
+            <p data-plain="Indexes are lookup tables built ahead of time so common questions are fast.">An index is not a feature. It's a <strong style="color:var(--wf-gold);">precomputed answer to a class of question</strong>. The structure you choose determines which questions are cheap and which are catastrophic.</p>
             <p>There is no universal index. There are only trade-offs.</p>
 
             <!-- Hash Table -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Hash Table</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Key → hash function → bucket → value. O(1) average lookup. No ordering. Just a direct mapping from input to slot.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="A hash table is great when you know the exact key and just want the answer fast."><strong style="color:var(--wf-cyan);">How it works</strong><br>Key → hash function → bucket → value. O(1) average lookup. No ordering. Just a direct mapping from input to slot.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Exact-match lookups. Session stores, caches, deduplication, symbol tables. When you know the key and just need the value. Fast, simple, brutal.</p>
@@ -23,7 +23,7 @@
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">B-Tree</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Self-balancing tree. Keys sorted across wide, shallow nodes optimised for disk pages. O(log n) search, insert, delete. Every node holds multiple keys — minimises disk seeks.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="A B-tree keeps things sorted so lookups stay quick even when the data gets huge."><strong style="color:var(--wf-cyan);">How it works</strong><br>Self-balancing tree. Keys sorted across wide, shallow nodes optimised for disk pages. O(log n) search, insert, delete. Every node holds multiple keys — minimises disk seeks.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>General-purpose database indexes. Point lookups and range queries. The default choice when you don't yet know your access pattern. Mature, predictable, well understood.</p>
@@ -59,7 +59,7 @@
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Inverted Index</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>Flips the relationship: instead of document → words, it maps word → list of documents containing it. Each term points to a posting list of document IDs, positions, and frequencies.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="An inverted index lets you search by words and quickly find which documents contain them."><strong style="color:var(--wf-cyan);">How it works</strong><br>Flips the relationship: instead of document → words, it maps word → list of documents containing it. Each term points to a posting list of document IDs, positions, and frequencies.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Full-text search. "Find every document containing these words." Elasticsearch, Lucene, Solr. Also used in search engines, log analysis, and anywhere you query by content rather than key.</p>
@@ -107,7 +107,7 @@
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Bitmap Index</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">How it works</strong><br>One bit per row, per distinct value. "Status = active" becomes a bit vector across all rows. Queries combine bitmaps with AND/OR/NOT — hardware-level bitwise operations on entire columns at once.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="A bitmap index turns yes-or-no filters into very fast bit checks across lots of rows."><strong style="color:var(--wf-cyan);">How it works</strong><br>One bit per row, per distinct value. "Status = active" becomes a bit vector across all rows. Queries combine bitmaps with AND/OR/NOT — hardware-level bitwise operations on entire columns at once.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">When to use</strong><br>Low-cardinality columns in analytics. Gender, status, region, boolean flags. OLAP warehouses, column stores. When the number of distinct values is small relative to row count.</p>

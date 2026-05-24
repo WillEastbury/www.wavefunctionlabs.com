@@ -9,7 +9,7 @@
             <p>Structure. Behaviour. Symbol. Three channels. Three different ways to represent a concept. What happens when you combine them all?</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">CLIP: Bridging Vision and Language</h3>
-            <p>In 2021, OpenAI released CLIP (Contrastive Language-Image Pretraining). The idea was simple and profound: train a model on 400 million image-text pairs so that images and their captions end up near each other in the same vector space.</p>
+            <p data-plain="CLIP learns to put pictures and captions close together so matching images and words end up near each other.">In 2021, OpenAI released CLIP (Contrastive Language-Image Pretraining). The idea was simple and profound: train a model on 400 million image-text pairs so that images and their captions end up near each other in the same vector space.</p>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-gold);font-size:.82rem;line-height:2.2;margin:0;">
@@ -22,7 +22,7 @@
                 </p>
             </div>
 
-            <p>Structure and symbol now share a common geometry. "Looks like a duck" and "the word duck" converge to the same region. You can search images with text. You can search text with images. The channels are <em>aligned</em>.</p>
+            <p data-plain="The model links what a duck looks like with the word 'duck' on the same internal map." data-psi="When modalities share geometry, a concept stops belonging to any one sensor. Duckness becomes a cross-channel attractor." data-duck="Now the pond has a duck index shared by eyes and beaks. Show a picture or say duck and the same birds waddle over.">Structure and symbol now share a common geometry. "Looks like a duck" and "the word duck" converge to the same region. You can search images with text. You can search text with images. The channels are <em>aligned</em>.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Shared Embedding Space</h3>
 
@@ -45,7 +45,7 @@
             </div>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">CLIPSeg: Finding the Duck in the Scene</h3>
-            <p>CLIP tells you that an image contains a duck. But <em>where</em> is the duck? Which pixels are duck and which are pond? That's <strong>segmentation</strong> — assigning a label to every pixel in the image. CLIPSeg combines CLIP's text-image understanding with a segmentation decoder to do this with just a text prompt.</p>
+            <p data-plain="CLIPSeg goes past 'there is a duck here' and tries to mark exactly which parts of the image are the duck." data-psi="Segmentation is ontology pushed down to the pixel. The system stops asking whether duck exists and starts tracing its exact boundary conditions." data-duck="The pond is no longer asking is there a duck. It is outlining exactly which feathers get the bread.">CLIP tells you that an image contains a duck. But <em>where</em> is the duck? Which pixels are duck and which are pond? That's <strong>segmentation</strong> — assigning a label to every pixel in the image. CLIPSeg combines CLIP's text-image understanding with a segmentation decoder to do this with just a text prompt.</p>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-gold);font-size:.82rem;line-height:2.2;margin:0;">
@@ -70,20 +70,20 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">The Architecture</h4>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="It reuses CLIP's image understanding, adds the text prompt, and turns that into a pixel-by-pixel mask.">
                         Takes CLIP's frozen image encoder and adds a lightweight decoder on top. The text prompt is encoded by CLIP's text encoder into a conditioning vector. The decoder uses that vector to produce a per-pixel segmentation mask — guided by the text, grounded in the image features.
                     </p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">Why It Matters</h4>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="Old systems needed hand-drawn masks. CLIPSeg can often find things just from a text description.">
                         Traditional segmentation needs training data with hand-drawn pixel masks — expensive and slow. CLIPSeg segments <em>anything you can describe in words</em>. Ask for "duck" and it finds ducks. Ask for "water near the duck" and it finds that too. Zero-shot, open-vocabulary segmentation — the text prompt <em>is</em> the class definition.
                     </p>
                 </div>
             </div>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">SAM and the Segmentation Landscape</h3>
-            <p>CLIPSeg isn't alone. Meta's <strong style="color:var(--wf-accent);">SAM (Segment Anything Model)</strong> takes a different approach — give it a point, a box, or a text prompt and it segments any object. The field is converging on models that can isolate any concept in any image, guided by language:</p>
+            <p data-plain="SAM is another tool in the same space: point at something or describe it, and it tries to cut that object out.">CLIPSeg isn't alone. Meta's <strong style="color:var(--wf-accent);">SAM (Segment Anything Model)</strong> takes a different approach — give it a point, a box, or a text prompt and it segments any object. The field is converging on models that can isolate any concept in any image, guided by language:</p>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
                 <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
@@ -94,7 +94,7 @@
                 </p>
             </div>
 
-            <p>The pattern: structure recognition (knowing what a duck looks like) is now <em>directed by</em> symbolic recognition (the word "duck"). The channels aren't just aligned — they're <strong style="color:var(--wf-gold);">collaborating</strong>. Language tells vision what to look for. Vision tells language what's actually there.</p>
+            <p data-plain="Now language can guide vision, and vision can check what language is talking about." data-psi="Understanding deepens when channels constrain each other. Language proposes a hypothesis; vision collapses or rejects it." data-duck="One duck quacks find the duck, another points with its beak, and together the pond stops feeding random reeds.">The pattern: structure recognition (knowing what a duck looks like) is now <em>directed by</em> symbolic recognition (the word "duck"). The channels aren't just aligned — they're <strong style="color:var(--wf-gold);">collaborating</strong>. Language tells vision what to look for. Vision tells language what's actually there.</p>
 
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">GPT-4V and Beyond: All Channels Active</h3>
             <p>Modern multimodal models combine everything. They can:</p>
@@ -109,7 +109,7 @@
                 </p>
             </div>
 
-            <p>All three channels operating simultaneously. Structure provides the visual grounding. Behaviour provides the contextual knowledge. Symbol provides the communication medium. The representation of "duck" is no longer one vector — it's a <strong style="color:var(--wf-gold);">web of aligned representations across modalities</strong>.</p>
+            <p data-plain="In newer models, the idea of a duck is spread across linked picture and language systems instead of living in one place.">All three channels operating simultaneously. Structure provides the visual grounding. Behaviour provides the contextual knowledge. Symbol provides the communication medium. The representation of "duck" is no longer one vector — it's a <strong style="color:var(--wf-gold);">web of aligned representations across modalities</strong>.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Is This Understanding?</h3>
 
@@ -122,14 +122,14 @@
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Case Against</h4>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="It can talk about ducks well, but it still doesn't have real first-hand experience of them.">
                         It has no embodied experience. It has never been cold and seen ducks flying south. It doesn't know what it's like to hold a duckling. Its "understanding" is a statistical alignment of modalities, not lived experience. It can tell you about ducks. It can't <em>be</em> near a duck.
                     </p>
                 </div>
             </div>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Convergence Hypothesis</h3>
-            <p>Maybe understanding isn't a binary. Maybe it's a <strong style="color:var(--wf-cyan);">gradient</strong>:</p>
+            <p data-plain="Maybe understanding isn't all-or-nothing — maybe you can have more or less of it.">Maybe understanding isn't a binary. Maybe it's a <strong style="color:var(--wf-cyan);">gradient</strong>:</p>
 
             <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
                 <strong style="color:var(--wf-cyan);">No channels</strong> — no concept at all. A rock.<br>
@@ -140,13 +140,13 @@
                 <strong style="color:var(--wf-cyan);">All channels + all experience</strong> — complete understanding. Probably impossible. An asymptote.
             </p>
 
-            <p>Each additional channel doesn't just add information — it <em>constrains</em> the representation. A concept grounded in one channel can drift. A concept grounded in three channels is pinned. The more channels that agree, the more the representation reflects something real rather than something hallucinated.</p>
+            <p data-plain="More kinds of evidence help keep the model anchored so it drifts less into nonsense.">Each additional channel doesn't just add information — it <em>constrains</em> the representation. A concept grounded in one channel can drift. A concept grounded in three channels is pinned. The more channels that agree, the more the representation reflects something real rather than something hallucinated.</p>
 
             <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2.5rem;">
-                <p style="color:var(--wf-gold);font-weight:400;">Structure shows you the form.<br>Behaviour shows you the function.<br>Symbol gives you the handle.<br><br>Understanding might just be: enough channels, agreeing, with enough constraint, that the representation becomes useful.<br><br>The duck is a wavefunction. Each channel is a measurement. None captures the duck completely. But together, they collapse toward something that works.</p>
+                <p style="color:var(--wf-gold);font-weight:400;" data-plain="Maybe understanding is just having enough different clues agree strongly enough to be useful." data-psi="Understanding is consensus under constraint. Enough independent measurements agreeing turns a guess into a usable world-model." data-duck="This is the duck parliament: sight-duck, quack-duck, and word-duck voting on the same bird until bread can be allocated safely.">Structure shows you the form.<br>Behaviour shows you the function.<br>Symbol gives you the handle.<br><br>Understanding might just be: enough channels, agreeing, with enough constraint, that the representation becomes useful.<br><br>The duck is a wavefunction. Each channel is a measurement. None captures the duck completely. But together, they collapse toward something that works.</p>
             </div>
 
-            <p style="color:var(--wf-gold);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">This entire series was about one question: how do systems represent concepts? The answer: imperfectly, through multiple channels, each with its own strengths and failure modes. Combine them and you get something that looks like understanding. Whether it <em>is</em> understanding depends on where you draw the line — and that line might not exist.</p>
+            <p style="color:var(--wf-gold);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;" data-plain="Put all the channels together and you get something close to understanding, even if it's never perfect.">This entire series was about one question: how do systems represent concepts? The answer: imperfectly, through multiple channels, each with its own strengths and failure modes. Combine them and you get something that looks like understanding. Whether it <em>is</em> understanding depends on where you draw the line — and that line might not exist.</p>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <a href="/ducks/when-its-not-a-duck" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 5: When It's Not a Duck</a>

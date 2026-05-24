@@ -32,7 +32,7 @@
 
             <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">GAN Architecture Variants</h4>
             <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                <p data-plain="These are different GAN designs for different jobs, like more realistic faces or turning one kind of image into another." data-psi="Architectures diversify when the same generative principle meets different constraints. Each GAN variant reshapes the adversarial information flow." data-duck="These are different duck games for different ponds. Some ducks get good at faces, some at turning zebra bread into horse bread, but it is still ducks fooling the pond inspector." style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
                     <strong style="color:var(--wf-accent);">DCGAN</strong> — convolutional generator/discriminator. Replaced fully-connected layers with conv layers. Made training stable enough to actually work.<br>
                     <strong style="color:var(--wf-accent);">StyleGAN</strong> — injects style at each resolution layer. Produces photorealistic faces. Introduced the "mapping network" that converts z to a style space w before generation.<br>
                     <strong style="color:var(--wf-accent);">CycleGAN</strong> — unpaired image-to-image translation (horses→zebras). Two generators, two discriminators, cycle-consistency loss.<br>
@@ -41,7 +41,7 @@
                 </p>
             </div>
 
-            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">GANs dominated image generation from 2014–2021. Diffusion models largely replaced them for quality, but GANs remain faster at inference — a single forward pass vs 20–50 denoising steps. Some modern systems combine both: use diffusion for quality, then distil into a GAN for speed.</p>
+            <p data-plain="GANs make images in one pass, so they're faster. Diffusion usually looks better but needs many cleanup steps." data-psi="GANs front-load collapse into training, while diffusion spends compute during inference. Speed and fidelity are traded by when the uncertainty gets paid." data-duck="One pond trains its ducks so well that one quack makes a fake duck immediately. The other pond takes more quacks to clean up the ripples, but usually ends prettier." style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">GANs dominated image generation from 2014–2021. Diffusion models largely replaced them for quality, but GANs remain faster at inference — a single forward pass vs 20–50 denoising steps. Some modern systems combine both: use diffusion for quality, then distil into a GAN for speed.</p>
 
             <!-- VIDEO MODELS -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Video Generative Models</h3>
@@ -50,18 +50,18 @@
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">Plain English</h4>
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Video is images + time. The fundamental challenge is <strong style="color:var(--wf-cyan);">temporal coherence</strong> — making sure frame 47 looks like it belongs after frame 46. A video model doesn't generate frames independently; it has to understand motion, physics, and continuity.</p>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Most video models extend image architectures into the time dimension. The same attention mechanisms that let a Transformer look across tokens, or a diffusion model denoise pixels, are extended to look across <em>frames</em>.</p>
+                    <p data-plain="Most video generators reuse image models, but make them track how frames change over time." data-psi="Video generation adds temporal coherence as another conservation law. The model must preserve identity across time, not just single-frame plausibility." data-duck="A video pond cannot let the duck change species every splash. The ducks have to keep the same bird swimming from one ripple to the next." style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Most video models extend image architectures into the time dimension. The same attention mechanisms that let a Transformer look across tokens, or a diffusion model denoise pixels, are extended to look across <em>frames</em>.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Core Problem</h4>
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">An image is a 2D grid of pixels: H × W × 3 (height, width, RGB). A video is a 3D grid: T × H × W × 3 — where T is time (frames). For a 5-second 1080p clip at 24fps, that's 120 × 1080 × 1920 × 3 ≈ <strong style="color:var(--wf-gold);">746 million values</strong>.</p>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">You can't just do attention over 746M tokens. So video models use <strong style="color:var(--wf-cyan);">compressed latent spaces</strong> — encode the video into a much smaller representation, generate in that space, then decode back.</p>
+                    <p data-plain="Video is too big to process at full detail, so models shrink it first, work on the smaller version, then expand it back." style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">You can't just do attention over 746M tokens. So video models use <strong style="color:var(--wf-cyan);">compressed latent spaces</strong> — encode the video into a much smaller representation, generate in that space, then decode back.</p>
                 </div>
             </div>
 
             <h4 style="color:var(--wf-accent);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Video Architecture Approaches</h4>
             <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                <p data-plain="These are different ways to generate video. Some adapt image models to handle time, while others generate one frame after another or work on compressed video data." style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
                     <strong style="color:var(--wf-cyan);">Temporal Diffusion (Sora, Runway)</strong> — extend a 2D diffusion model to 3D. Add temporal attention layers between spatial attention layers. The U-Net (or DiT) denoises across space <em>and</em> time simultaneously. The noise schedule applies to all frames at once.<br>
                     <strong style="color:var(--wf-cyan);">DiT (Diffusion Transformer)</strong> — replace the U-Net with a Transformer operating on video patches. Chop each frame into patches, flatten across time, apply full attention. Sora uses this. The patch-based approach lets you handle variable resolutions and durations.<br>
                     <strong style="color:var(--wf-cyan);">Autoregressive Video</strong> — generate frame-by-frame, conditioning each frame on the previous ones. Like a text Transformer but for images. Slower but naturally handles arbitrarily long sequences.<br>
@@ -79,7 +79,7 @@
                 </p>
             </div>
 
-            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The biggest challenge isn't architecture — it's data and compute. Training video models requires orders of magnitude more data than images (each training example is hundreds of frames) and the 3D attention is O(T² × H² × W²) without tricks. Practical systems use factored attention: spatial-then-temporal rather than full 3D.</p>
+            <p data-plain="The hard part is the huge amount of data and computing power video needs, so real systems use shortcuts instead of comparing every detail with every other one." style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The biggest challenge isn't architecture — it's data and compute. Training video models requires orders of magnitude more data than images (each training example is hundreds of frames) and the 3D attention is O(T² × H² × W²) without tricks. Practical systems use factored attention: spatial-then-temporal rather than full 3D.</p>
 
             <!-- AUDIO MODELS -->
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">Audio Generative Models</h3>
@@ -102,7 +102,7 @@
 
             <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Audio Architecture Approaches</h4>
             <div style="margin:1rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
+                <p data-plain="These are different ways to generate sound, from predicting audio one tiny piece at a time to generating a compressed audio version and turning it back into sound." data-psi="Audio generation shows the substrate can change while the principle stays the same. The model learns a latent carrier for sound, then decodes it back into waveform." data-duck="Sometimes the pond is not about duck shapes but duck sounds. The ducks still turn messy ripples into organised quacks, then back into something the pond can hear." style="color:#cbd5e1;font-size:.82rem;line-height:2.2;margin:0;">
                     <strong style="color:var(--wf-accent);">WaveNet</strong> — autoregressive CNN. Generates one sample at a time, conditioned on all previous samples. Dilated causal convolutions give exponentially growing receptive field. Extremely high quality, extremely slow at inference.<br>
                     <strong style="color:var(--wf-accent);">Transformer TTS (Tacotron → VALL-E → Bark)</strong> — text → mel spectrogram via attention, then a vocoder (HiFi-GAN, WaveGlow) converts to audio. VALL-E tokenises audio with a codec, then does language-model-style next-token prediction on audio tokens. Voice cloning in 3 seconds of reference audio.<br>
                     <strong style="color:var(--wf-accent);">AudioLM / MusicLM</strong> — hierarchical token generation. Coarse tokens capture structure and rhythm. Fine tokens capture acoustic detail. A Transformer generates coarse tokens first, then another generates fine tokens conditioned on them.<br>
@@ -121,7 +121,7 @@
                 </p>
             </div>
 
-            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The trend across all audio models is the same as vision: compress into a latent space, generate there, decode back. The codec-based approach (turning audio into tokens) is winning because it lets you reuse all the Transformer infrastructure that already works for text.</p>
+            <p data-plain="Modern audio models usually shrink sound into a smaller format, generate there, then turn it back into audio because it's much cheaper." style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">The trend across all audio models is the same as vision: compress into a latent space, generate there, decode back. The codec-based approach (turning audio into tokens) is winning because it lets you reuse all the Transformer infrastructure that already works for text.</p>
 
             <!-- HOW THEY ALL CONNECT -->
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:3rem;margin-bottom:.8rem;">The Unifying Pattern</h3>
@@ -136,7 +136,7 @@
                 </p>
             </div>
 
-            <p>Every modality converges on the same two ideas: <strong style="color:var(--wf-cyan);">compress the signal into tokens or latents</strong>, then either <strong style="color:var(--wf-accent);">predict the next one</strong> (autoregressive) or <strong style="color:var(--wf-accent);">denoise them all at once</strong> (diffusion). The architecture differences are engineering — the underlying mechanism is always constrained collapse of a possibility space.</p>
+            <p data-plain="Most generative AI systems now follow the same pattern: shrink the data into a manageable form, then either predict it piece by piece or clean it up all at once." data-psi="Across modalities, modern AI converges on one deep rule: compress reality into a latent code, then collapse that code under constraint." data-duck="No matter the pond, the ducks first turn bread and ripples into a smaller pond-map. Then they either pick the next breadcrumb one by one or smooth the whole pond until the right pattern appears." >Every modality converges on the same two ideas: <strong style="color:var(--wf-cyan);">compress the signal into tokens or latents</strong>, then either <strong style="color:var(--wf-accent);">predict the next one</strong> (autoregressive) or <strong style="color:var(--wf-accent);">denoise them all at once</strong> (diffusion). The architecture differences are engineering — the underlying mechanism is always constrained collapse of a possibility space.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-accent);padding-left:1rem;">

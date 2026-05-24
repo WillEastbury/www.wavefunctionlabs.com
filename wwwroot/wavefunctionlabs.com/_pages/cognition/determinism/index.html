@@ -4,12 +4,12 @@
         <p class="wf-section-desc">Same input, same output. That's the promise. Here's where it holds — and where it doesn't.</p>
 
         <div class="wf-article-body">
-            <p>A system is <strong style="color:var(--wf-gold);">deterministic</strong> if, given the same input and the same starting state, it always produces the same output. A system is <strong style="color:var(--wf-accent);">non-deterministic</strong> if it doesn't — either by design or by accident.</p>
+            <p data-plain="Deterministic means same setup, same result. Non-deterministic means other factors can change what happens." data-psi="Determinism is a tightly constrained wavefunction with one allowed trajectory. Non-determinism is the system exploring multiple admissible paths before measurement." data-duck="A deterministic pond sends the same duck to the same crumb every time. A non-deterministic pond lets timing, ripples, and other ducks change who gets there first.">A system is <strong style="color:var(--wf-gold);">deterministic</strong> if, given the same input and the same starting state, it always produces the same output. A system is <strong style="color:var(--wf-accent);">non-deterministic</strong> if it doesn't — either by design or by accident.</p>
             <p>Most engineers think everything they build is deterministic. Most of it isn't.</p>
 
             <!-- Pure Determinism -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Pure Determinism</h3>
-            <p>A pure function: f(x) = y. Always. No exceptions. No side effects, no external state, no timing dependency.</p>
+            <p data-plain="A truly predictable function always gives the same output for the same input, no matter what else is happening.">A pure function: f(x) = y. Always. No exceptions. No side effects, no external state, no timing dependency.</p>
 
             <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
                 <strong style="color:var(--wf-cyan);">Integer arithmetic</strong> — 3 + 5 = 8. On every machine. Every time.<br>
@@ -49,7 +49,7 @@
 
             <!-- Accidental Non-Determinism -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Accidental Non-Determinism: The Bugs You Can't See</h3>
-            <p>This is where systems that <em>should</em> be deterministic aren't. Not because you chose randomness — because the universe leaked in.</p>
+            <p data-plain="Sometimes a system acts unpredictably because outside conditions leaked in." data-psi="What feels like a bug is often uncontrolled coupling to external entropy. The machine did not fail; the boundary around the computation was porous." data-duck="You thought the pond was fenced, then wind, current, and extra ducks slipped through the gate and moved the bread.">This is where systems that <em>should</em> be deterministic aren't. Not because you chose randomness — because the universe leaked in.</p>
 
             <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
                 <strong style="color:var(--wf-accent);">Floating-point arithmetic</strong> — different hardware, different rounding, different results<br>
@@ -63,7 +63,7 @@
 
             <!-- Concurrency -->
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Concurrency: The Biggest Source</h3>
-            <p>The moment you have two threads, two processes, or two machines, determinism is gone unless you explicitly enforce it.</p>
+            <p data-plain="As soon as multiple things run at once, predictability disappears unless you force it." data-psi="Concurrency creates superposition at the system level. Without synchronisation, observation finds different interleavings on different runs." data-duck="Once two ducks lunge for the same crumb, the pond decides the story by splash timing unless a duck in charge sets the order.">The moment you have two threads, two processes, or two machines, determinism is gone unless you explicitly enforce it.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
@@ -82,7 +82,7 @@
 
             <!-- Distributed Systems -->
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Distributed Systems: Non-Determinism as Physics</h3>
-            <p>In distributed systems, non-determinism isn't a bug. It's the fundamental operating condition.</p>
+            <p data-plain="In distributed systems, unpredictability is normal.">In distributed systems, non-determinism isn't a bug. It's the fundamental operating condition.</p>
 
             <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2;">
                 <strong style="color:var(--wf-cyan);">No global clock</strong> — "what happened first?" has no universal answer<br>
@@ -91,11 +91,11 @@
                 <strong style="color:var(--wf-cyan);">Eventual consistency</strong> — different nodes see different values for the same data. Temporarily. Maybe.
             </p>
 
-            <p>The entire field of distributed consensus (Paxos, Raft, PBFT) exists because the physical world is non-deterministic and you need to synthesise agreement from chaos.</p>
+            <p data-plain="Consensus exists because computers have to agree even when timing and failures are messy." data-psi="Consensus is engineered collapse across distant observers. Separate nodes inhabit different local eigenstates until protocol crystallises one shared history." data-duck="Each corner of the pond sees different ripples, so the ducks need a loud quacking ritual before they agree where the bread actually landed.">The entire field of distributed consensus (Paxos, Raft, PBFT) exists because the physical world is non-deterministic and you need to synthesise agreement from chaos.</p>
 
             <!-- Quantum -->
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Quantum: Fundamental Non-Determinism</h3>
-            <p>At the bottom of the stack, physics itself is non-deterministic. Quantum measurement is genuinely random — not "we don't know the hidden variable" random, but "there is no hidden variable" random.</p>
+            <p data-plain="At the quantum level, some randomness is real, not just hidden complexity.">At the bottom of the stack, physics itself is non-deterministic. Quantum measurement is genuinely random — not "we don't know the hidden variable" random, but "there is no hidden variable" random.</p>
 
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:1.8;">
                 A quantum bit exists in superposition until measured. The outcome is probabilistic. No seed. No hidden state. This is the only true source of non-determinism in the universe — everything else is just complexity we can't track.
@@ -115,12 +115,12 @@
                 </p>
             </div>
 
-            <p>Most real systems live in the middle — deterministic at the instruction level, non-deterministic at the system level. The gap between those two is where bugs live.</p>
+            <p data-plain="Small parts can be predictable even when the whole system is not.">Most real systems live in the middle — deterministic at the instruction level, non-deterministic at the system level. The gap between those two is where bugs live.</p>
 
             <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
-                <p style="color:var(--wf-gold);font-weight:400;">Determinism is not a property of computers. It's a property of <em>specific computations running under specific conditions</em>. The moment you add concurrency, networks, or floating point, you've left the deterministic world. Most software lives outside it and pretends otherwise.</p>
+                <p style="color:var(--wf-gold);font-weight:400;" data-plain="Predictability depends on the exact setup, not just on using a computer." data-psi="Determinism is not magic inside silicon but a boundary condition you must actively preserve. Open the system to time, float, or networks and entropy re-enters." data-duck="A pond is only predictable while you control the gate, the ducks, and the bread. Open it to weather and wandering ducks and the story stops repeating.">Determinism is not a property of computers. It's a property of <em>specific computations running under specific conditions</em>. The moment you add concurrency, networks, or floating point, you've left the deterministic world. Most software lives outside it and pretends otherwise.</p>
             </div>
 
-            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Determinism is a constraint on the wavefunction. Remove it, and the system explores. Enforce it, and the system collapses to a single path. Most interesting systems need both — deterministic components composed into non-deterministic wholes.</p>
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;" data-plain="Interesting systems are usually built from reliable parts mixed into messy real-world behaviour.">Determinism is a constraint on the wavefunction. Remove it, and the system explores. Enforce it, and the system collapses to a single path. Most interesting systems need both — deterministic components composed into non-deterministic wholes.</p>
         </div>
 </div>

@@ -5,7 +5,7 @@
         <a href="https://github.com/WillEastbury/picowal" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
         <div class="wf-article-tags">C · RP2350 · Pico 2W · SD Card · WAL · SSR</div>
         <div class="wf-article-body">
-            <p>A networked micro-database running on a <strong>Raspberry Pi Pico 2W</strong> with a 3.5" touchscreen and 16GB SD card. Full SSR web UI, user auth, schema management, a query language with joins and aggregates, batch writes, and OTA firmware updates.</p>
+            <p data-plain="This puts a small but complete data system on cheap hardware. It can store records, show a web interface, handle users, run queries, and update itself." data-psi="PicoWAL compresses database ontology down to its irreducible core: ordered bytes, durable state, and simple transforms. The surprise is how little hardware that truth requires." data-duck="This pond proves you do not need a giant lake for real duck business. A tiny pond can still track bread, ducks, gates, and who gets fed.">A networked micro-database running on a <strong>Raspberry Pi Pico 2W</strong> with a 3.5" touchscreen and 16GB SD card. Full SSR web UI, user auth, schema management, a query language with joins and aggregates, batch writes, and OTA firmware updates.</p>
 
             <p><strong>Architecture</strong></p>
             <ul>
@@ -17,7 +17,7 @@
             </ul>
 
             <p><strong>Data model</strong></p>
-            <p>Data is organised into <strong>packs</strong> (like tables) containing <strong>cards</strong> (like rows). Each card is a binary blob with a 4-byte magic header followed by ordinal-tagged fields. No ORM. No query planner committee meetings. Just structured bytes on an SD card.</p>
+            <p data-plain="It stores records in table-like groups as compact binary data on an SD card. The design stays simple by working directly with structured bytes instead of extra software layers." data-psi="Tables and rows are just human metaphors over persistent byte structure. Once meaning is explicit, the database becomes disciplined state on storage." data-duck="Underneath all the fancy pond talk, it is just organised bread piles and ducks agreeing what each pile means.">Data is organised into <strong>packs</strong> (like tables) containing <strong>cards</strong> (like rows). Each card is a binary blob with a 4-byte magic header followed by ordinal-tagged fields. No ORM. No query planner committee meetings. Just structured bytes on an SD card.</p>
 
             <div class="wf-insight">A database is just a transformation engine over byte streams.</div>
 

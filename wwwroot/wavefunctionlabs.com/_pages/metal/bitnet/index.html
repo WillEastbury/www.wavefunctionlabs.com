@@ -5,7 +5,7 @@
         <a href="https://github.com/WillEastbury/RP2350B_Bitnet" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
         <div class="wf-article-tags">C · RP2350 · BitNet · 1.58-bit · Ternary · Inference</div>
         <div class="wf-article-body">
-            <p>A native C inference engine for <strong>BitNet b1.58</strong> targeting the RP2350 with SD card weight storage. The model — 24 layers, dim 1536, 16 heads, FFN 4096, vocab 32K — fits in a <strong>194 MB</strong> SD card image and runs end-to-end in pure C with no runtime dependencies.</p>
+            <p data-plain="This runs the BitNet AI model directly in C on a very small computer by keeping the model on an SD card. The goal is to make text generation work on limited hardware without extra software layers.">A native C inference engine for <strong>BitNet b1.58</strong> targeting the RP2350 with SD card weight storage. The model — 24 layers, dim 1536, 16 heads, FFN 4096, vocab 32K — fits in a <strong>194 MB</strong> SD card image and runs end-to-end in pure C with no runtime dependencies.</p>
 
             <p><strong>What works</strong></p>
             <ul>
@@ -18,7 +18,7 @@
             </ul>
 
             <p><strong>SD card layout</strong></p>
-            <p>Sector 0 holds the header. Vocab at sector 16. Embeddings at sector 1732. 24 layers with stride 11,153 sectors each. Every matrix starts on a sector boundary — DMA-aligned reads never straddle. No filesystem. No indirection.</p>
+            <p data-plain="The model is laid out on the SD card in fixed locations so the device can read pieces quickly and predictably. That avoids filesystem overhead and keeps data transfers simple.">Sector 0 holds the header. Vocab at sector 16. Embeddings at sector 1732. 24 layers with stride 11,153 sectors each. Every matrix starts on a sector boundary — DMA-aligned reads never straddle. No filesystem. No indirection.</p>
 
             <p><strong>Embedding quantization</strong></p>
             <table class="wf-spec-table">

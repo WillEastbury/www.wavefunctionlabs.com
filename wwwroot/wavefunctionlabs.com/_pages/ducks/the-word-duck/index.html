@@ -6,10 +6,10 @@
 
         <div class="wf-article-body">
 
-            <p>D-U-C-K. Four letters. One syllable. A vibration pattern in air. A sequence of Unicode code points. A token ID (probably somewhere around 37812, depending on the tokeniser). None of these have any physical relationship to the actual animal. The connection is pure <strong style="color:var(--wf-gold);">convention</strong>.</p>
+            <p data-plain="The word 'duck' only means something because people agreed it does." data-psi="Symbols have no mass of their own. Their power comes from synchronising many minds onto one latent attractor." data-duck="The duck is now reading the word duck. Four little marks, and the whole pond swivels toward one bird.">D-U-C-K. Four letters. One syllable. A vibration pattern in air. A sequence of Unicode code points. A token ID (probably somewhere around 37812, depending on the tokeniser). None of these have any physical relationship to the actual animal. The connection is pure <strong style="color:var(--wf-gold);">convention</strong>.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Symbol Problem</h3>
-            <p>Words are arbitrary. In French it's "canard." In Japanese it's "アヒル." In Mandarin it's "鸭." Different sounds, different letters, same bird. The symbol has no intrinsic connection to the thing it represents. This is Saussure's insight: the signifier is arbitrary relative to the signified.</p>
+            <p data-plain="Different languages use different sounds for the same bird, which shows the word itself is arbitrary.">Words are arbitrary. In French it's "canard." In Japanese it's "アヒル." In Mandarin it's "鸭." Different sounds, different letters, same bird. The symbol has no intrinsic connection to the thing it represents. This is Saussure's insight: the signifier is arbitrary relative to the signified.</p>
 
             <p>And yet symbols are the most powerful representational channel we have. You just read "duck" and your brain activated visual, behavioural, and conceptual representations simultaneously. Four letters did what evolution took millions of years to wire.</p>
 
@@ -25,10 +25,10 @@
                 </p>
             </div>
 
-            <p>The tokeniser doesn't understand "duck." It's a lookup table. But the embedding vector — the 768 or 4096 numbers that represent "duck" inside the model — <em>that</em> encodes something. It was placed in a specific region of vector space by billions of training examples that showed the model what "duck" means by showing it what "duck" <em>does</em> in sentences.</p>
+            <p data-plain="The model turns the word into numbers, then learns where those numbers belong near related ideas." data-psi="Meaning is not in the token ID but in the field of relations around it. The vector is a coordinate in a social geometry of symbols." data-duck="The label on the bread bag means nothing alone. It matters because every duck learned where that label usually appears.">The tokeniser doesn't understand "duck." It's a lookup table. But the embedding vector — the 768 or 4096 numbers that represent "duck" inside the model — <em>that</em> encodes something. It was placed in a specific region of vector space by billions of training examples that showed the model what "duck" means by showing it what "duck" <em>does</em> in sentences.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Word2Vec: The Original Insight</h3>
-            <p>The 2013 result that changed everything: if you train a model to predict words from their context (or context from words), the learned vectors capture <strong style="color:var(--wf-cyan);">semantic relationships as geometric relationships</strong>:</p>
+            <p data-plain="Word models learned that meaning shows up as distance and direction in a maths space.">The 2013 result that changed everything: if you train a model to predict words from their context (or context from words), the learned vectors capture <strong style="color:var(--wf-cyan);">semantic relationships as geometric relationships</strong>:</p>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-cyan);font-size:.85rem;line-height:2.2;margin:0;">
@@ -38,15 +38,15 @@
                 </p>
             </div>
 
-            <p>The symbols have no inherent structure. But the <em>vectors learned from symbol co-occurrence</em> have rich structure. The geometry of the space reflects the geometry of the concepts. Analogy is vector arithmetic.</p>
+            <p data-plain="Words don't come with built-in meaning, but patterns between words can still be useful.">The symbols have no inherent structure. But the <em>vectors learned from symbol co-occurrence</em> have rich structure. The geometry of the space reflects the geometry of the concepts. Analogy is vector arithmetic.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Grounding Problem</h3>
-            <p>A language model has a rich representation of "duck." It knows ducks swim, quack, have feathers, are birds, are eaten, appear in parks. But it has never seen, heard, touched, or smelled a duck. Its "duck" is grounded in <strong style="color:var(--wf-gold);">other symbols</strong>, not in sensory experience.</p>
+            <p data-plain="A language model knows ducks through text, not through seeing or touching a real one." data-psi="Ungrounded symbols form closed semantic loops. A system can orbit duckness forever without ever getting wet." data-duck="This duck knows every pond rumour but has never touched water. It is a library duck with immaculate quack theory.">A language model has a rich representation of "duck." It knows ducks swim, quack, have feathers, are birds, are eaten, appear in parks. But it has never seen, heard, touched, or smelled a duck. Its "duck" is grounded in <strong style="color:var(--wf-gold);">other symbols</strong>, not in sensory experience.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">The Chinese Room</h4>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">Searle's thought experiment: a person in a room follows rules to manipulate Chinese symbols perfectly, producing correct outputs — but doesn't understand Chinese. Symbols can be processed without grounding. Is an LLM the room? It manipulates "duck" perfectly in context. Does it understand ducks?</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="This asks whether following language rules perfectly is the same as actually understanding.">Searle's thought experiment: a person in a room follows rules to manipulate Chinese symbols perfectly, producing correct outputs — but doesn't understand Chinese. Symbols can be processed without grounding. Is an LLM the room? It manipulates "duck" perfectly in context. Does it understand ducks?</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-cyan);font-size:.85rem;margin-bottom:.6rem;">The Counter-Argument</h4>
@@ -60,13 +60,13 @@
             <p>One symbol. At least eight concepts. How does a Transformer handle this?</p>
 
             <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;margin:1.2rem 0;">
-                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Contextual embeddings.</strong> The initial token embedding for "duck" is the same regardless of context. But after passing through attention layers, the representation changes. In "the duck swam," the vector shifts toward animal-space. In "duck!" it shifts toward action-space. In "sitting duck," it shifts toward vulnerability/idiom-space. The same symbol gets different representations depending on what's around it. Polysemy is resolved by attention.</p>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="The model starts with the same word, then uses the surrounding words to figure out which meaning you mean."><strong style="color:var(--wf-cyan);">Contextual embeddings.</strong> The initial token embedding for "duck" is the same regardless of context. But after passing through attention layers, the representation changes. In "the duck swam," the vector shifts toward animal-space. In "duck!" it shifts toward action-space. In "sitting duck," it shifts toward vulnerability/idiom-space. The same symbol gets different representations depending on what's around it. Polysemy is resolved by attention.</p>
             </div>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Where Symbols Break</h3>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;" data-plain="Word systems break when labels are split oddly, new words show up, or fluent text sounds right but isn't.">
                     <strong style="color:var(--wf-gold);">Tokenisation artefacts</strong> — "duck" is one token. "ducklings" might be two: "duck" + "lings." "Muscovy duck" is probably three tokens. The boundary between symbols doesn't align with the boundary between concepts.<br>
                     <strong style="color:var(--wf-gold);">Out-of-vocabulary</strong> — a new word has no embedding. The model must infer meaning from subword tokens. It handles "duckish" by combining "duck" + "ish" — but has never seen the word, so the representation is approximate.<br>
                     <strong style="color:var(--wf-gold);">Translation gaps</strong> — some concepts don't have one-to-one symbol mappings across languages. The Japanese distinction between wild ducks (鴨, kamo) and domestic ducks (アヒル, ahiru) collapses to one English word.<br>
@@ -74,7 +74,7 @@
                 </p>
             </div>
 
-            <p style="color:var(--wf-gold);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">The symbol is the most efficient channel — four letters carry the weight of an entire concept. But efficiency comes from compression, and compression is lossy. The word "duck" activates a representation, but the representation is built from co-occurrence, not from reality. The map is not the territory. The word is not the duck.</p>
+            <p style="color:var(--wf-gold);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;" data-plain="Words are efficient shortcuts, but they leave a lot out. The word is never the full thing." data-psi="Compression makes language powerful and dangerous. The symbol is a tiny packet standing in for a world too large to fit inside it." data-duck="Writing duck on the sign is efficient. It is also not, in any legally binding sense, an actual duck.">The symbol is the most efficient channel — four letters carry the weight of an entire concept. But efficiency comes from compression, and compression is lossy. The word "duck" activates a representation, but the representation is built from co-occurrence, not from reality. The map is not the territory. The word is not the duck.</p>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <a href="/ducks/quacks-like-a-duck" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 3: Quacks Like a Duck</a>

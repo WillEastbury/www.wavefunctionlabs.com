@@ -3,8 +3,8 @@
         <h1 class="wf-section-hdr">Streaming Over Owning</h1>
         <div class="wf-article-tags">performance · streaming · IO · systems design</div>
         <div class="wf-article-body">
-            <p>Owning state is expensive. Streaming it is cheap.</p>
-            <p>If you can avoid materialising, avoid it. Transform in motion. Respond while reading. Never stop the flow unless you have to.</p>
-            <p class="wf-insight">The fastest system is the one that never stops moving.</p>
+            <p data-plain="Keeping data around as owned state costs more memory and coordination than just processing it as it passes through." data-psi="Stored state accumulates entropy and coordination cost. Streaming lets information propagate without crystallising into unnecessary mass." data-duck="A pond full of hoarding ducks turns to sludge. Let the bread drift and let the ducks eat in motion.">Owning state is expensive. Streaming it is cheap.</p>
+            <p data-plain="If you can read, transform, and send data as it arrives, you avoid storing extra copies and slowing the system down." data-psi="The wavefunction is cheapest while it stays in flight. Every pause to materialise creates a new basin of inertia." data-duck="Do not haul every crumb onto the bank for inspection. Let it ride the ripples and quack back while it is still floating.">If you can avoid materialising, avoid it. Transform in motion. Respond while reading. Never stop the flow unless you have to.</p>
+            <p class="wf-insight" data-plain="Systems are fastest when data keeps moving instead of being paused and stored.">The fastest system is the one that never stops moving.</p>
         </div>
 </div>

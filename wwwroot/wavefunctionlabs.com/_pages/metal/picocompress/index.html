@@ -5,7 +5,7 @@
         <a href="https://github.com/WillEastbury/picocompress" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
         <div class="wf-article-tags">C · Embedded · LZ · Compression · ARM · NEON</div>
         <div class="wf-article-body">
-            <p>Tiny dependency-free C compression library. Runs on Arduino, ESP32, Pico W/2W, and Raspberry Pi — from <strong>2K SRAM</strong> to Linux SBCs. Beats brotli q1 on ratio. Decodes 2-5× faster. Uses 3,600× less memory.</p>
+            <p data-plain="This squeezes data down on very small devices without needing extra software. It aims to save space while staying fast and using very little memory." data-psi="Compression is structured entropy management. The win comes from detecting repeated information and paying for it once." data-duck="The ducks notice the same bread patterns showing up again and again, so they stop quacking every crumb from scratch.">Tiny dependency-free C compression library. Runs on Arduino, ESP32, Pico W/2W, and Raspberry Pi — from <strong>2K SRAM</strong> to Linux SBCs. Beats brotli q1 on ratio. Decodes 2-5× faster. Uses 3,600× less memory.</p>
 
             <p><strong>Encoder profiles</strong></p>
             <table class="wf-spec-table">
@@ -14,7 +14,7 @@
                 <tr><td>Q3</td><td>7.7 KB encode — Pico 2W, ESP32, medium MCUs</td></tr>
                 <tr><td>Q4</td><td>13.8 KB encode — Pi 3/4/5, ESP32-S3, Linux SBCs</td></tr>
             </table>
-            <p>All profiles produce decoder-compatible streams. Any encoder, any decoder, always interoperable.</p>
+            <p data-plain="Data compressed with any mode can be decompressed by any supported decoder. You can choose the size-speed tradeoff you want without breaking compatibility." data-psi="Interoperable streams mean the information contract stays stable even when the optimisation profile changes. Different encoders still inhabit the same code space." data-duck="Big ducks and tiny ducks can all leave bread in the same pond language. However the bread was packed, any duck can unpack it.">All profiles produce decoder-compatible streams. Any encoder, any decoder, always interoperable.</p>
 
             <p><strong>Features</strong></p>
             <ul>

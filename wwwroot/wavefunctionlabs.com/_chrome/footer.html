@@ -70,5 +70,106 @@ function spawn() {
 setInterval(spawn, 2200);
 for (let i = 0; i < 6; i++) setTimeout(spawn, i * 350);
 </script>
+<style>
+#wtf-btn,#psi-btn,#duck-btn{position:fixed;right:1.5rem;z-index:10000;display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1rem;background:rgba(4,4,14,.94);border-radius:6px;font-family:'BareMetalMono',SFMono-Regular,Menlo,monospace;font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);transition:box-shadow .25s,transform .12s,opacity .2s;user-select:none;border-style:solid;border-width:1px}
+#wtf-btn{bottom:1.5rem;color:#00c8ff;border-color:rgba(0,200,255,.55);box-shadow:0 0 14px rgba(0,200,255,.2),0 2px 10px rgba(0,0,0,.7)}
+#wtf-btn:hover{box-shadow:0 0 26px rgba(0,200,255,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}
+#psi-btn{bottom:4.5rem;color:#f0c040;border-color:rgba(240,192,64,.55);box-shadow:0 0 14px rgba(240,192,64,.2),0 2px 10px rgba(0,0,0,.7)}
+#psi-btn:hover{box-shadow:0 0 26px rgba(240,192,64,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}
+#duck-btn{bottom:7.5rem;color:#f97316;border-color:rgba(249,115,22,.55);box-shadow:0 0 14px rgba(249,115,22,.2),0 2px 10px rgba(0,0,0,.7)}
+#duck-btn:hover{box-shadow:0 0 26px rgba(249,115,22,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}
+#wtf-btn:active,#psi-btn:active,#duck-btn:active{transform:translateY(0)}
+#wtf-btn.busy,#psi-btn.busy,#duck-btn.busy{opacity:.45;cursor:wait;pointer-events:none}
+</style>
+<script>
+// ── WTF + PSI + Duck Buttons: Matrix decode toggles ──
+// WTF (cyan) → plain English  |  ψ (gold) → deeper metaphor  |  🦆 (orange) → duck analogy
+(function(){
+    var CHARS='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモラリルレロABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+=-|<>[]{}';
+    function decode(el,target,dur,hue,done){
+        var start=null,len=target.length;
+        function frame(ts){
+            if(!start)start=ts;
+            var p=Math.min((ts-start)/dur,1),locked=Math.floor(p*len),out='';
+            for(var i=0;i<len;i++){
+                out+=(i<locked||target[i]===' '||target[i]==='\n')?target[i]:CHARS[Math.random()*CHARS.length|0];
+            }
+            el.textContent=out;
+            el.style.filter=p<1?'blur('+((1-p)*4).toFixed(1)+'px)':'';
+            el.style.color=p<1?('hsl('+(hue+Math.round(p*8))+',85%,'+(42+Math.round(p*30))+'%)'):'';
+            p<1?requestAnimationFrame(frame):(el.style.filter=el.style.color='',done&&done());
+        }
+        requestAnimationFrame(frame);
+    }
+    function init(){
+        var plainEls=Array.from(document.querySelectorAll('[data-plain]'));
+        var psiEls=Array.from(document.querySelectorAll('[data-psi]'));
+        var duckEls=Array.from(document.querySelectorAll('[data-duck]'));
+        if(!plainEls.length&&!psiEls.length&&!duckEls.length)return;
+        var mode='tech',busy=false,activeEls=[];
+        var wtfBtn=null,psiBtn=null,duckBtn=null;
+        if(plainEls.length){
+            wtfBtn=document.createElement('button');
+            wtfBtn.id='wtf-btn';
+            wtfBtn.innerHTML='<span class="wtf-icon">⁇</span>&nbsp;wtf?';
+            wtfBtn.title='Translate to plain English';
+            document.body.appendChild(wtfBtn);
+        }
+        if(psiEls.length){
+            psiBtn=document.createElement('button');
+            psiBtn.id='psi-btn';
+            psiBtn.innerHTML='<span class="psi-icon">ψ</span>&nbsp;deeper';
+            psiBtn.title='Amplify the metaphor';
+            document.body.appendChild(psiBtn);
+        }
+        if(duckEls.length){
+            duckBtn=document.createElement('button');
+            duckBtn.id='duck-btn';
+            duckBtn.innerHTML='<span class="duck-icon">🦆</span>&nbsp;ducky';
+            duckBtn.title='Explain it in duck terms';
+            document.body.appendChild(duckBtn);
+        }
+        function setLabels(m){
+            if(wtfBtn){wtfBtn.innerHTML=m==='plain'?'<span class="wtf-icon">◎</span>&nbsp;tech':'<span class="wtf-icon">⁇</span>&nbsp;wtf?';wtfBtn.title=m==='plain'?'Back to technical':'Translate to plain English';}
+            if(psiBtn){psiBtn.innerHTML=m==='psi'?'<span class="psi-icon">ψ</span>&nbsp;back':'<span class="psi-icon">ψ</span>&nbsp;deeper';psiBtn.title=m==='psi'?'Back to technical':'Amplify the metaphor';}
+            if(duckBtn){duckBtn.innerHTML=m==='duck'?'<span class="duck-icon">🦆</span>&nbsp;back':'<span class="duck-icon">🦆</span>&nbsp;ducky';duckBtn.title=m==='duck'?'Back to technical':'Explain it in duck terms';}
+        }
+        function restoreTech(){
+            activeEls.forEach(function(el){if(el.dataset.techHtml)el.innerHTML=el.dataset.techHtml;});
+            activeEls=[];
+        }
+        function switchTo(newMode){
+            if(busy)return;
+            busy=true;
+            if(wtfBtn)wtfBtn.classList.add('busy');
+            if(psiBtn)psiBtn.classList.add('busy');
+            if(duckBtn)duckBtn.classList.add('busy');
+            if(mode!=='tech')restoreTech();
+            mode=newMode;
+            setLabels(mode);
+            if(mode==='tech'){busy=false;if(wtfBtn)wtfBtn.classList.remove('busy');if(psiBtn)psiBtn.classList.remove('busy');if(duckBtn)duckBtn.classList.remove('busy');return;}
+            var els=mode==='plain'?plainEls:mode==='psi'?psiEls:duckEls;
+            var attr=mode==='plain'?'data-plain':mode==='psi'?'data-psi':'data-duck';
+            var hue=mode==='plain'?182:mode==='psi'?42:22;
+            activeEls=els.slice();
+            var total=els.length,done=0;
+            els.forEach(function(el,i){
+                if(!el.dataset.techHtml)el.dataset.techHtml=el.innerHTML;
+                var target=el.getAttribute(attr);
+                var dur=Math.max(480,Math.min(target.length*3.8,1500));
+                setTimeout(function(){
+                    decode(el,target,dur,hue,function(){
+                        if(++done===total){busy=false;if(wtfBtn)wtfBtn.classList.remove('busy');if(psiBtn)psiBtn.classList.remove('busy');if(duckBtn)duckBtn.classList.remove('busy');}
+                    });
+                },i*110);
+            });
+        }
+        if(wtfBtn)wtfBtn.addEventListener('click',function(){switchTo(mode==='plain'?'tech':'plain');});
+        if(psiBtn)psiBtn.addEventListener('click',function(){switchTo(mode==='psi'?'tech':'psi');});
+        if(duckBtn)duckBtn.addEventListener('click',function(){switchTo(mode==='duck'?'tech':'duck');});
+    }
+    document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+})();
+</script>
 </body>
 </html>

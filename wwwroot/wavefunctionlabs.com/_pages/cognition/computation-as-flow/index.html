@@ -4,7 +4,7 @@
         <div class="wf-article-tags">computation · flow · constraint · parallelism · AI · systems · metaphor</div>
         <div class="wf-article-body">
 
-            <p>A system is a river flowing through a channel over distance.</p>
+            <p data-plain="This is a metaphor: think of a system as data moving through a constrained path over time.">A system is a river flowing through a channel over distance.</p>
             <p>Six variables define everything about how it behaves.</p>
 
             <h3 style="color:var(--wf-cyan);margin-top:2rem;">The variables</h3>
@@ -13,32 +13,32 @@
                 <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-cyan);">
                     <div style="font-family:'Courier New',monospace;color:var(--wf-cyan);font-size:1.3rem;margin-bottom:.4rem;">ε <span style="font-size:.8rem;opacity:.5;">epsilon</span></div>
                     <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Channel width · Resolution</div>
-                    <p style="font-size:.9rem;">Granularity of flow. How finely change can be expressed. The precision of the pipe.</p>
+                    <p style="font-size:.9rem;" data-plain="ε means how fine-grained the system can be: how small or precise each change can get.">Granularity of flow. How finely change can be expressed. The precision of the pipe.</p>
                 </div>
                 <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-gold);">
                     <div style="font-family:'Courier New',monospace;color:var(--wf-gold);font-size:1.3rem;margin-bottom:.4rem;">Δ <span style="font-size:.8rem;opacity:.5;">delta</span></div>
                     <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Flow rate · Transformation</div>
-                    <p style="font-size:.9rem;">The amount of state moving. Δ defines both throughput and the transformation applied at each step.</p>
+                    <p style="font-size:.9rem;" data-plain="Δ is how much state moves at each step, so it affects both speed and what work gets done.">The amount of state moving. Δ defines both throughput and the transformation applied at each step.</p>
                 </div>
                 <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-gold);">
                     <div style="font-family:'Courier New',monospace;color:var(--wf-gold);font-size:1.3rem;margin-bottom:.4rem;">φ <span style="font-size:.8rem;opacity:.5;">phi</span></div>
                     <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Inflow · Expansion</div>
-                    <p style="font-size:.9rem;">New possibilities entering the system. Tributaries feeding the river. The source of growth.</p>
+                    <p style="font-size:.9rem;" data-plain="φ is the amount of new input or new possibilities entering the system.">New possibilities entering the system. Tributaries feeding the river. The source of growth.</p>
                 </div>
                 <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid var(--wf-accent);">
                     <div style="font-family:'Courier New',monospace;color:var(--wf-accent);font-size:1.3rem;margin-bottom:.4rem;">ψ <span style="font-size:.8rem;opacity:.5;">psi</span></div>
                     <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Outflow · Constraint</div>
-                    <p style="font-size:.9rem;">Stabilisation. Dissipation. The river mouth regulating the system. What leaves and what survives.</p>
+                    <p style="font-size:.9rem;" data-plain="ψ is what limits, filters, or settles the system so it doesn't just expand forever.">Stabilisation. Dissipation. The river mouth regulating the system. What leaves and what survives.</p>
                 </div>
                 <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid #e2e8f0;">
                     <div style="font-family:'Courier New',monospace;color:#e2e8f0;font-size:1.3rem;margin-bottom:.4rem;">V <span style="font-size:.8rem;opacity:.5;">volume</span></div>
                     <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Concurrent capacity</div>
-                    <p style="font-size:.9rem;">Total water in the system at once. How much can flow concurrently. High V → parallelism. Low V → serial execution.</p>
+                    <p style="font-size:.9rem;" data-plain="V is how much work or state the system can hold at once, which affects how much can happen in parallel.">Total water in the system at once. How much can flow concurrently. High V → parallelism. Low V → serial execution.</p>
                 </div>
                 <div style="padding:1.2rem;border:1px solid rgba(0,212,255,.15);border-radius:6px;border-left:3px solid #e2e8f0;">
                     <div style="font-family:'Courier New',monospace;color:#e2e8f0;font-size:1.3rem;margin-bottom:.4rem;">L <span style="font-size:.8rem;opacity:.5;">length</span></div>
                     <div style="color:var(--wf-gold);font-size:.9rem;margin-bottom:.5rem;">Pipeline depth</div>
-                    <p style="font-size:.9rem;">Distance the river travels. Number of transformation stages. High L → deeper refinement. Low L → shallow, immediate output.</p>
+                    <p style="font-size:.9rem;" data-plain="L is how many stages the data goes through before you get an answer.">Distance the river travels. Number of transformation stages. High L → deeper refinement. Low L → shallow, immediate output.</p>
                 </div>
             </div>
 
@@ -100,9 +100,9 @@
             <div class="wf-narrative-edge" style="margin-top:1rem;">
                 <p>Every system you've ever built is a river.</p>
                 <p>The question was never "what does it do?"</p>
-                <p>The question is: how wide is the channel, how fast is the flow, how deep does it go, and what keeps it from flooding?</p>
+                <p data-plain="The real questions are about capacity, speed, depth, and what keeps the system stable.">The question is: how wide is the channel, how fast is the flow, how deep does it go, and what keeps it from flooding?</p>
             </div>
 
-            <p class="wf-insight">Computation is flow through constraint, at scale and depth.</p>
+            <p class="wf-insight" data-plain="Computation here means data moving through limits and stages, across enough scale to matter.">Computation is flow through constraint, at scale and depth.</p>
         </div>
 </div>

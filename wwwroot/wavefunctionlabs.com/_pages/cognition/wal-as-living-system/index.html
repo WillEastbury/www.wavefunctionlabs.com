@@ -3,8 +3,8 @@
         <h1 class="wf-section-hdr">WAL as a Living System</h1>
         <div class="wf-article-tags">storage · WAL · databases · time · systems</div>
         <div class="wf-article-body">
-            <p>A write-ahead log isn't storage. It's a timeline. Every mutation, every state transition, appended as truth.</p>
-            <p>Indexes, views, queries — they're all interpretations layered on top. The system doesn't "store state". It replays it.</p>
-            <p class="wf-insight">State is not stored. It is reconstructed.</p>
+            <p data-plain="A write-ahead log is a record of changes written in order. Instead of treating the current state as primary, it treats the history of changes as the source of truth." data-psi="A WAL is not a snapshot but a worldline. State is the interference pattern left by ordered mutations through time." data-duck="The pond does not remember one frozen pose of the ducks. It remembers every splash in order and calls that the truth.">A write-ahead log isn't storage. It's a timeline. Every mutation, every state transition, appended as truth.</p>
+            <p data-plain="Indexes and views are built from that history. The system rebuilds the current state by replaying the recorded changes." data-psi="Views are measurements over the log, not independent realities. Current state is a reconstruction collapsed from the history of transitions." data-duck="The ducks keep a trail of ripples and later read it as maps and feeding charts. The pond state is replayed from the splashes.">Indexes, views, queries — they're all interpretations layered on top. The system doesn't "store state". It replays it.</p>
+            <p class="wf-insight" data-plain="The system works out its current state from its recorded history instead of treating one stored snapshot as the only truth.">State is not stored. It is reconstructed.</p>
         </div>
 </div>
