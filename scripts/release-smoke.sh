@@ -33,6 +33,10 @@ expect_code() {
 
 curl "${curl_common[@]}" -D "$HEADERS" -o "$BODY" "$(url /)"
 grep -qi '^HTTP/.* 200' "$HEADERS"
+grep -qi '^Strict-Transport-Security: max-age=31536000; includeSubDomains; preload' "$HEADERS"
+grep -qi "^Content-Security-Policy: default-src 'self'" "$HEADERS"
+grep -qi '^Referrer-Policy: strict-origin-when-cross-origin' "$HEADERS"
+grep -qi '^Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()' "$HEADERS"
 grep -qi 'WaveFunctionLabs' "$BODY"
 
 curl "${curl_common[@]}" -o "$BODY" "$(url /readyz)"
