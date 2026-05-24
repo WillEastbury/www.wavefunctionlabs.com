@@ -7,7 +7,9 @@ TMPDIR="${TMPDIR:-/tmp}"
 BODY="$TMPDIR/wfl-release-smoke-body.$$"
 HEADERS="$TMPDIR/wfl-release-smoke-headers.$$"
 TOKEN_BODY="$TMPDIR/wfl-release-smoke-token.$$"
-trap 'rm -f "$BODY" "$HEADERS" "$TOKEN_BODY"' EXIT
+LIVE_CERT="$TMPDIR/wfl-release-smoke-live-cert.$$"
+SECRET_CERT="$TMPDIR/wfl-release-smoke-secret-cert.$$"
+trap 'rm -f "$BODY" "$HEADERS" "$TOKEN_BODY" "$LIVE_CERT" "$SECRET_CERT"' EXIT
 
 curl_common=(--silent --show-error --fail --max-time "${CURL_MAX_TIME:-10}" --resolve "$HOST:443:${RESOLVE_IP:-}")
 if [ -z "${RESOLVE_IP:-}" ]; then
@@ -38,6 +40,25 @@ grep -qi "^Content-Security-Policy: default-src 'self'" "$HEADERS"
 grep -qi '^Referrer-Policy: strict-origin-when-cross-origin' "$HEADERS"
 grep -qi '^Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()' "$HEADERS"
 grep -qi 'WaveFunctionLabs' "$BODY"
+
+if [ "${CHECK_CERT_SECRET:-1}" != "0" ] && command -v openssl >/dev/null 2>&1 && command -v kubectl >/dev/null 2>&1; then
+    cert_ns="${CERT_NAMESPACE:-wfl-www}"
+    cert_secret="${CERT_SECRET_NAME:-wfl-www-tls}"
+    connect_host="${RESOLVE_IP:-$HOST}"
+    if kubectl get secret "$cert_secret" -n "$cert_ns" -o jsonpath='{.data.tls\.crt}' 2>/dev/null | base64 -d > "$SECRET_CERT"; then
+        echo | openssl s_client -servername "$HOST" -connect "$connect_host:443" -showcerts 2>/dev/null |
+            sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' > "$LIVE_CERT"
+        live_fp=$(openssl x509 -in "$LIVE_CERT" -noout -fingerprint -sha256 | sed 's/^.*=//')
+        secret_fp=$(openssl x509 -in "$SECRET_CERT" -noout -fingerprint -sha256 | sed 's/^.*=//')
+        if [ "$live_fp" != "$secret_fp" ]; then
+            echo "live TLS certificate does not match Kubernetes secret $cert_ns/$cert_secret" >&2
+            echo "live:   $live_fp" >&2
+            echo "secret: $secret_fp" >&2
+            exit 1
+        fi
+        openssl x509 -in "$LIVE_CERT" -noout -checkend "${CERT_MIN_VALID_SECONDS:-1209600}" >/dev/null
+    fi
+fi
 
 curl "${curl_common[@]}" -o "$BODY" "$(url /readyz)"
 grep -q '"status":"ready"' "$BODY"
