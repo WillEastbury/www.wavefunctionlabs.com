@@ -39,8 +39,16 @@ snapshot and can miss filesystem/journal state. Use the CSI snapshot path.
      exit 1'
    ```
 
-4. Create a `VolumeSnapshot` for the PVC. Use the cluster's Azure Disk CSI
-   `VolumeSnapshotClass` name.
+4. Create a `VolumeSnapshot` for the PVC. Apply the Azure Disk snapshot
+   classes once if the cluster does not already have them:
+
+   ```sh
+   kubectl apply -f k8s/azure-disk-snapshotclass.yaml
+   ```
+
+   Use `azure-disk-csi-snapshot-retain` for backup artifacts that must survive
+   deletion of the Kubernetes `VolumeSnapshot` object. Use
+   `azure-disk-csi-snapshot-delete` only for disposable drills.
 
    ```yaml
    apiVersion: snapshot.storage.k8s.io/v1
@@ -49,7 +57,7 @@ snapshot and can miss filesystem/journal state. Use the CSI snapshot path.
      name: wfl-www-picowal-YYYYMMDD-HHMM
      namespace: wfl-www
    spec:
-     volumeSnapshotClassName: <azure-disk-snapshot-class>
+     volumeSnapshotClassName: azure-disk-csi-snapshot-retain
      source:
        persistentVolumeClaimName: wfl-www-picowal
    ```
@@ -68,9 +76,37 @@ snapshot and can miss filesystem/journal state. Use the CSI snapshot path.
      wget -qO- --no-check-certificate https://127.0.0.1/readyz
    ```
 
-## Restore smoke
+## Restore drill
 
 Restore into a fresh PVC first; do not overwrite the live PVC in place.
+
+The scripted drill writes a sentinel score record, quiesces the live pod, takes
+a disposable snapshot, resumes writes, restores the snapshot to a fresh PVC,
+starts an isolated picoweb pod that is not selected by the production Service,
+and validates WAL recovery plus score readback:
+
+```sh
+kubectl apply -f k8s/azure-disk-snapshotclass.yaml
+scripts/picowal-restore-drill.sh
+```
+
+To rehearse an existing retained backup artifact instead of taking a new
+snapshot:
+
+```sh
+scripts/picowal-restore-drill.sh --snapshot-name wfl-www-picowal-YYYYMMDD-HHMM
+```
+
+The drill expects restored `/readyz` to report clean recovery with zero corrupt
+records. `tail_truncated` is a failure for a quiesced snapshot; only use
+`ALLOW_TAIL_TRUNCATED=1` when deliberately inspecting an unquiesced external
+artifact. Set `KEEP_RESTORE=1` or pass `--keep` to leave the temporary pod/PVC
+for manual inspection.
+
+Expected RTO for the current 1Gi Azure Disk PVC is the elapsed time printed by
+the drill: quiesce and snapshot readiness, restore PVC binding, restore pod
+readiness, and validation. Use the latest successful drill output as the live
+RTO expectation rather than a guessed number.
 
 ```yaml
 apiVersion: v1
