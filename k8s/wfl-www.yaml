@@ -16,14 +16,11 @@ spec:
   # SO_REUSEPORT inside the kernel does the cross-core distribution.
   replicas: 1
   strategy:
-    # Inline kernel-socket TLS (no AF_XDP map contention any more), so
-    # RollingUpdate is safe — fresh pod can bind :443 in its own netns
-    # concurrently with the old one. maxUnavailable:0 + maxSurge:1 keeps
-    # the site up across rolls.
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    # Single-writer picowal storage: only one process may own
+    # /data/picowal.wal. Recreate avoids a rollout surge mounting the same
+    # RWO PVC into two picoweb pods; picowal also takes an exclusive file lock
+    # at startup as a fail-fast guard against accidental multi-process writers.
+    type: Recreate
   selector:
     matchLabels:
       app: wfl-www
@@ -60,7 +57,7 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p39-score-2111
+          image: tileforgeacr.azurecr.io/wfl-www:p40-single-2120
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
