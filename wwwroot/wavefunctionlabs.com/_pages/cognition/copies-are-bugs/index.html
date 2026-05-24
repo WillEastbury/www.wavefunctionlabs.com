@@ -4,11 +4,11 @@
         <p class="wf-section-desc">…until proven otherwise.</p>
 
         <div class="wf-article-body">
-            <p>A copy looks harmless. It's usually invisible. It's almost always unnecessary.</p>
-            <p>Every time you copy data, you:</p>
+            <p data-plain="Copying data often feels harmless, but it usually adds work and memory use without adding value.">A copy looks harmless. It's usually invisible. It's almost always unnecessary.</p>
+            <p data-plain="Copying makes the CPU do extra work, touches more memory, and hurts performance.">Every time you copy data, you:</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">Burn CPU<br>Touch memory you didn't need to<br>Trash cache locality<br>Increase GC / allocation pressure</p>
             <p>And worst of all:</p>
-            <p style="color:var(--wf-gold);font-weight:400;">You duplicate reality.</p>
+            <p style="color:var(--wf-gold);font-weight:400;" data-plain="Once you copy data, you now have two versions to keep track of instead of one." data-psi="Two truths with the same name is a lie that hasn't been caught yet." data-duck="Two ducks. Same pond. Same name. One of them is a lie. You just don't know which one yet.">You duplicate reality.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Why Copies Hurt More Than You Think</h3>
             <p>A single copy is cheap. A system full of them isn't.</p>
@@ -17,19 +17,19 @@
             <p>Now you're not processing data. You're moving it around repeatedly for no reason.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Boxing is the Same Smell</h3>
-            <p>Boxing is just a sneaky copy with extra ceremony.</p>
+            <p data-plain="Boxing means wrapping a simple value in a heap object, which usually adds allocation and indirection.">Boxing is just a sneaky copy with extra ceremony.</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">value → heap<br>metadata wrapped around it<br>GC now cares about it</p>
-            <p>You didn't just copy the value. You changed its lifetime and cost model.</p>
+            <p data-plain="A boxed value doesn't just move location; it becomes more expensive to manage and can live longer.">You didn't just copy the value. You changed its lifetime and cost model.</p>
             <p style="color:var(--wf-gold);font-weight:400;">Boxing is a copy that escaped into the heap.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Rule of Thumb</h3>
-            <p>Default stance: don't copy. Don't box. Don't allocate.</p>
+            <p data-plain="The default should be to reuse existing data and memory unless you have a clear reason not to.">Default stance: don't copy. Don't box. Don't allocate.</p>
             <p>Only break that rule when:</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">You cross a boundary that requires it<br>You need isolation for correctness<br>You're deliberately trading memory for something measurable</p>
             <p style="color:var(--wf-gold);font-weight:400;">If you can't explain the reason, it's probably a bug.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Better Model</h3>
-            <p>Operate on views, not values:</p>
+            <p data-plain="Use lightweight views or references to existing data instead of making whole new copies.">Operate on views, not values:</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);"><a href="#/cognition/everything-is-a-span" onclick="event.preventDefault();route('cognition/everything-is-a-span')" style="color:var(--wf-cyan);text-decoration:none;">Spans</a>. Slices. References.</p>
             <p>Same data. Different lens. No duplication. No churn.</p>
 
@@ -41,7 +41,7 @@
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Pattern</h3>
             <p>Most systems copy because it's easy.</p>
             <p>Better systems don't copy because they understand the cost.</p>
-            <p style="color:var(--wf-gold);font-weight:400;">Great systems make copying awkward on purpose.</p>
+            <p style="color:var(--wf-gold);font-weight:400;" data-plain="Well-designed systems make unnecessary copying inconvenient, so you stay close to the original data." data-psi="The design knows something the programmer doesn't. It makes the mistake feel wrong before you make it." data-duck="A well-designed pond makes it awkward to add a second duck with the same name. That awkwardness is the design quacking at you.">Great systems make copying awkward on purpose.</p>
         </div>
 
         <p style="color:var(--wf-accent);font-size:.88rem;font-weight:400;font-style:italic;margin-top:2rem;">A copy is a tax you pay forever for a decision you made once.</p>

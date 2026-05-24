@@ -7,7 +7,7 @@
 
             <div style="border:1px solid var(--wf-cyan);border-left-width:4px;border-radius:6px;padding:1.35rem 1.5rem;margin:0 0 1.4rem 0;background:linear-gradient(90deg,rgba(0,200,255,0.08),rgba(0,200,255,0.025));">
                 <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.55rem;">The current production shape</div>
-                <p style="font-size:1.38rem;line-height:1.42;margin:0 0 .85rem 0;font-weight:500;">One process owns port 443. Two pinned worker threads terminate TLS&nbsp;1.3 inline, parse HTTP/1.1, dispatch through a precompiled jump table, and send prebuilt response bytes straight back to the kernel.</p>
+                <p style="font-size:1.38rem;line-height:1.42;margin:0 0 .85rem 0;font-weight:500;" data-plain="One process runs the whole site. Two dedicated threads handle secure connections, read incoming web requests, look up the right file using a pre-built index, and send it back. No extra steps in between." data-psi="The socket is not a door. It's a channel. The server doesn't answer. It continues." data-duck="One duck owns the pond gate. It does the secret tail-wiggle handshake, reads your quack, finds the right bread, and tosses it back. No middlemen. Just duck.">One process owns port 443. Two pinned worker threads terminate TLS&nbsp;1.3 inline, parse HTTP/1.1, dispatch through a precompiled jump table, and send prebuilt response bytes straight back to the kernel.</p>
                 <div style="display:flex;flex-wrap:wrap;gap:1.6rem;padding-top:.85rem;border-top:1px solid rgba(0,200,255,0.18);">
                     <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">41.2k</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">req/sec cross-node</div></div>
                     <div><div style="font-size:1.55rem;font-weight:600;color:var(--wf-cyan);line-height:1;">3.1×</div><div style="font-size:.78rem;color:var(--wf-muted);margin-top:.25rem;letter-spacing:.04em;">vs Blob's current path</div></div>
@@ -17,7 +17,7 @@
                 </div>
             </div>
 
-            <p>Picoweb is not faster because it has a clever router. It is faster because the usual route is gone. There is no nginx terminator in front, no app server behind, no second parser, no middleware chain, no runtime allocator on the serving path.</p>
+            <p data-plain="Picoweb is not faster because of a clever trick. It is faster because all the usual extra layers — the proxy, the TLS handler, the app server, the middleware — are simply not there." data-psi="You don't win by running faster. You win by having nothing left that can slow you down." data-duck="It's not a faster duck. It's the only duck. The bouncer duck, the translator duck, the middleman duck — all sent home. One pond. One duck.">Picoweb is not faster because it has a clever router. It is faster because the usual route is gone. There is no nginx terminator in front, no app server behind, no second parser, no middleware chain, no runtime allocator on the serving path.</p>
 
             <figure style="margin:1.35rem 0;border:1px solid var(--wf-border);border-left:4px solid var(--wf-cyan);border-radius:6px;background:rgba(0,200,255,0.035);padding:1rem;">
                 <figcaption style="color:var(--wf-cyan);font-size:.74rem;letter-spacing:.12em;font-weight:600;text-transform:uppercase;margin-bottom:.8rem;">Typical static web stack vs picoweb</figcaption>
@@ -72,7 +72,7 @@
                 </table>
             </div>
 
-            <p>The result is not a general application platform. It is a static HTTPS serving machine: minimal HTTP/1.1, a byte-driven TLS&nbsp;1.3 engine, NEON/SHA/AES acceleration, SIMD parsing where it matters, and no dynamic work that can be done once at boot.</p>
+            <p data-plain="The result is not a general-purpose app server. It is a fast static file server: it handles secure connections, finds the right file, and sends it back. Anything that can be prepared once at startup is. Nothing extra runs per request." data-psi="Strip enough layers and the server stops being software. It becomes a propagation medium." data-duck="A duck with nothing left but the essential quack. It doesn't think. It doesn't plan. It finds the right bread and tosses it to whoever did the right tail-wiggle at the gate.">The result is not a general application platform. It is a static HTTPS serving machine: minimal HTTP/1.1, a byte-driven TLS&nbsp;1.3 engine, NEON/SHA/AES acceleration, SIMD parsing where it matters, and no dynamic work that can be done once at boot.</p>
 
             <p><strong>Numbers</strong></p>
 

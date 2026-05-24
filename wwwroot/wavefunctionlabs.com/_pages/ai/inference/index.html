@@ -7,15 +7,15 @@
         <div class="wf-article-body">
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Building Blocks</h3>
-            <p>When you run an AI model — inference — you're executing a computational graph. Every concept below is something that graph is made of. None of them are magical. All of them are just numbers being multiplied and added together, at extraordinary scale.</p>
+            <p data-plain="Running a model just means executing a long chain of math operations that turn input into output." data-psi="Inference is frozen intelligence becoming motion. The trained graph is a fixed causal structure through which information propagates into a decision." data-duck="Inference is the pond running its routine. No duck learns anything new; they just pass bread, quacks, and ripples until an answer pops out.">When you run an AI model — inference — you're executing a computational graph. Every concept below is something that graph is made of. None of them are magical. All of them are just numbers being multiplied and added together, at extraordinary scale.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">Decoder vs Encoder: Two Families of Transformer</h3>
-            <p>The original 2017 Transformer had two halves — an encoder and a decoder. The field split them apart and built entirely different model families from each half. Understanding which half you're using explains most of the differences between models.</p>
+            <p data-plain="Transformer models are built from two roles: one part reads and understands input, and the other generates new output." data-psi="Encoder and decoder are two orientations of the same informational machine. One maps a field, the other extends it through time." data-duck="One duck studies the whole pond before speaking. The other duck keeps quacking forward, using each new ripple to decide the next move.">The original 2017 Transformer had two halves — an encoder and a decoder. The field split them apart and built entirely different model families from each half. Understanding which half you're using explains most of the differences between models.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-cyan);font-size:.88rem;margin-bottom:.6rem;">Decoder-Only (Autoregressive)</h3>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                    <p data-plain="Decoder-only models generate text one piece at a time, using what they've already written." style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
                         <strong>Models:</strong> GPT-4, Claude, LLaMA, Mistral, Gemini, Qwen, Command R<br><br>
                         <strong>How it works:</strong> Processes tokens left-to-right. Each token can only attend to tokens that came <em>before</em> it (causal masking). Generates one token at a time, feeding each output back as input.<br><br>
                         <strong>Trained on:</strong> Next-token prediction — "given everything so far, what comes next?"<br><br>
@@ -24,7 +24,7 @@
                 </div>
                 <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
                     <h3 style="color:var(--wf-accent);font-size:.88rem;margin-bottom:.6rem;">Encoder-Only (Bidirectional)</h3>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                    <p data-plain="Encoder-only models read the whole input at once and are mainly used for understanding or classifying text, not writing new text." style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
                         <strong>Models:</strong> BERT, RoBERTa, DeBERTa, DistilBERT, BGE, E5<br><br>
                         <strong>How it works:</strong> Processes all tokens simultaneously. Every token can attend to every other token — forward <em>and</em> backward. The model sees the full input at once.<br><br>
                         <strong>Trained on:</strong> Masked language modelling — hide random tokens and predict them from context, plus next-sentence prediction.<br><br>
@@ -42,7 +42,7 @@
                 </p>
             </div>
 
-            <p>This single difference — whether attention is <strong>causal</strong> (forward-only) or <strong>bidirectional</strong> (full) — determines what the model can do. Decoders can generate because they're trained to predict the future without seeing it. Encoders can't generate, but they understand context more deeply because they see the entire input at once.</p>
+            <p data-plain="Whether a model can look only backward or at the whole input determines whether it's better at generating text or analysing it." data-psi="Causality defines what information can exist at a point in computation. Seeing only the past enables generation; seeing the whole field enables stronger interpretation." data-duck="A forward-swimming duck can only watch earlier ripples, so it can keep leading the flock. A pond-watching duck that sees the whole pond is better at judging what kind of flock it is.">This single difference — whether attention is <strong>causal</strong> (forward-only) or <strong>bidirectional</strong> (full) — determines what the model can do. Decoders can generate because they're trained to predict the future without seeing it. Encoders can't generate, but they understand context more deeply because they see the entire input at once.</p>
 
             <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
                 <strong style="color:var(--wf-gold);">Why BERT can't write a story:</strong> It was trained to fill in blanks, not to continue sequences. It has no concept of "what comes next" — only "what fits here, given everything around it."<br>
@@ -50,7 +50,7 @@
             </p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Encoder-Decoder (The Original Architecture)</h3>
-            <p>Some models keep both halves. The encoder processes the full input bidirectionally, then the decoder generates output autoregressively while attending to the encoder's representations.</p>
+            <p data-plain="Some models use one part to read the input and another part to produce a separate output, which is useful for tasks like translation.">Some models keep both halves. The encoder processes the full input bidirectionally, then the decoder generates output autoregressively while attending to the encoder's representations.</p>
 
             <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2;">
                 <strong style="color:var(--wf-accent);">Models:</strong> T5, FLAN-T5, mBART, Whisper (for speech)<br>
@@ -93,7 +93,7 @@
                 </table>
             </div>
 
-            <p>BERT-class models are small because they don't need to generate — they just need to understand. A 110M parameter BERT can power a semantic search system that handles millions of queries. A 70B decoder model can reason about novel problems but costs 600× more compute per input.</p>
+            <p data-plain="Smaller read-only models are cheaper for search and classification, while giant generator models cost much more to run but can do broader tasks.">BERT-class models are small because they don't need to generate — they just need to understand. A 110M parameter BERT can power a semantic search system that handles millions of queries. A 70B decoder model can reason about novel problems but costs 600× more compute per input.</p>
 
             <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;margin-top:2rem;">
                 <p style="color:var(--wf-gold);font-weight:400;">The big generative models (GPT, Claude, LLaMA) are all decoders. BERT and its descendants are encoders. They share the same attention mechanism, the same matrix multiplications, the same fundamental maths — the difference is which direction information is allowed to flow.</p>
@@ -110,9 +110,9 @@
                 <strong style="color:var(--wf-cyan);">Scale factors</strong> — learned per-element multipliers in normalisation layers (γ in RMSNorm).
             </p>
 
-            <p>Parameters are fixed after training — they don't change during inference. The number of parameters determines the model's capacity (how much it can learn), its memory footprint (how much RAM/VRAM it needs), and its compute cost (how many operations per token). More parameters generally means more capable, but also more expensive to run.</p>
+            <p data-plain="The more parameters a model has, the more memory it needs and the more expensive it is to run.">Parameters are fixed after training — they don't change during inference. The number of parameters determines the model's capacity (how much it can learn), its memory footprint (how much RAM/VRAM it needs), and its compute cost (how many operations per token). More parameters generally means more capable, but also more expensive to run.</p>
 
-            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Not all numbers in a running model are parameters. Activations (intermediate values), the KV cache, and optimizer states are all computed at runtime — they're not part of the model's parameter count.</p>
+            <p data-plain="A running model also uses extra working memory besides its stored weights." style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Not all numbers in a running model are parameters. Activations (intermediate values), the KV cache, and optimizer states are all computed at runtime — they're not part of the model's parameter count.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Inference</h3>
             <p>Inference is the act of running a trained model to produce an output. Training teaches the model. Inference uses what it learned.</p>
@@ -175,7 +175,7 @@
             <p>Attention is O(N²) in sequence length — doubling the context quadruples the attention compute. FlashAttention and other optimisations reduce the memory cost, but the fundamental compute scaling remains. Long context is expensive.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">KV Cache</h3>
-            <p>During autoregressive generation, the model produces one token at a time. Without caching, it would need to recompute the Key and Value vectors for <em>every previous token</em> at each step — an enormous waste of compute.</p>
+            <p data-plain="The KV cache saves work by remembering earlier token calculations instead of recomputing them every time." data-psi="The KV cache is memory made persistent across collapse steps. It preserves prior relational structure so the model does not have to re-observe the whole past." data-duck="Instead of every duck rechecking the whole pond every quack, they keep a breadcrumb map of earlier ripples. That lets the pond keep moving without starting from scratch." >During autoregressive generation, the model produces one token at a time. Without caching, it would need to recompute the Key and Value vectors for <em>every previous token</em> at each step — an enormous waste of compute.</p>
 
             <p>The KV cache stores the K and V tensors from all previous tokens so they only need to be computed once:</p>
 
@@ -184,9 +184,9 @@
                 <strong style="color:var(--wf-accent);">Step 2+ (decode):</strong> For each new token, compute its Q, K, V. Append its K, V to the cache. Attend to the full cached K, V. Generate the next token.
             </p>
 
-            <p>The KV cache is often the dominant memory consumer during long-context inference. For a 70B model with 128K context in BF16, the KV cache alone can exceed 40 GB. This is why quantised KV caches (INT8, FP8) and techniques like GQA (grouped-query attention) matter — they reduce the cache size without meaningful quality loss.</p>
+            <p data-plain="Long prompts can use huge amounts of memory just to remember earlier tokens, so systems compress that memory too." >The KV cache is often the dominant memory consumer during long-context inference. For a 70B model with 128K context in BF16, the KV cache alone can exceed 40 GB. This is why quantised KV caches (INT8, FP8) and techniques like GQA (grouped-query attention) matter — they reduce the cache size without meaningful quality loss.</p>
 
-            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The distinction between "prefill" (processing the prompt) and "decode" (generating tokens) is fundamental to inference performance. Prefill is compute-bound (large MatMuls). Decode is memory-bound (reading the KV cache for a single token's attention).</p>
+            <p data-plain="Reading the prompt and generating the reply stress hardware in different ways, so they speed up differently." style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The distinction between "prefill" (processing the prompt) and "decode" (generating tokens) is fundamental to inference performance. Prefill is compute-bound (large MatMuls). Decode is memory-bound (reading the KV cache for a single token's attention).</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Tensor</h3>
             <p>A tensor is a multi-dimensional array of numbers. That's it. A single number is a 0D tensor (scalar). A list of numbers is 1D (vector). A grid of numbers is 2D (matrix). Stack grids and you get 3D, 4D, and beyond.</p>
@@ -498,14 +498,14 @@
                 </div>
             </div>
 
-            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
+            <p data-plain="The model does its real work in a smaller internal format, then converts the result back into something humans can read or see." style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
                 <strong style="color:var(--wf-gold);">Why it matters:</strong> The model never works with raw inputs. It projects everything into latent space first — a compressed, structured representation where the geometry encodes meaning. Nearby points mean similar things. Directions encode concepts. The model reasons in this space, and the output is decoded back into tokens, pixels, or audio.
             </p>
 
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">When someone says "latent diffusion," they mean "diffusion that happens in a compressed representation space, not in raw pixel space." When someone says "the model's latent representations," they mean the internal vectors the model computes between input and output.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">Number Formats: Why Precision Matters</h3>
-            <p>Every weight, every activation, every intermediate result is a number. <em>How</em> you represent that number — how many bits, what format — changes everything about cost, speed, and quality.</p>
+            <p data-plain="The size of each stored number changes how much memory and compute the model needs.">Every weight, every activation, every intermediate result is a number. <em>How</em> you represent that number — how many bits, what format — changes everything about cost, speed, and quality.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">FP32 — 32-bit Floating Point</h3>
             <p>The gold standard. 1 sign bit, 8 exponent bits, 23 mantissa bits. Can represent numbers from ≈10<sup>−38</sup> to ≈10<sup>38</sup> with ~7 decimal digits of precision.</p>
@@ -531,7 +531,7 @@
             </div>
 
             <h3 style="color:var(--wf-cyan);font-size:1.1rem;margin-top:3rem;margin-bottom:1rem;">Quantisation: Shrinking the Numbers</h3>
-            <p>Quantisation converts floating-point weights into lower-precision integers. Instead of storing each weight as a 16-bit or 32-bit float, you map the values into a smaller set of discrete levels. The idea: neural network weights are statistically well-behaved — most values cluster around zero, with tails that decay rapidly. You don't need 32 bits of precision to represent them.</p>
+            <p data-plain="Quantisation shrinks the numbers inside a model so it uses less memory and runs faster, while trying to keep behaviour similar." data-psi="Quantisation admits that intelligence is robust to coarse numerics. The shape of the learned field matters more than perfect precision at every coordinate." data-duck="The ducks do not need perfect scales for every crumb of bread. They can round the bread amounts a bit, still quack the same pattern, and fit the whole flock into a smaller pond." >Quantisation converts floating-point weights into lower-precision integers. Instead of storing each weight as a 16-bit or 32-bit float, you map the values into a smaller set of discrete levels. The idea: neural network weights are statistically well-behaved — most values cluster around zero, with tails that decay rapidly. You don't need 32 bits of precision to represent them.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">INT8 — 8-bit Integer</h3>
             <p>Maps each weight to one of 256 levels. A scale factor and zero-point convert between the quantised integers and the original float values.</p>
@@ -548,7 +548,7 @@
             </p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">INT4 — 4-bit Integer</h3>
-            <p>Maps each weight to one of 16 levels. Half a byte per weight. This is where things get aggressive — you're representing the entirety of a weight's learned knowledge with just 4 bits.</p>
+            <p data-plain="4-bit models squeeze each weight into far fewer possible values so large models can fit on consumer hardware." >Maps each weight to one of 16 levels. Half a byte per weight. This is where things get aggressive — you're representing the entirety of a weight's learned knowledge with just 4 bits.</p>
 
             <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2;">
                 <strong style="color:var(--wf-gold);">Memory:</strong> 0.5 bytes per weight. 70B model = ~35 GB. Fits on consumer hardware.<br>
@@ -559,7 +559,7 @@
             <p>INT4 is the sweet spot for running large models on consumer GPUs. Most "local LLM" setups use 4-bit quantised models.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">BitNet & Ternary Weights: {−1, 0, +1}</h3>
-            <p>The extreme end of quantisation. Microsoft's BitNet b1.58 constrains every weight to one of three values: −1, 0, or +1. That's 1.58 bits per weight (log₂(3)).</p>
+            <p data-plain="BitNet pushes this idea further by limiting each weight to three simple choices, which could make AI chips much simpler." >The extreme end of quantisation. Microsoft's BitNet b1.58 constrains every weight to one of three values: −1, 0, or +1. That's 1.58 bits per weight (log₂(3)).</p>
 
             <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
                 <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
@@ -577,7 +577,7 @@
                 <strong style="color:var(--wf-accent);">Microcontroller inference</strong> — models can potentially run on devices with no floating-point unit at all
             </p>
 
-            <p>The catch: you can't just quantise a trained model to ternary after the fact. BitNet models must be <em>trained from scratch</em> with ternary constraints. The model learns to distribute its knowledge across three values instead of continuous floats. The research shows that at sufficient scale, ternary models match the quality of full-precision models.</p>
+            <p data-plain="These ultra-small models have to be trained that way from the start; you can't just heavily compress any normal model and expect it to work the same." >The catch: you can't just quantise a trained model to ternary after the fact. BitNet models must be <em>trained from scratch</em> with ternary constraints. The model learns to distribute its knowledge across three values instead of continuous floats. The research shows that at sufficient scale, ternary models match the quality of full-precision models.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Trits — The Ternary Digit</h3>
             <p>A <strong>bit</strong> holds two states: 0 or 1. A <strong>trit</strong> holds three: −1, 0, or +1. It's the fundamental unit of ternary computing, and it's what BitNet weights are measured in.</p>

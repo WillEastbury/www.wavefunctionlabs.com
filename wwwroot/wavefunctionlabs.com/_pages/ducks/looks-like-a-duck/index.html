@@ -6,12 +6,12 @@
 
         <div class="wf-article-body">
 
-            <p>You can recognise a duck from a silhouette. From a sketch. From a photo at an angle you've never seen before. From a cartoon that shares almost no pixel-level similarity with a real duck. Your visual system doesn't match pixels — it matches <strong style="color:var(--wf-accent);">structure</strong>.</p>
+            <p data-plain="You recognise the overall shape and pattern, not every exact pixel." data-psi="Recognition begins as invariant extraction. The mind throws away pixel noise and keeps the topology that survives." data-duck="The pond is not matching every ripple. It remembers the head-bill-body silhouette that keeps waddling back.">You can recognise a duck from a silhouette. From a sketch. From a photo at an angle you've never seen before. From a cartoon that shares almost no pixel-level similarity with a real duck. Your visual system doesn't match pixels — it matches <strong style="color:var(--wf-accent);">structure</strong>.</p>
 
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What Is Structure?</h3>
-            <p>Structure is spatial relationship between features. A duck has a round head, a flat bill extending forward, a roughly oval body, short legs set far back. These relationships hold across poses, lighting, colours, and art styles. Structure is <em>invariant</em> — it survives transformation.</p>
+            <p data-plain="A duck still reads as a duck even when the angle, colour, or style changes.">Structure is spatial relationship between features. A duck has a round head, a flat bill extending forward, a roughly oval body, short legs set far back. These relationships hold across poses, lighting, colours, and art styles. Structure is <em>invariant</em> — it survives transformation.</p>
 
-            <p>This is exactly what convolutional neural networks learn. Not pixels. Not colours. <strong style="color:var(--wf-accent);">Spatial feature hierarchies.</strong></p>
+            <p data-plain="This is what image models learn too: bigger visual patterns, not raw pixels.">This is exactly what convolutional neural networks learn. Not pixels. Not colours. <strong style="color:var(--wf-accent);">Spatial feature hierarchies.</strong></p>
 
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Feature Ladder</h3>
             <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
@@ -22,10 +22,10 @@
                 <strong style="color:var(--wf-accent);">Layer 5</strong> — scenes. "A duck on water." "Ducks in a park." Context.
             </p>
 
-            <p>Each layer compresses: millions of pixels → thousands of edges → hundreds of textures → dozens of parts → a handful of objects. Recognition is <em>compression with structure preservation</em>.</p>
+            <p data-plain="The model keeps the important shape info and throws away a lot of detail." data-psi="A concept is what survives compression. If duckness remains after most detail is discarded, duckness was structural all along." data-duck="Strip away colour, lighting, glamour, half the feathers. If the pond still yells duck, the duck passed inspection.">Each layer compresses: millions of pixels → thousands of edges → hundreds of textures → dozens of parts → a handful of objects. Recognition is <em>compression with structure preservation</em>.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Embeddings: Duckness as a Point in Space</h3>
-            <p>After the feature ladder, a model doesn't output "duck" directly. It produces a <strong style="color:var(--wf-gold);">vector</strong> — a point in a high-dimensional space. A 512-dimensional embedding. And in that space, something remarkable happens:</p>
+            <p data-plain="Instead of a word, the model turns the image into a point on a big maths map.">After the feature ladder, a model doesn't output "duck" directly. It produces a <strong style="color:var(--wf-gold);">vector</strong> — a point in a high-dimensional space. A 512-dimensional embedding. And in that space, something remarkable happens:</p>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
                 <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
@@ -38,10 +38,10 @@
                 </p>
             </div>
 
-            <p>The distance between points <em>is</em> structural similarity. "Looks like a duck" has a precise mathematical meaning: <strong style="color:var(--wf-gold);">close to the duck region in embedding space</strong>.</p>
+            <p data-plain="On that map, things that look duck-like end up near other ducks." data-psi="Meaning becomes geometry when resemblance is consistent enough. Duckness is a basin in phase space, not a sticker on the image." data-duck="Every duck in the pond drifts toward the duck corner. Geese loiter nearby, penguins get politely redirected.">The distance between points <em>is</em> structural similarity. "Looks like a duck" has a precise mathematical meaning: <strong style="color:var(--wf-gold);">close to the duck region in embedding space</strong>.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">How Diffusion Models Use Structure</h3>
-            <p>A diffusion model generates images by denoising. At each step, the U-Net asks: "given this partially-noisy image and the prompt 'duck,' what noise should I remove?" The answer depends entirely on structural priors — the model has learned what spatial arrangements of features are consistent with "duck."</p>
+            <p data-plain="Image generators build a duck by slowly cleaning noise into a shape that fits 'duck'.">A diffusion model generates images by denoising. At each step, the U-Net asks: "given this partially-noisy image and the prompt 'duck,' what noise should I remove?" The answer depends entirely on structural priors — the model has learned what spatial arrangements of features are consistent with "duck."</p>
 
             <p>Early denoising steps establish <strong style="color:var(--wf-accent);">global structure</strong> — rough shape, pose, composition. Late steps add <strong style="color:var(--wf-accent);">local detail</strong> — feather texture, eye highlights, water reflections. The model generates structure top-down, from the abstract to the specific.</p>
 
@@ -71,7 +71,7 @@
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Where Structure Breaks</h3>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;" data-plain="Vision systems get fooled by tiny changes, strange angles, or convincing fakes.">
                     <strong style="color:var(--wf-accent);">Adversarial examples</strong> — change a few pixels imperceptibly and the model sees "truck" instead of "duck." The feature space has regions where small perturbations cross decision boundaries that don't align with human perception.<br>
                     <strong style="color:var(--wf-accent);">Decoys</strong> — a wooden duck decoy has perfect duck structure. A vision model correctly identifies it as a duck. Is that a success or a failure? It <em>looks</em> like a duck. It isn't one.<br>
                     <strong style="color:var(--wf-accent);">Unusual poses</strong> — a duck diving underwater, upside down, mid-flight from behind. The structural template doesn't match. Recognition degrades when structure breaks expected patterns.<br>
@@ -79,7 +79,7 @@
                 </p>
             </div>
 
-            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Structure is the most intuitive channel. It's what we mean when we say "I know it when I see it." But seeing is just pattern matching on spatial features. The duck you see is a compressed representation — a lossy projection of reality through learned feature detectors. What you see isn't the duck. It's your model of the duck.</p>
+            <p style="color:var(--wf-accent);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;" data-plain="Seeing is still a best-fit guess from patterns. It's not the full thing." data-psi="Seeing is a fast collapse onto the lowest-friction explanation for incoming light. Vision feels direct because the guess lands quickly." data-duck="You never hold the whole duck. You hold the pond's freshest best guess, quacked straight into your head.">Structure is the most intuitive channel. It's what we mean when we say "I know it when I see it." But seeing is just pattern matching on spatial features. The duck you see is a compressed representation — a lossy projection of reality through learned feature detectors. What you see isn't the duck. It's your model of the duck.</p>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <a href="/ducks/the-duck-problem" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 1: The Duck Problem</a>

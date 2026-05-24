@@ -8,4 +8,7 @@ echo "entrypoint: starting picoweb on :443 (inline TLS 1.3, kernel sockets)"
 exec ./picoweb --tls \
   --tls-cert=/certs/tls.crt --tls-key=/certs/tls.key \
   --http-early-hints \
+  --picowal-device=/tmp/picowal.wal \
+  --picowal-prefix=/wal/ \
+  --picowal-bytes=10485760 \
   443 wwwroot 1 100 0 128

@@ -5,7 +5,7 @@
         <a href="https://github.com/WillEastbury/pios" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
         <div class="wf-article-tags">C · AArch64 · BCM2712 · Cortex-A76 · Microkernel</div>
         <div class="wf-article-body">
-            <p>A deterministic microkernel. No Linux. No libc. 4 dedicated CPU cores. Every byte of RAM, every CPU cycle, every hardware register — under your direct control.</p>
+            <p data-plain="This is a very small operating system that runs directly on the hardware and behaves predictably. It gives the program full control over the machine instead of relying on Linux." data-psi="Owning the whole machine collapses uncertainty about where latency and failure come from. Determinism is what remains when the hidden landlords are gone." data-duck="This duck runs the whole pond itself. No landlord ducks or mystery gatekeepers, just one flock controlling bread and ripples directly.">A deterministic microkernel. No Linux. No libc. 4 dedicated CPU cores. Every byte of RAM, every CPU cycle, every hardware register — under your direct control.</p>
 
             <p><strong>Core architecture</strong></p>
             <ul>
@@ -26,7 +26,7 @@
             </table>
 
             <p><strong>Unified pipes</strong></p>
-            <p><code>/ipc</code>, <code>/net</code>, <code>/fs</code>, <code>/hw</code> — all domains mapped through capability-gated pipe adapters. Everything is a stream.</p>
+            <p data-plain="All the system's parts talk through the same simple stream interface. Permissions control what each part can reach." data-psi="A unified stream model turns subsystems into variants of the same informational interface. Capability gates decide reach without changing the underlying semantics." data-duck="Every part of the pond speaks in quacks and flowing bread. The gate only decides which ducks may reach which corner of the pond."><code>/ipc</code>, <code>/net</code>, <code>/fs</code>, <code>/hw</code> — all domains mapped through capability-gated pipe adapters. Everything is a stream.</p>
 
             <div class="wf-insight">When you own every cycle, latency becomes a choice, not an accident.</div>
 

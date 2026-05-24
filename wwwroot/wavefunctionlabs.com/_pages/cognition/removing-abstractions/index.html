@@ -3,9 +3,9 @@
         <h1 class="wf-section-hdr">Removing Abstraction Layers</h1>
         <div class="wf-article-tags">performance · architecture · low-level systems · control · truth</div>
         <div class="wf-article-body">
-            <p>Most abstractions exist to make things feel nice, not to make them fast or honest. Middleware, ORMs, frameworks — they hide cost and distort reality.</p>
-            <p>Remove them and you see the actual system: sockets, buffers, spans, syscalls, timing.</p>
+            <p data-plain="Extra layers like middleware and frameworks can make code nicer to use, but they also hide performance costs and what the machine is really doing." data-psi="Abstraction can hide the energy budget and turn real cost into invisible entropy. A pleasant interface does not repeal the underlying physics." data-duck="Fancy pond signs do not make the swim shorter. They just stop the ducks noticing how much bread and splashing the trip costs.">Most abstractions exist to make things feel nice, not to make them fast or honest. Middleware, ORMs, frameworks — they hide cost and distort reality.</p>
+            <p data-plain="Once you remove the extra layers, you can see the real operations underneath, like IO, memory use, and system calls." data-psi="Peel away the layers and you recover the true propagation medium: buffers, syscalls, timing, matter in motion. Reality is the lowest-energy description." data-duck="Strip the pond down and you finally see the water, the ripples, the gate, and which duck is actually moving the bread.">Remove them and you see the actual system: sockets, buffers, spans, syscalls, timing.</p>
             <p>It's harsher. But it's true.</p>
-            <p class="wf-insight">Every abstraction hides cost. Remove it, and reality becomes visible.</p>
+            <p class="wf-insight" data-plain="Every extra layer of code or architecture adds overhead you can't see. Remove it and you can see what the system is actually doing.">Every abstraction hides cost. Remove it, and reality becomes visible.</p>
         </div>
 </div>

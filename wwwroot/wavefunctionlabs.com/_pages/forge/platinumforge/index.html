@@ -1,49 +1,91 @@
 <div class="wf-section">
         <a href="/forge" class="wf-back">← forge</a>
-        <h1 class="wf-section-hdr">PlatinumForge</h1>
-        <p class="wf-section-desc">One idea. Eight agents. Nine stages. Working software.</p>
+        <h1 class="wf-section-hdr">PlatinumForge: the agentic council SDLC prototype</h1>
+        <p class="wf-section-desc" data-plain="Several AI roles work together to design, review, and approve software before it is allowed to ship.">An AI-driven software development pipeline where 8 agents collaborate, challenge each other, and won't let anything ship until it's actually ready.</p>
         <a href="https://github.com/WillEastbury/IdeaForge" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
         <div class="wf-article-tags">C# · .NET 10 · Roslyn · LLM · Single-file · ~6500 lines</div>
         <div class="wf-article-body">
-            <p>A single-file C# web application that drives LLM-powered agentic software generation from a single idea sentence. An 8-agent Design Council refines your constraints, then a 9-stage linear forge pipeline generates a multi-file project with full constraint traceability.</p>
 
-            <p>No scaffolding. No boilerplate. Idea in → traceable, validated, working code out.</p>
-
-            <p><strong>The Design Council — 8 AI Agents</strong></p>
-            <table class="wf-spec-table">
-                <tr><td>Ψ Psi</td><td>General Designer — balanced, helpful, opinionated</td></tr>
-                <tr><td>☀️ Apollo</td><td>The Expander — wild ideas, lateral thinking, "what if?"</td></tr>
-                <tr><td>🔥 Prometheus</td><td>The Challenger — probes assumptions, finds gaps</td></tr>
-                <tr><td>⚒️ Hephaestus</td><td>The Builder — data structures, patterns, architecture</td></tr>
-                <tr><td>⚖️ Themis</td><td>The Enforcer — blocks non-compliant changes</td></tr>
-                <tr><td>🏠 Hestia</td><td>The Explorer — enriches concepts, splits compound ideas</td></tr>
-                <tr><td>⚡ Zeus</td><td>The Arbiter — resolves disagreements, overrides vetoes</td></tr>
-                <tr><td>🔨 Thor</td><td>The Stress Tester — chaos engineering, performance, security</td></tr>
-            </table>
-
-            <p><strong>The 9-Stage Pipeline</strong></p>
-            <div style="font-family: &#x27;JetBrains Mono&#x27;, monospace; font-size: 0.8rem; color: var(--text-dim); margin: 1rem 0; line-height: 2;">
-                🌱 Seed → 💡 Expansion → ⚖️ ConstraintForge → 🎭 BehaviourForge → 🏗️ ShapeForge → 🧪 BuildForge → ⚒️ GenerateForge → ✓ Validate → 🚀 Ship
+            <div style="border:1px solid var(--wf-cyan);border-left-width:4px;border-radius:6px;padding:1.35rem 1.5rem;margin:0 0 1.4rem 0;background:linear-gradient(90deg,rgba(0,200,255,0.08),rgba(0,200,255,0.025));">
+                <div style="color:var(--wf-cyan);font-size:.72rem;letter-spacing:.14em;font-weight:600;text-transform:uppercase;margin-bottom:.55rem;">What it is</div>
+                <p style="font-size:1.18rem;line-height:1.5;margin:0 0 .75rem 0;font-weight:500;" data-plain="You describe the software you want, and several specialised AI roles work through it together until they produce tested code that is ready to build." data-psi="PlatinumForge externalises software development as structured cognition. Design, challenge, construction, and judgement become explicit agents in one information circuit." data-duck="You throw one loaf of intent into the pond, but eight different ducks handle it. One expands it, one questions it, one builds it, and none let bad bread leave the pond.">PlatinumForge is a developer-facing agentic SDLC platform. You describe what you want to build. Eight AI agents with distinct roles — designer, challenger, builder, enforcer, stress tester — work through it together, gate every stage, and produce traceable, tested, buildable code.</p>
+                <p style="margin:0;color:var(--wf-muted);font-size:.92rem;line-height:1.7;" data-plain="This is the developer-facing pipeline prototype, not the end-user app builder.">This is not Forge Studio. Forge Studio is the end-user app builder. PlatinumForge is the developer pipeline prototype — pure agentic SDLC from idea to shipped code.</p>
             </div>
 
-            <p><strong>Key mechanics</strong></p>
-            <ul>
-                <li><strong>Constraint traceability</strong> — every constraint gets a unique ID (C001, C002…) traced through acceptance criteria, architecture, and tests</li>
-                <li><strong>Tests before code</strong> — BuildForge generates all tests BEFORE GenerateForge writes code</li>
-                <li><strong>Council review gates</strong> — after each stage, all 8 agents review with APPROVE / CONCERN / VETO</li>
-                <li><strong>Multi-file generation</strong> — LLM plans a file manifest, then generates interfaces, services, controllers, models</li>
-                <li><strong>End-to-end build</strong> — generates .csproj, runs <code>dotnet build</code>, launches app, health-checks it</li>
-                <li><strong>12 quality sliders</strong> — performance, security, readability… shape every line of generated code</li>
-            </ul>
+            <p data-plain="Instead of one AI working alone, several AI roles review the same work and only move forward when they agree." data-psi="Consensus is a quality filter, not ceremony. Multiple viewpoints reduce the chance that one local minimum becomes the shipped system." data-duck="One duck alone may rush the bread. A whole circle of ducks quacking at each other makes sure the pond does not chase the wrong crumb.">Most AI coding tools work alone. You paste a prompt, you get some code back, you hope it's right. PlatinumForge works differently: a council of eight agents with different jobs, who disagree with each other, and who have to reach consensus before anything moves forward.</p>
 
-            <p><strong>Architecture</strong></p>
-            <p>The entire application is one <code>Program.cs</code>. No ASP.NET. No frameworks. Raw <code>HttpListener</code> on port 5005. Roslyn in-memory compilation. SSE for real-time collaboration. Monaco editor for code viewing. JSON on disk under <code>~/.platinumforge/</code>.</p>
+            <p>The idea is that good software development is already a collaborative process with different kinds of thinking — the person who expands ideas, the person who pokes holes in them, the person who actually builds it, the person who refuses to let unsafe things through. PlatinumForge makes that explicit, and automates it.</p>
+
+            <div class="wf-insight">Nothing ships until the council agrees it's ready.</div>
+
+            <p><strong>The Design Council — 8 agents</strong></p>
+
+            <div style="overflow-x:auto;margin:1rem 0 1.4rem;">
+                <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
+                    <tbody>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;width:2rem;">Ψ</td><td style="padding:.45rem .6rem;"><strong>Psi</strong> — General Designer</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Balanced, helpful, opinionated. Keeps the overall design coherent.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">☀️</td><td style="padding:.45rem .6rem;"><strong>Apollo</strong> — The Expander</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Wild ideas, lateral thinking, "what if?" Pushes the scope of what's possible.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">🔥</td><td style="padding:.45rem .6rem;"><strong>Prometheus</strong> — The Challenger</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Probes assumptions, finds gaps, asks the uncomfortable questions.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">⚒️</td><td style="padding:.45rem .6rem;"><strong>Hephaestus</strong> — The Builder</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Data structures, patterns, architecture. Makes it actually buildable.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">⚖️</td><td style="padding:.45rem .6rem;"><strong>Themis</strong> — The Enforcer</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Blocks non-compliant changes. Rules are rules. Constraints are constraints.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">🏠</td><td style="padding:.45rem .6rem;"><strong>Hestia</strong> — The Explorer</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Enriches concepts, splits compound ideas into manageable pieces.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;">⚡</td><td style="padding:.45rem .6rem;"><strong>Zeus</strong> — The Arbiter</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Resolves disagreements, overrides vetoes when the council is stuck.</td></tr>
+                        <tr><td style="padding:.45rem .6rem;">🔨</td><td style="padding:.45rem .6rem;"><strong>Thor</strong> — The Stress Tester</td><td style="padding:.45rem .6rem;color:var(--wf-muted);">Chaos engineering, performance, security. Breaks things before they ship.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p data-plain="After each step, every AI role reviews the result and can raise issues or stop progress until problems are fixed." data-psi="Review gates create phase boundaries. Work only propagates when the council has enough shared information to stabilise the next state." data-duck="After every pond move, all the ducks quack their vote. If one guard duck blocks the gate, no bread moves until the ripples settle.">After each pipeline stage, all 8 agents review the output. Each votes <strong>APPROVE</strong>, <strong>CONCERN</strong>, or <strong>VETO</strong>. Concerns are logged and addressed. Vetoes block progress until resolved. Zeus can override a veto, but only once everything else has been heard.</p>
+
+            <p><strong>The 9-stage pipeline</strong></p>
+
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--wf-muted);margin:1rem 0;line-height:2.2;">
+                🌱 Seed &nbsp;→&nbsp; 💡 Expansion &nbsp;→&nbsp; ⚖️ ConstraintForge &nbsp;→&nbsp; 🎭 BehaviourForge &nbsp;→&nbsp; 🏗️ ShapeForge &nbsp;→&nbsp; 🧪 BuildForge &nbsp;→&nbsp; ⚒️ GenerateForge &nbsp;→&nbsp; ✓ Validate &nbsp;→&nbsp; 🚀 Ship
+            </div>
+
+            <div style="overflow-x:auto;margin:1rem 0 1.4rem;">
+                <table style="width:100%;border-collapse:collapse;font-size:.92rem;">
+                    <tbody>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>🌱 Seed</strong></td><td style="padding:.45rem .6rem;">You describe what you want to build. Rough intent is fine here.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>💡 Expansion</strong></td><td style="padding:.45rem .6rem;">Apollo and the council expand the idea into concrete concepts, candidate features, and open questions.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>⚖️ ConstraintForge</strong></td><td style="padding:.45rem .6rem;">Every constraint is identified and given a unique ID (C001, C002…). These trace through everything that follows.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>🎭 BehaviourForge</strong></td><td style="padding:.45rem .6rem;">Acceptance criteria and expected behaviours are defined before any architecture is decided.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>🏗️ ShapeForge</strong></td><td style="padding:.45rem .6rem;">Hephaestus shapes the data model, interfaces, and architecture. The council reviews and gates.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>🧪 BuildForge</strong></td><td style="padding:.45rem .6rem;">Tests are written first. All tests. Before a single line of production code exists.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>⚒️ GenerateForge</strong></td><td style="padding:.45rem .6rem;">The LLM plans a file manifest, then generates interfaces, services, controllers, and models to pass the tests.</td></tr>
+                        <tr style="border-bottom:1px solid #222;"><td style="padding:.45rem .6rem;"><strong>✓ Validate</strong></td><td style="padding:.45rem .6rem;">Generates the .csproj, runs <code>dotnet build</code>, launches the app, health-checks it. If it doesn't build and run, it goes back.</td></tr>
+                        <tr><td style="padding:.45rem .6rem;"><strong>🚀 Ship</strong></td><td style="padding:.45rem .6rem;">Traceable, constraint-linked, tested, built, and signed off by the council. Now it can ship.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p><strong>What makes it different</strong></p>
+
+            <ul>
+                <li><strong>Constraint traceability</strong> — every constraint (C001, C002…) is referenced in acceptance criteria, architecture decisions, generated tests, and code comments. You can always trace why something exists.</li>
+                <li><strong>Tests before code</strong> — BuildForge writes all tests before GenerateForge writes a single line of implementation. The tests define what "done" means.</li>
+                <li><strong>Council review gates</strong> — the pipeline cannot move forward if an agent vetoes. This is not optional. It is the mechanism.</li>
+                <li><strong>12 quality sliders</strong> — performance, security, readability, and 9 more. These shape every generation decision throughout the pipeline.</li>
+                <li><strong>End-to-end in one file</strong> — the entire platform is one <code>Program.cs</code>, ~6500 lines. No ASP.NET. Raw <code>HttpListener</code>. Roslyn in-memory compilation. SSE for real-time updates. Monaco editor for code review.</li>
+            </ul>
 
             <div class="wf-insight">Nothing behaves, exists, or ships without traceable constraint lineage.</div>
 
-            <p style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                <a href="https://platinumforge.wavefunctionlabs.com" target="_blank" class="wf-github-btn">Launch PlatinumForge →</a>
+            <p><strong>How it relates to Forge Studio</strong></p>
+
+            <p>PlatinumForge and Forge Studio share the same origin — the idea that AI should understand intent and turn it into something real. But they target different people doing different things.</p>
+
+            <p data-plain="PlatinumForge is for people building software and gives them a structured AI-assisted process that produces tested code." data-psi="PlatinumForge is for code-producing ponds, not ready-made business ponds. It optimises the behaviour that turns intent into buildable artefacts." data-duck="This pond is for ducks building new pond machinery, not ducks just wanting a finished pond. The bread that comes out is code, tests, and a build.">PlatinumForge is for developers. You're building software. You want a structured, traceable, agent-driven pipeline that produces tested, buildable code. The output is code and a build.</p>
+
+            <p>Forge Studio is for end users who want a running business application, not a codebase. They describe what they want to do, the AI coaches them into a proper business definition, and Forge generates and runs the application from it. No developer required for the boilerplate.</p>
+
+            <p>PlatinumForge is the prototype that proved the agentic pipeline concept. Forge Studio is where that concept meets the end user.</p>
+
+            <p style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap;">
                 <a href="https://github.com/WillEastbury/IdeaForge" target="_blank" class="wf-github-btn">View on GitHub →</a>
+                <a href="/forge/continuity" class="wf-github-btn" style="background:transparent;border:1px solid var(--wf-cyan);color:var(--wf-cyan);">Forge Studio →</a>
+                <a href="/forge/origin" class="wf-github-btn" style="background:transparent;border:1px solid #555;color:#aaa;">The origin story →</a>
             </p>
+
         </div>
     </div>

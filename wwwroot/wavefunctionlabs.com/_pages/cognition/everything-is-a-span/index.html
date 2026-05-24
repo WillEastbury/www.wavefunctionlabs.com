@@ -1,16 +1,16 @@
 <div class="wf-section">
 <a class="wf-back" href="/cognition">← cognition</a>
         <h1 class="wf-section-hdr">Everything is a Span</h1>
-        <p class="wf-section-desc">At the lowest level, nothing is objects. Nothing is JSON. Nothing is "models." It's just memory. A pointer. A length. That's it.</p>
+        <p class="wf-section-desc" data-plain="Underneath all the higher-level concepts, a program is just memory plus information about where it starts and how long it is.">At the lowest level, nothing is objects. Nothing is JSON. Nothing is "models." It's just memory. A pointer. A length. That's it.</p>
 
         <div class="wf-article-body">
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Illusion of Structure</h3>
-            <p>What we call structure is interpretation layered on top of bytes.</p>
+            <p data-plain="Structure isn't physically inside the data; it's the meaning we assign when we read raw bytes." data-psi="Bytes remain in superposition until a reader supplies a basis. Structure is the collapse, not the substance." data-duck="The pond water is just water until the ducks agree which ripples mean feed time. The pattern lives in the reading, not in the pond.">What we call structure is interpretation layered on top of bytes.</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">A string is bytes with an encoding<br>An object is bytes with a schema<br>A message is bytes with a boundary</p>
             <p>Remove the interpretation, and they all collapse to the same thing:</p>
             <p style="color:var(--wf-gold);font-weight:400;font-size:1.05rem;font-family:monospace;">(ptr, len)</p>
-            <p>Everything else is agreement.</p>
+            <p data-plain="Most higher-level types exist because systems agree on how to interpret the same bytes.">Everything else is agreement.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Zero Transformation</h3>
             <p>Most systems spend their time converting between shapes:</p>
@@ -19,18 +19,18 @@
             <p style="color:var(--wf-gold);font-weight:400;">The fastest transformation is the one you don't do.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Late Binding of Meaning</h3>
-            <p>If everything is <span style="font-family:monospace;color:var(--wf-gold);">(ptr, len)</span>, then meaning becomes optional until the last possible moment.</p>
-            <p>You don't need to "deserialize" to operate. You can:</p>
+            <p data-plain="This means you can delay deciding what the data means until the moment you actually need to use it." data-psi="Late binding preserves superposition. You delay collapse until action actually requires a meaning." data-duck="Do not decide which duck gets the bread while it is still drifting. Let the ripple travel until a real beak needs it.">If everything is <span style="font-family:monospace;color:var(--wf-gold);">(ptr, len)</span>, then meaning becomes optional until the last possible moment.</p>
+            <p data-plain="You can often work directly on raw data positions without fully turning it into objects first.">You don't need to "deserialize" to operate. You can:</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">Route based on offsets<br>Filter based on known positions<br>Project fields without materialising the whole structure</p>
-            <p>Schema becomes a lens, not a requirement.</p>
+            <p data-plain="A schema is something you apply when reading data, not a requirement baked into the bytes." data-psi="Schema is a measurement lens, not a property embedded in the field. Change the lens and the same bytes collapse differently." data-duck="A duck looking for lunch and a duck looking for nesting straw can watch the same pond and see different treasure.">Schema becomes a lens, not a requirement.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Streams, Not Copies</h3>
-            <p>When data moves, it shouldn't be rebuilt. It should be referenced. Sliced. Forwarded.</p>
-            <p>A stream of spans, not a series of allocations.</p>
-            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">Every copy is a tax.<br>Every allocation is latency.</p>
+            <p data-plain="When data moves through a system, it's usually better to point at the existing bytes than rebuild them." data-psi="Copies create new local entropy and extra mass. Reference and propagation keep the informational wave coherent." data-duck="Do not bake a new loaf for every duck. Pass the same bread across the pond and let each duck peck from the same ripple.">When data moves, it shouldn't be rebuilt. It should be referenced. Sliced. Forwarded.</p>
+            <p data-plain="A span is just a reference to some bytes, so streaming spans means passing views around instead of creating new objects.">A stream of spans, not a series of allocations.</p>
+            <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);" data-plain="Copying data and allocating new memory both add extra time and cost.">Every copy is a tax.<br>Every allocation is latency.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Metadata as Map</h3>
-            <p>If bytes are the territory, metadata is the map.</p>
+            <p data-plain="Metadata is the extra information that tells you how to find meaning inside raw bytes.">If bytes are the territory, metadata is the map.</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);">Field offsets<br>Lengths<br>Indexes</p>
             <p>These are enough to interpret and operate without reshaping the data. You don't need to understand everything. You just need to know where to look.</p>
 
@@ -42,7 +42,7 @@
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Frame</h3>
             <p>All systems eventually collapse to this:</p>
             <p>A region of memory. A view over that region.</p>
-            <p>Everything else is abstraction. Useful, sometimes necessary, but never fundamental.</p>
+            <p data-plain="Everything beyond raw memory and a description of how to read it is just a convenience layer.">Everything else is abstraction. Useful, sometimes necessary, but never fundamental.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Why This Matters</h3>
             <p>This ties directly into everything else:</p>
@@ -50,7 +50,7 @@
             <p>It's the same model, just viewed at the lowest resolution.</p>
         </div>
 
-        <p style="color:var(--wf-accent);font-size:.88rem;font-weight:400;font-style:italic;margin-top:2rem;">If you control (ptr, len), you control the system.</p>
+        <p style="color:var(--wf-accent);font-size:.88rem;font-weight:400;font-style:italic;margin-top:2rem;" data-plain="If you control where the bytes are and how much of them to read, you control how the system behaves." data-psi="Control of pointer and length is control of the observation boundary. Choose the slice and you choose the system that can emerge." data-duck="If you control where the bread floats and how much of it each duck can reach, you control the whole pond.">If you control (ptr, len), you control the system.</p>
     </div>
 
     <!-- Cognition: Allocate Once. Pool Everywhere. -->

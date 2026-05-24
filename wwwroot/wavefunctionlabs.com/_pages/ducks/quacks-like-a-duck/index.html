@@ -6,10 +6,10 @@
 
         <div class="wf-article-body">
 
-            <p>You're blindfolded. Something quacks. You say "duck." You didn't see it. You didn't read the word. You identified it purely by what it <em>did</em>. This is behavioural recognition — and it's the foundation of an entire philosophy of computation.</p>
+            <p data-plain="Here the clue is what it does or sounds like, not what it looks like." data-psi="Behaviour is a time-domain signature. When the dynamics match, identity arrives before form." data-duck="No one saw the bird. The pond just heard a premium quack and opened a duck ticket.">You're blindfolded. Something quacks. You say "duck." You didn't see it. You didn't read the word. You identified it purely by what it <em>did</em>. This is behavioural recognition — and it's the foundation of an entire philosophy of computation.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Duck Typing: The Programming Metaphor</h3>
-            <p>In dynamically typed languages, you don't check what something <em>is</em>. You check what it <em>can do</em>:</p>
+            <p data-plain="In some languages, you don't ask what something is called — you just see if it can do the job.">In dynamically typed languages, you don't check what something <em>is</em>. You check what it <em>can do</em>:</p>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-cyan);font-size:.82rem;line-height:2;margin:0;">
@@ -21,7 +21,7 @@
                 </p>
             </div>
 
-            <p>"If it quacks like a duck and swims like a duck, I call it a duck." Identity isn't declared by type — it's inferred by <strong style="color:var(--wf-cyan);">interface</strong>. What it does defines what it is. This isn't just a programming trick. It's a deep epistemological claim.</p>
+            <p data-plain="If it behaves the right way, we often treat it as the thing, even without a formal label." data-psi="Interfaces are observable boundaries. Systems are often known only by the transformations they permit." data-duck="This page is duck-typing a duck. If it takes bread, paddles the loop, and returns a respectable quack, the pond lets it in.">"If it quacks like a duck and swims like a duck, I call it a duck." Identity isn't declared by type — it's inferred by <strong style="color:var(--wf-cyan);">interface</strong>. What it does defines what it is. This isn't just a programming trick. It's a deep epistemological claim.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">How Transformers Learn Behaviour</h3>
             <p>A language model never sees a duck. It reads billions of sentences where the word "duck" appears. It learns what ducks <em>do</em> in text:</p>
@@ -37,10 +37,10 @@
                 </p>
             </div>
 
-            <p>The model builds a <strong style="color:var(--wf-gold);">behavioural profile</strong> from statistical co-occurrence. It knows ducks swim, quack, waddle, fly, nest, migrate, get fed bread (unfortunately), and have ducklings. It knows this because those are the verbs that appear near "duck" in the training data. It knows "duck" as a behaviour pattern long before it could ever know "duck" as a visual entity.</p>
+            <p data-plain="The model learns 'duck' from the actions and words that usually show up around ducks." data-psi="Language models infer essence from transition statistics. A thing becomes the bundle of moves it tends to make in context." data-duck="This duck is assembled from habits: quack here, swim there, steal bread whenever available. A behavioural duck built from pond gossip.">The model builds a <strong style="color:var(--wf-gold);">behavioural profile</strong> from statistical co-occurrence. It knows ducks swim, quack, waddle, fly, nest, migrate, get fed bread (unfortunately), and have ducklings. It knows this because those are the verbs that appear near "duck" in the training data. It knows "duck" as a behaviour pattern long before it could ever know "duck" as a visual entity.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Prediction as Behaviour Modelling</h3>
-            <p>When a Transformer predicts the next token, it's doing duck typing on language. Given the context "The duck swam across the ___", the model assigns high probability to tokens like "pond", "lake", "river" — because those are where ducks swim. It's predicting behaviour from behavioural patterns.</p>
+            <p data-plain="It guesses the next word by learning the kinds of places ducks usually appear.">When a Transformer predicts the next token, it's doing duck typing on language. Given the context "The duck swam across the ___", the model assigns high probability to tokens like "pond", "lake", "river" — because those are where ducks swim. It's predicting behaviour from behavioural patterns.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
@@ -53,7 +53,7 @@
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <h4 style="color:var(--wf-gold);font-size:.85rem;margin-bottom:.6rem;">What This Means</h4>
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;">
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="Inside the model, 'duck' is basically a bundle of linked habits and contexts.">
                         The model's "duck" is a <strong style="color:var(--wf-gold);">cloud of behavioural associations</strong>. It doesn't have a picture of a duck. It has a high-dimensional vector that encodes: "the kind of entity that does these things, appears in these contexts, relates to these other things." Duckness-as-behaviour. The interface, not the implementation.
                     </p>
                 </div>
@@ -74,7 +74,7 @@
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Where Behaviour Breaks</h3>
 
             <div style="margin:1.2rem 0;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;">
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:2.2;margin:0;" data-plain="Behaviour can fool you, because copying the right signals isn't the same as being the real thing.">
                     <strong style="color:var(--wf-cyan);">The parrot problem</strong> — a parrot can quack. Is it a duck? Behavioural mimicry breaks duck typing. The interface matches but the implementation is completely different.<br>
                     <strong style="color:var(--wf-cyan);">Goodhart's Law</strong> — "when a measure becomes a target, it ceases to be a good measure." If you define duck by behaviour, things will optimise to match the behaviour without being a duck. See: SEO, teaching to the test, gaming metrics.<br>
                     <strong style="color:var(--wf-cyan);">Hallucination</strong> — an LLM can generate perfectly plausible text about ducks that is factually wrong. The <em>behaviour</em> looks right — the sentences read naturally — but the content is fabricated. Duck-shaped output from a non-duck process.<br>
@@ -82,7 +82,7 @@
                 </p>
             </div>
 
-            <p style="color:var(--wf-cyan);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;">Behaviour is the most pragmatic channel. It answers "what does it do?" rather than "what is it?" — and in most real systems, what it does is all that matters. But behaviour can be mimicked, gamed, and faked. The quack is not the duck.</p>
+            <p style="color:var(--wf-cyan);font-size:.85rem;font-weight:300;font-style:italic;margin-top:2rem;opacity:.85;" data-plain="Behaviour is useful, but it can be copied or faked." data-psi="Performance can converge without ontology converging. The output manifold matches while the substrate stays alien." data-duck="A perfect quack can still come from a parrot in a rented beak. The pond applauds first and audits later.">Behaviour is the most pragmatic channel. It answers "what does it do?" rather than "what is it?" — and in most real systems, what it does is all that matters. But behaviour can be mimicked, gamed, and faked. The quack is not the duck.</p>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <a href="/ducks/looks-like-a-duck" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 2: Looks Like a Duck</a>

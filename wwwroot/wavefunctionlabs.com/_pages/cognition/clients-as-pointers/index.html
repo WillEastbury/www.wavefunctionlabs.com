@@ -6,9 +6,9 @@
         <div class="wf-article-body">
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Shift</h3>
-            <p>Traditional systems treat clients as request senders. The client says what it wants. The server interprets, parses, routes, deserialises, queries, serialises, and responds.</p>
+            <p data-plain="Normal APIs make the server do a lot of translation before it can answer." data-psi="API stacks spend energy translating intent through too many intermediate eigenstates. Each layer adds entropy before the bytes reach matter." data-duck="In the old pond, every duck quacks a whole speech and the duck in charge translates it into bread routes. Lots of noise, little movement.">Traditional systems treat clients as request senders. The client says what it wants. The server interprets, parses, routes, deserialises, queries, serialises, and responds.</p>
             <p>This model is different.</p>
-            <p>Clients are pointer generators into a structured data space. They don't ask "what do you want?" They say <span style="color:var(--wf-gold);font-weight:400;">"where is it?"</span></p>
+            <p data-plain="Instead of asking generally, the client points straight at the data it wants." data-psi="A pointer request is pre-collapsed intent. The client supplies coordinates in the field instead of asking the system to infer them." data-duck="Instead of shouting for food, the duck points its beak at the exact patch of water where the bread is floating.">Clients are pointer generators into a structured data space. They don't ask "what do you want?" They say <span style="color:var(--wf-gold);font-weight:400;">"where is it?"</span></p>
             <p>That single shift changes everything downstream.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Core Model</h3>
@@ -29,10 +29,10 @@
                     <p style="color:#cbd5e1;font-size:.85rem;margin-top:.4rem;">No parsing<br>No routing<br>No serialization<br>Just pointer → bytes → stream</p>
                 </div>
             </div>
-            <p>The entire HTTP/JSON stack collapses into three integers and a span read.</p>
+            <p data-plain="This cuts a whole API stack down to a few numbers and a direct read." data-psi="Protocol towers collapse into direct addressing once meaning is encoded as ordinals. Fewer transforms mean less entropy and shorter propagation paths." data-duck="All that pond paperwork turns into a few quacks and a straight swim to the crumb.">The entire HTTP/JSON stack collapses into three integers and a span read.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Clients Become Pointers</h3>
-            <p>Clients hold route ordinals, field ordinals, and keys. They generate compact requests that effectively address data directly.</p>
+            <p data-plain="The client carries the exact coordinates needed to fetch the data fast." data-psi="The client carries a compact measurement basis: route, key, field. With the coordinates fixed, the system reads instead of interpreting." data-duck="Each duck carries the pond map, the bread number, and the peck target. Then the pond only has to open the gate and let the ripple through.">Clients hold route ordinals, field ordinals, and keys. They generate compact requests that effectively address data directly.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
                 <div style="border-left:2px solid var(--wf-muted);padding-left:1rem;">
                     <h4 style="color:var(--wf-muted);font-size:.82rem;margin-bottom:.4rem;">Traditional</h4>

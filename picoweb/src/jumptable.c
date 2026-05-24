@@ -807,6 +807,18 @@ static void compute_etag(char* out, size_t outsz,
              body_len, (unsigned long long)h);
 }
 
+static void compute_etag_parts(char* out, size_t outsz,
+                               const void* p1, size_t l1,
+                               const void* p2, size_t l2,
+                               const void* p3, size_t l3) {
+    uint64_t h = metal_fnv1a_init();
+    if (l1) h = metal_fnv1a_step(h, p1, l1);
+    if (l2) h = metal_fnv1a_step(h, p2, l2);
+    if (l3) h = metal_fnv1a_step(h, p3, l3);
+    snprintf(out, outsz, "W/\"%zx-%016llx\"",
+             l1 + l2 + l3, (unsigned long long)h);
+}
+
 /* ============================================================== */
 /* 304 Not Modified wire buffers.                                 */
 /* ============================================================== */

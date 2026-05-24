@@ -11,7 +11,7 @@
 
             <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Architecture</h3>
 
-            <p style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+            <p data-plain="Your prompt is turned into numbers, and the model uses those numbers to guide a noisy starting image toward a final picture." data-psi="The prompt is not a drawing instruction but a constraint field. It biases probability flow so noise settles into one compatible attractor." data-duck="The quack does not paint the duck. It tells the pond what kind of duck should emerge, and the ripples start steering that way." style="color:#cbd5e1;font-size:.88rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
                 <strong style="color:var(--wf-accent);">1. Text encoder</strong> — prompt → embedding vectors (CLIP / T5)<br>
                 <strong style="color:var(--wf-accent);">2. Noise schedule</strong> — define T timesteps of increasing noise<br>
                 <strong style="color:var(--wf-accent);">3. Forward process</strong> — gradually add Gaussian noise to training images<br>
@@ -22,7 +22,7 @@
             </p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Maths: Forward Process</h3>
-            <p>Take a clean image x₀. At each timestep t, add Gaussian noise according to a schedule β<sub>t</sub>:</p>
+            <p data-plain="During training, the model gradually adds random static to clean images so it can learn how to reverse that process later." data-psi="Training teaches the model the thermodynamics of corruption. By watching signal dissolve into entropy, it learns the inverse path back to structure." data-duck="First the pond stirs itself into chaos so the ducks learn what random splash looks like. Then they learn how to undo that mess and find the bread pattern again.">Take a clean image x₀. At each timestep t, add Gaussian noise according to a schedule β<sub>t</sub>:</p>
 
             <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-accent);font-size:.9rem;line-height:2;margin:0;">
@@ -36,10 +36,10 @@
                 </p>
             </div>
 
-            <p>At t = 0, you have the original image. At t = T, you have pure Gaussian noise. The schedule ᾱ<sub>t</sub> controls how fast information is destroyed.</p>
+            <p data-plain="t is just the current step in the process. Early steps still look like the original image, while later steps are mostly random noise.">At t = 0, you have the original image. At t = T, you have pure Gaussian noise. The schedule ᾱ<sub>t</sub> controls how fast information is destroyed.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Maths: Reverse Process</h3>
-            <p>The model learns to reverse this: given a noisy image at timestep t, predict what the slightly-less-noisy version looks like:</p>
+            <p data-plain="Generation runs this process backwards: start with noise, then make it a little cleaner at each step." data-psi="Generation is time-reversed degradation. The model walks uphill from maximum entropy toward an image manifold." data-duck="Start with a pond full of nonsense ripples. Each round the ducks knock out a bit of useless splash until a clear duck appears.">The model learns to reverse this: given a noisy image at timestep t, predict what the slightly-less-noisy version looks like:</p>
 
             <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-accent);font-size:.9rem;line-height:2;margin:0;">
@@ -54,7 +54,7 @@
             </div>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Training Objective</h3>
-            <p>Beautifully simple. Sample a random timestep, add noise, and train the network to predict what noise was added:</p>
+            <p data-plain="Training is simple: pick a step, add noise, and teach the model to guess what noise was added.">Beautifully simple. Sample a random timestep, add noise, and train the network to predict what noise was added:</p>
 
             <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:0;">
@@ -65,7 +65,7 @@
             <p>The model learns: "given this noisy mess at this noise level, what does the noise look like?" That's it. Do this well enough across millions of images and every noise level, and the model can reverse-engineer any image from static.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Conditioning: Text → Image</h3>
-            <p>The text prompt enters via <strong>cross-attention</strong>. The U-Net's attention layers receive text embeddings as keys and values, while the noisy image features are the queries:</p>
+            <p data-plain="The model keeps checking your prompt while it cleans up the image, so the final picture matches the text you gave it." data-psi="Cross-attention lets visual state query semantic state. Language becomes an external information reservoir that keeps collapse aligned." data-duck="The forming duck keeps listening to the prompt duck while it swims. Every few strokes it checks the quacks to make sure the pond is turning into the right bird.">The text prompt enters via <strong>cross-attention</strong>. The U-Net's attention layers receive text embeddings as keys and values, while the noisy image features are the queries:</p>
 
             <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
@@ -73,10 +73,10 @@
                 </p>
             </div>
 
-            <p>Same attention mechanism as the Transformer, but <em>cross-modal</em>: the image queries text for guidance on what to denoise towards. The text doesn't tell the model what to draw — it constrains what the noise can collapse into.</p>
+            <p data-plain="The prompt doesn't paint the image directly. It steers the cleanup process so the noise turns into something that fits your description.">Same attention mechanism as the Transformer, but <em>cross-modal</em>: the image queries text for guidance on what to denoise towards. The text doesn't tell the model what to draw — it constrains what the noise can collapse into.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What the U-Net Actually Computes</h3>
-            <p>The U-Net is a convolutional neural network. Convolutions are similar to the matrix multiplications in a Transformer, but instead of operating on sequences, they operate on grids of pixels.</p>
+            <p data-plain="The model processes images using a standard kind of image-focused neural network that works across a grid of pixels.">The U-Net is a convolutional neural network. Convolutions are similar to the matrix multiplications in a Transformer, but instead of operating on sequences, they operate on grids of pixels.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
                 <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
@@ -89,12 +89,12 @@
                 </div>
             </div>
 
-            <p>The "U" shape: the network <strong>downsamples</strong> (compresses the image to smaller and smaller feature maps — capturing what, losing where) then <strong>upsamples</strong> (expands back to full resolution — recovering where, guided by what). Skip connections link matching resolution levels so detail isn't lost.</p>
+            <p data-plain="The model first shrinks the image to understand the big picture, then expands it again to put the details back in.">The "U" shape: the network <strong>downsamples</strong> (compresses the image to smaller and smaller feature maps — capturing what, losing where) then <strong>upsamples</strong> (expands back to full resolution — recovering where, guided by what). Skip connections link matching resolution levels so detail isn't lost.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">What One Denoising Step Actually Does</h3>
             <p>Each step is concrete:</p>
 
-            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+            <p data-plain="At each step, the model looks at the current noisy image, estimates what part is random static, removes some of it, and repeats." data-psi="Each denoising step is a tiny Bayesian correction. Signal survives by repeatedly subtracting estimated randomness from the current state." data-duck="Each pass, the ducks ask which ripples are just splash and which belong to the duck they want. Then they smooth out some splash and keep going." style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
                 <strong style="color:var(--wf-accent);">1.</strong> Take the current noisy image x<sub>t</sub> (a grid of numbers — pixel values with noise)<br>
                 <strong style="color:var(--wf-accent);">2.</strong> Tell the U-Net what timestep t we're at (embedded as a vector, injected into every layer)<br>
                 <strong style="color:var(--wf-accent);">3.</strong> Feed the text prompt via cross-attention — the image features query the text: "what should I look like?"<br>
@@ -109,7 +109,7 @@
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">The U-Net isn't drawing. It's looking at static and answering: "what part of this is noise and what part is signal?" At each step, it peels away a layer of noise. What remains is the image that was always there — the text just told the model which image to find in the noise.</p>
 
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Classifier-Free Guidance</h3>
-            <p>To strengthen the text's influence, the model runs two predictions — one conditioned on the prompt, one unconditional — and amplifies the difference:</p>
+            <p data-plain="The model compares an image with and without the prompt, then pushes harder toward the prompt when you want a closer match.">To strengthen the text's influence, the model runs two predictions — one conditioned on the prompt, one unconditional — and amplifies the difference:</p>
 
             <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-accent);font-size:.88rem;line-height:2;margin:0;">

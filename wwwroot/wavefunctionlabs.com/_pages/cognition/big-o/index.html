@@ -4,8 +4,8 @@
         <p class="wf-section-desc">Big O doesn't tell you how fast something is. It tells you how fast it gets worse.</p>
 
         <div class="wf-article-body">
-            <p>When you see O(log n) on an index lookup, it's not a performance number. It's a <strong style="color:var(--wf-gold);">growth rate</strong>. It tells you what happens to the cost when the dataset doubles, triples, or hits a billion rows.</p>
-            <p>The constant factors — CPU speed, cache lines, disk latency — those matter in practice. But Big O tells you whether your approach <em>survives</em> at scale.</p>
+            <p data-plain="Big-O tells you whether your approach will still work when your data gets 10x bigger.">When you see O(log n) on an index lookup, it's not a performance number. It's a <strong style="color:var(--wf-gold);">growth rate</strong>. It tells you what happens to the cost when the dataset doubles, triples, or hits a billion rows.</p>
+            <p data-plain="Real machines still matter, but Big-O tells you if the basic idea survives at scale.">The constant factors — CPU speed, cache lines, disk latency — those matter in practice. But Big O tells you whether your approach <em>survives</em> at scale.</p>
 
             <!-- O(1) -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(1) — Constant</h3>
@@ -23,7 +23,7 @@
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(log n) — Logarithmic</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>Every time the dataset doubles, you do one more step. 1,000 rows ≈ 10 steps. 1,000,000 rows ≈ 20 steps. 1,000,000,000 rows ≈ 30 steps. It barely grows.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="Logarithmic means data can grow huge without the work growing much."><strong style="color:var(--wf-cyan);">What it means</strong><br>Every time the dataset doubles, you do one more step. 1,000 rows ≈ 10 steps. 1,000,000 rows ≈ 20 steps. 1,000,000,000 rows ≈ 30 steps. It barely grows.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>B-Tree / B+Tree lookups. Binary search. Any algorithm that halves the problem at each step.</p>
@@ -59,7 +59,7 @@
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">O(n²) — Quadratic</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">What it means</strong><br>Double the data, 4× the work. Triple it, 9× the work. Every element compared against every other element. Grows explosively.</p>
+                    <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;" data-plain="Quadratic means a little more data can turn into a lot more work."><strong style="color:var(--wf-cyan);">What it means</strong><br>Double the data, 4× the work. Triple it, 9× the work. Every element compared against every other element. Grows explosively.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
                     <p style="color:#cbd5e1;font-size:.85rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Where you see it</strong><br>Nested loops without indexes. Naive join algorithms. Bubble sort. "For each row, scan every other row."</p>

@@ -9,13 +9,13 @@
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Default Mistake</h3>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-muted);">allocate → use → discard → repeat</p>
-            <p>Over and over. Each allocation touches the heap, pressures the GC, fragments memory, introduces latency you don't control.</p>
+            <p data-plain="Most software wastes time asking for memory over and over. That adds pauses and mess." data-psi="Repeated allocation injects entropy into the heap and forces the system to keep re-crystallising temporary state. Latency is the tax for forgetting yesterday's matter." data-duck="If the ducks build a new nest for every crumb, the whole pond turns into construction noise. Reuse the reeds and save the bread for eating.">Over and over. Each allocation touches the heap, pressures the GC, fragments memory, introduces latency you don't control.</p>
             <p>The system works harder managing memory than doing useful work.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The Hidden Cost</h3>
             <p>Allocations don't just cost time. They create unpredictability.</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);">GC pauses (stop-the-world)<br>Allocator contention (malloc / heap locks)<br>Cache churn<br>Memory fragmentation</p>
-            <p>Everything looks fine… until it doesn't. Then you get random latency spikes, throughput collapse under load, behaviour that can't be reproduced locally.</p>
+            <p data-plain="It can seem okay for ages, then suddenly get weirdly slow at random." data-psi="Deferred memory cost behaves like a hidden phase change. Energy accumulates quietly until the system snaps into a worse state under load." data-duck="The pond looks calm until too many crumbs and reeds pile up, then every duck starts colliding in sludge.">Everything looks fine… until it doesn't. Then you get random latency spikes, throughput collapse under load, behaviour that can't be reproduced locally.</p>
             <p style="color:var(--wf-gold);font-weight:400;">You didn't remove the cost. You deferred it.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Stop-The-World Reality</h3>
@@ -50,7 +50,7 @@
             <p>The system stops spiking. It just runs.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Spans Make It Work</h3>
-            <p>This only works because of the underlying model: everything is <span style="font-family:monospace;color:var(--wf-gold);">(ptr, len)</span>.</p>
+            <p data-plain="You don't need brand new memory each time. You just reuse different slices of what you already have." data-psi="Pooling works because identity lives in the view, not the bytes. New behaviour can emerge from the same matter by slicing different spans." data-duck="The same loaf can feed many ducks if you pass different bites around the pond. You do not need new bread, just smarter pecks.">This only works because of the underlying model: everything is <span style="font-family:monospace;color:var(--wf-gold);">(ptr, len)</span>.</p>
             <p>You don't need new objects. You need new views.</p>
             <p style="color:var(--wf-muted);font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);">Slice. Reuse. Reinterpret.<br>No copies. No allocations.</p>
 

@@ -6,15 +6,15 @@
 
         <div class="wf-article-body">
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Seeds: The Starting Point of Randomness</h3>
-            <p>Both Transformers and diffusion models use random numbers during generation. A <strong style="color:var(--wf-gold);">seed</strong> is the starting value for the random number generator (RNG). Same seed → same sequence of random numbers → same output (in theory).</p>
+            <p data-plain="A seed is the starting random number. Reusing it should recreate the same randomness and usually the same result.">Both Transformers and diffusion models use random numbers during generation. A <strong style="color:var(--wf-gold);">seed</strong> is the starting value for the random number generator (RNG). Same seed → same sequence of random numbers → same output (in theory).</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Transformer</strong><br>
+                    <p data-plain="For text models, the seed affects which next word gets chosen when there is some randomness in sampling." style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Transformer</strong><br>
                     The model outputs a probability distribution over tokens. Sampling picks one. The RNG seed controls <em>which</em> token gets chosen when multiple tokens have similar probabilities. Same seed + same prompt + temperature > 0 = same text.</p>
                 </div>
                 <div style="border-left:2px solid var(--wf-accent);padding-left:1.2rem;">
-                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-accent);">Diffusion</strong><br>
+                    <p data-plain="For image models, the seed sets the exact starting noise pattern, so using the same seed should recreate the same image." style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-accent);">Diffusion</strong><br>
                     Generation starts from pure noise — the seed determines the <em>specific</em> noise tensor. Different seed = different starting noise = completely different image. Same seed + same prompt + same settings = same image. This is why image tools let you copy seeds.</p>
                 </div>
             </div>
@@ -23,9 +23,9 @@
             <p>Sampling is the <em>deliberate</em> source of variation. The model produces probabilities; sampling decides what to do with them.</p>
 
             <h4 style="color:var(--wf-gold);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Transformer Sampling</h4>
-            <p>After softmax, you have a probability distribution over the vocabulary. Several strategies exist:</p>
+            <p data-plain="Once the model scores possible next words, different sampling rules decide how predictable or varied the answer will be.">After softmax, you have a probability distribution over the vocabulary. Several strategies exist:</p>
 
-            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
+            <p data-plain="These settings control whether the model always takes the safest next choice or allows more randomness and variety." style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
                 <strong style="color:var(--wf-cyan);">Greedy (temperature = 0)</strong> — always pick the highest-probability token. Deterministic. Same input = same output. No randomness at all.<br>
                 <strong style="color:var(--wf-cyan);">Temperature sampling</strong> — divide the logits by temperature before softmax. Low temperature (0.1–0.5) → sharpens the distribution → more predictable. High temperature (1.0–2.0) → flattens it → more creative/random.<br>
                 <strong style="color:var(--wf-cyan);">Top-k</strong> — only consider the top k most likely tokens, zero out the rest, then sample. Prevents the model picking wildly unlikely tokens.<br>
@@ -35,9 +35,9 @@
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:.8rem;">Temperature literally controls collapse sharpness. At 0, the wavefunction collapses deterministically to the peak. At high values, it explores the full field of possibilities.</p>
 
             <h4 style="color:var(--wf-gold);font-size:.85rem;margin-top:1.5rem;margin-bottom:.6rem;">Diffusion Sampling</h4>
-            <p>Each denoising step adds a small amount of fresh Gaussian noise (except the final step). This keeps the process stochastic — the model doesn't just converge to the mathematically closest clean image, it explores the space of plausible outputs.</p>
+            <p data-plain="Image generation also adds controlled randomness during the cleanup process, which changes the final picture.">Each denoising step adds a small amount of fresh Gaussian noise (except the final step). This keeps the process stochastic — the model doesn't just converge to the mathematically closest clean image, it explores the space of plausible outputs.</p>
 
-            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+            <p data-plain="Different schedulers trade off speed, randomness, and repeatability while turning noise into an image." style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
                 <strong style="color:var(--wf-accent);">DDPM (original)</strong> — full stochastic schedule. Each step adds fresh noise. More variation, slower (1000 steps).<br>
                 <strong style="color:var(--wf-accent);">DDIM</strong> — deterministic variant. No added noise between steps. Same seed = exactly same image. Much faster (20–50 steps).<br>
                 <strong style="color:var(--wf-accent);">Euler / DPM-Solver</strong> — treat denoising as solving a differential equation. Faster convergence, tuneable stochasticity.
@@ -46,11 +46,11 @@
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:.8rem;">The scheduler is the collapse trajectory. DDPM explores more of the possibility space. DDIM takes the most direct path. Same destination, different routes through the noise.</p>
 
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Source 2: Floating-Point Non-Determinism — Accidental Randomness</h3>
-            <p>Even with the same seed, same prompt, and greedy/deterministic sampling, you can still get different outputs. This is the one that surprises people.</p>
+            <p data-plain="Even when randomness is turned off, tiny hardware differences can still change the result.">Even with the same seed, same prompt, and greedy/deterministic sampling, you can still get different outputs. This is the one that surprises people.</p>
 
             <p style="color:var(--wf-gold);font-weight:400;">The maths is deterministic. The hardware isn't.</p>
 
-            <p>Floating-point numbers (float16, float32) can't represent most real numbers exactly. They round. And the order in which you do additions affects the rounding:</p>
+            <p data-plain="Computers round numbers, so the exact order of calculations can slightly change the answer.">Floating-point numbers (float16, float32) can't represent most real numbers exactly. They round. And the order in which you do additions affects the rounding:</p>
 
             <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-cyan);font-size:.85rem;line-height:2;margin:0;">
@@ -58,9 +58,9 @@
                 </p>
             </div>
 
-            <p>This matters because GPUs are massively parallel — thousands of threads adding numbers together simultaneously. The order those threads finish is <em>non-deterministic</em>. Different execution order → different rounding → different results.</p>
+            <p data-plain="Because GPUs do lots of math in parallel, the order of tiny calculations can vary from run to run.">This matters because GPUs are massively parallel — thousands of threads adding numbers together simultaneously. The order those threads finish is <em>non-deterministic</em>. Different execution order → different rounding → different results.</p>
 
-            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+            <p data-plain="Changing hardware, drivers, or precision can change tiny rounding errors and lead to different outputs." style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
                 <strong style="color:var(--wf-gold);">Different GPU model</strong> — different FP units, different rounding behaviour<br>
                 <strong style="color:var(--wf-gold);">Different GPU count</strong> — different parallelisation splits, different addition order<br>
                 <strong style="color:var(--wf-gold);">Different driver version</strong> — different kernel implementations, different thread scheduling<br>
@@ -68,7 +68,7 @@
                 <strong style="color:var(--wf-gold);">float16 vs float32</strong> — fewer precision bits → larger rounding errors → bigger divergence
             </p>
 
-            <p>The difference starts tiny — maybe the 7th decimal place. But in an autoregressive model, one slightly different token changes every subsequent token. In diffusion, one slightly different denoising step shifts the trajectory through noise space. <strong style="color:var(--wf-gold);">Small rounding error → amplified through thousands of sequential operations → completely different output.</strong></p>
+            <p data-plain="A tiny math difference early on can snowball into a noticeably different sentence or image.">The difference starts tiny — maybe the 7th decimal place. But in an autoregressive model, one slightly different token changes every subsequent token. In diffusion, one slightly different denoising step shifts the trajectory through noise space. <strong style="color:var(--wf-gold);">Small rounding error → amplified through thousands of sequential operations → completely different output.</strong></p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.5rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
@@ -96,13 +96,13 @@
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Two Sources, Summarised</h3>
 
             <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
-                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                <p data-plain="Some variation is intentional and user-controlled. Some comes from low-level hardware behaviour." style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
                     <strong style="color:var(--wf-gold);">Sampling</strong> — intentional randomness. Controlled by seed, temperature, scheduler. You choose how much variation you want. This is the <em>feature</em>.<br>
                     <strong style="color:var(--wf-gold);">FP non-determinism</strong> — accidental randomness. Caused by hardware parallelism and rounding. You can't fully control it. This is the <em>physics</em>.
                 </p>
             </div>
 
-            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">True determinism requires: same seed + same model weights + same precision + same hardware + same driver + deterministic CUDA kernels + same batch size. In practice, most systems settle for "reproducible enough" — same seed gives visually similar results, not bit-identical ones.</p>
+            <p data-plain="To get exactly the same result, everything about the model, hardware, and settings has to match." style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">True determinism requires: same seed + same model weights + same precision + same hardware + same driver + deterministic CUDA kernels + same batch size. In practice, most systems settle for "reproducible enough" — same seed gives visually similar results, not bit-identical ones.</p>
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <a href="/ai/diffusion" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 2: Diffusion Models</a>

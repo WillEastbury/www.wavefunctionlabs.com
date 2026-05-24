@@ -3,8 +3,8 @@
         <h1 class="wf-section-hdr">The Jump Table as a Universal Primitive</h1>
         <div class="wf-article-tags">performance · routing · systems design · computation</div>
         <div class="wf-article-body">
-            <p>At the lowest level, everything is dispatch. Route → handler. Opcode → behaviour. Byte → meaning.</p>
-            <p>Jump tables are the purest form of this. O(1), predictable, brutally fast. Routing, protocols, execution engines — they all collapse to the same primitive.</p>
-            <p class="wf-insight">A system is just a mapping from input to behaviour.</p>
+            <p data-plain="At the core of most systems is a simple choice about which code runs next. A command or input maps directly to an action." data-psi="Computation is a cascade of collapses from symbol to behaviour. Each input selects an eigenpath through the machine." data-duck="Every pond event becomes the same question: which duck moves next. A quack, a splash, or a crumb all point to the duck that should act.">At the lowest level, everything is dispatch. Route → handler. Opcode → behaviour. Byte → meaning.</p>
+            <p data-plain="A jump table is a fast lookup that picks the next action directly, which is why routing and execution systems often reduce to it." data-psi="The jump table is low-entropy routing: no wandering search, just direct collapse from token to action. Many systems are this primitive in disguise." data-duck="A good pond does not hold a committee for every crumb. The duck in charge sees the ripple and points straight at the right duck.">Jump tables are the purest form of this. O(1), predictable, brutally fast. Routing, protocols, execution engines — they all collapse to the same primitive.</p>
+            <p class="wf-insight" data-plain="A system can be understood as inputs coming in and specific actions coming out.">A system is just a mapping from input to behaviour.</p>
         </div>
 </div>

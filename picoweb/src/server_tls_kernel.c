@@ -22,6 +22,7 @@
 #endif
 
 #include "server.h"
+#include "api.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -99,6 +100,7 @@ typedef struct {
 
     int             ticket_emitted;
     int             want_close;     /* HTTP signalled close; finish TX then exit */
+    char            peer_ip[64];
 } kconn_t;
 
 struct tls_kworker {
@@ -133,6 +135,66 @@ struct tls_kworker {
 /* Marker used to identify the listen-fd event vs per-conn events
  * via epoll_event.data.ptr. */
 static int g_listen_marker;
+
+static bool is_ctx_token_char(char c) {
+    return (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') ||
+           c == '-' || c == '_';
+}
+
+static void resolve_api_request_context_tls(const http_request_t* req,
+                                            api_request_context_t* ctx) {
+    memset(ctx, 0, sizeof(*ctx));
+    memcpy(ctx->tenant_system, "prod", 5);
+    memcpy(ctx->tenant_id, "default", 8);
+    memcpy(ctx->principal_id, "anonymous", 10);
+
+    (void)api_principal_from_cookie(req->cookie, req->cookie_len,
+                                    ctx->principal_id, sizeof(ctx->principal_id));
+
+    if (req->host_len > 0) {
+        const char* h = req->host;
+        size_t n = req->host_len;
+        size_t dot1 = 0;
+        while (dot1 < n && h[dot1] != '.') dot1++;
+        if (dot1 > 0) {
+            size_t o = 0;
+            for (size_t i = 0; i < dot1 && o + 1 < sizeof(ctx->tenant_id); i++) {
+                char ch = h[i];
+                if (!is_ctx_token_char(ch)) continue;
+                ctx->tenant_id[o++] = ch;
+            }
+            if (o > 0) ctx->tenant_id[o] = '\0';
+        }
+        if (dot1 + 1 < n) {
+            size_t s2 = dot1 + 1;
+            size_t e2 = s2;
+            while (e2 < n && h[e2] != '.') e2++;
+            size_t l2 = e2 - s2;
+            if ((l2 == 3 && memcmp(h + s2, "dev", 3) == 0) ||
+                (l2 == 2 && memcmp(h + s2, "qa", 2) == 0) ||
+                (l2 == 4 && memcmp(h + s2, "prod", 4) == 0)) {
+                snprintf(ctx->tenant_system, sizeof(ctx->tenant_system), "%.*s", (int)l2, h + s2);
+            }
+        }
+    }
+}
+
+static void api_apply_request_context_headers_tls(api_resp_t* resp,
+                                                  const api_request_context_t* ctx) {
+    if (!resp || !ctx) return;
+    size_t rem = (resp->head_len < sizeof(resp->head)) ? (sizeof(resp->head) - resp->head_len) : 0;
+    if (rem < 8) return;
+    int n = snprintf(resp->head + resp->head_len, rem,
+                     "X-PW-Principal-Id: %s\r\n"
+                     "X-PW-Tenant-Id: %s\r\n"
+                     "X-PW-Tenant-System: %s\r\n",
+                     ctx->principal_id,
+                     ctx->tenant_id,
+                     ctx->tenant_system);
+    if (n > 0 && (size_t)n < rem) resp->head_len += (size_t)n;
+}
 
 /* -----------------------------------------------------------------
  * RNG, file slurp, cert chain length parser
@@ -476,6 +538,43 @@ static int build_http_response_iov(kconn_t* c,
     return 0;
 }
 
+static int build_api_response_iov(kconn_t* c, const http_request_t* req,
+                                  api_resp_t* api_resp,
+                                  pw_iov_t* out, unsigned* out_n,
+                                  bool* out_close_after) {
+    memset(api_resp, 0, sizeof(*api_resp));
+
+    const char* body = c->plain + req->consumed;
+    api_request_context_t req_ctx;
+    resolve_api_request_context_tls(req, &req_ctx);
+    if (c->peer_ip[0]) {
+        snprintf(req_ctx.client_ip, sizeof(req_ctx.client_ip), "%s", c->peer_ip);
+    }
+    api_dispatch(req->method, req->path, req->path_len,
+                 body, req->content_length,
+                 req->cookie, req->cookie_len,
+                 req->pw_auth_header,
+                 req->score_token, req->score_token_len,
+                 &req_ctx,
+                 api_resp);
+    api_apply_request_context_headers_tls(api_resp, &req_ctx);
+    api_apply_cors(api_resp,
+                   req->origin, req->origin_len,
+                   req->acr_headers, req->acr_headers_len);
+
+    c->req_count++;
+
+    unsigned n = 0;
+    out[n++] = (pw_iov_t){ .base = (const uint8_t*)api_resp->head, .len = api_resp->head_len };
+    out[n++] = (pw_iov_t){ .base = (const uint8_t*)CONN_CLOSE, .len = sizeof(CONN_CLOSE) - 1 };
+    if (req->method != M_HEAD && api_resp->body && api_resp->body_len > 0) {
+        out[n++] = (pw_iov_t){ .base = (const uint8_t*)api_resp->body, .len = api_resp->body_len };
+    }
+    *out_n = n;
+    *out_close_after = true;
+    return 0;
+}
+
 /* 103 Early Hints (best-effort). Same logic as the AF_PACKET path. */
 static void maybe_seal_103(kconn_t* c, http_result_t pr, http_request_t* req) {
     tls_kworker_t* w = c->w;
@@ -625,23 +724,46 @@ static int tls_drive_engine(kconn_t* c, bool* out_close_after_drain) {
 
             http_request_t req = b->req;
             http_result_t  pr  = (prc == 1) ? HTTP_OK : b->parse_status;
+            size_t request_bytes = req.consumed;
+
+            if (pr == HTTP_OK && api_path_matches(req.path, req.path_len)) {
+                if (req.content_length > api_max_request_body() ||
+                    req.consumed + req.content_length > sizeof(c->plain)) {
+                    pr = HTTP_ERR_413;
+                } else if (c->plain_len < req.consumed + req.content_length) {
+                    break;
+                } else {
+                    request_bytes = req.consumed + req.content_length;
+                }
+            }
+
             pw_iov_t resp[PW_IOV_MAX_FRAGS];
             unsigned rn = 0;
-            if (build_http_response_iov(c, pr, &req, resp, &rn, &close_after) != 0) {
-                return -1;
+            api_resp_t api_resp = {0};
+            bool is_api = (pr == HTTP_OK && api_path_matches(req.path, req.path_len));
+            if (is_api) {
+                if (build_api_response_iov(c, &req, &api_resp, resp, &rn, &close_after) != 0) {
+                    return -1;
+                }
+            } else {
+                if (build_http_response_iov(c, pr, &req, resp, &rn, &close_after) != 0) {
+                    return -1;
+                }
             }
             const uint64_t t_p2 = metal_tsc();
             metrics_stage_add(METRICS_STAGE_TLS_BUILD, t_p2 - t_p1);
 
-            maybe_seal_103(c, pr, &req);
+            if (!is_api) maybe_seal_103(c, pr, &req);
 
             if (pw_tls_app_seal_iov(&c->eng, resp, rn) != 0) {
+                api_resp_release(&api_resp);
                 /* TX buffer pressure with more pipelined requests
                  * still queued: flush what we have and close. */
                 close_after = true;
                 c->plain_len = 0;
                 break;
             }
+            api_resp_release(&api_resp);
             const uint64_t t_p3 = metal_tsc();
             metrics_stage_add(METRICS_STAGE_TLS_SEAL, t_p3 - t_p2);
 
@@ -649,9 +771,9 @@ static int tls_drive_engine(kconn_t* c, bool* out_close_after_drain) {
                 metrics_record(g_worker_metrics, t_p0, t_p3);
             }
 
-            if (pr == HTTP_OK && req.consumed > 0 && c->plain_len > req.consumed) {
-                size_t left = c->plain_len - req.consumed;
-                memmove(c->plain, c->plain + req.consumed, left);
+            if (pr == HTTP_OK && request_bytes > 0 && c->plain_len > request_bytes) {
+                size_t left = c->plain_len - request_bytes;
+                memmove(c->plain, c->plain + request_bytes, left);
                 c->plain_len = left;
             } else {
                 c->plain_len = 0;
@@ -751,7 +873,9 @@ static int try_recv_and_drive(kconn_t* c, bool* out_close_after_drain) {
 
 static void try_accept(tls_kworker_t* w, int64_t now_ms) {
     for (;;) {
-        int fd = accept4(w->listen_fd, NULL, NULL, SOCK_NONBLOCK | SOCK_CLOEXEC);
+        struct sockaddr_storage peer;
+        socklen_t peer_len = sizeof(peer);
+        int fd = accept4(w->listen_fd, (struct sockaddr*)&peer, &peer_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
         if (fd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) return;
             if (errno == EINTR) continue;
@@ -771,6 +895,14 @@ static void try_accept(tls_kworker_t* w, int64_t now_ms) {
             continue;
         }
         kconn_init(c, w, fd, now_ms);
+        c->peer_ip[0] = '\0';
+        if (peer.ss_family == AF_INET) {
+            struct sockaddr_in* in = (struct sockaddr_in*)&peer;
+            (void)inet_ntop(AF_INET, &in->sin_addr, c->peer_ip, sizeof(c->peer_ip));
+        } else if (peer.ss_family == AF_INET6) {
+            struct sockaddr_in6* in6 = (struct sockaddr_in6*)&peer;
+            (void)inet_ntop(AF_INET6, &in6->sin6_addr, c->peer_ip, sizeof(c->peer_ip));
+        }
         if (c->state != KCONN_LIVE) {
             /* engine configure failed in init */
             close(fd);

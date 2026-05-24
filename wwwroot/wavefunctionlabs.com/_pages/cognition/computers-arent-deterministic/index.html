@@ -8,7 +8,7 @@
 
             <!-- Floating Point -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Floating Point: The Numbers Lie</h3>
-            <p>Floating-point numbers approximate real numbers using a fixed number of bits. Most real numbers can't be represented exactly — they get rounded to the nearest representable value.</p>
+            <p data-plain="Computers round some numbers, so tiny differences build up and answers can change." data-psi="Floating point is discretised measurement of a continuous field. Each rounding step collapses amplitude and the errors interfere downstream." data-duck="Some bread crumbs are too small for the ducks to count exactly, so they round them. Enough rounded crumbs later, the pond total changes.">Floating-point numbers approximate real numbers using a fixed number of bits. Most real numbers can't be represented exactly — they get rounded to the nearest representable value.</p>
 
             <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-cyan);font-size:.85rem;line-height:2;margin:0;">
@@ -39,7 +39,7 @@
                 Memory pressure and page fault handling
             </p>
 
-            <p>Two threads writing to the same variable without a lock: the result depends on which thread's write lands last. This changes every run. Every microsecond of timing difference in the OS scheduler produces a different interleaving of instructions, and a potentially different outcome.</p>
+            <p data-plain="If two things write at once, timing decides who wins." data-psi="A race is superposition made operational. The final state depends on which write reaches measurement last." data-duck="Two ducks grab the same crumb at once, and whichever beak lands last decides the story.">Two threads writing to the same variable without a lock: the result depends on which thread's write lands last. This changes every run. Every microsecond of timing difference in the OS scheduler produces a different interleaving of instructions, and a potentially different outcome.</p>
 
             <div style="margin:1rem 0;padding:1rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
                 <p style="color:var(--wf-muted);font-size:.82rem;line-height:2;margin:0;">
@@ -53,7 +53,7 @@
 
             <!-- Clocks and Time -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Clocks: Time Is a Lie</h3>
-            <p>Every call to "get current time" returns a different value. Any logic that depends on it is non-deterministic by definition.</p>
+            <p data-plain="Anything that depends on the current time can change from one run to the next." data-psi="Time is an external signal source, not a constant. Once computation couples to that clock field, repeatability is gone." data-duck="If the ducks wait on the pond bell, the answer changes with every ring. A moving pond clock makes moving rules.">Every call to "get current time" returns a different value. Any logic that depends on it is non-deterministic by definition.</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin:1.2rem 0;">
                 <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
@@ -91,7 +91,7 @@
 
             <!-- Memory and Caches -->
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Memory: The Invisible State</h3>
-            <p>The program sees virtual addresses. The CPU sees physical pages, cache lines, TLB entries, and prefetch queues. None of this is visible to your code, but it affects behaviour:</p>
+            <p data-plain="Hidden stuff like caches and memory layout changes how the same code behaves." data-psi="Below the language lies a hidden landscape of cache lines, page mappings, and prefetch paths. Invisible substrate changes how the same program propagates." data-duck="Your duck thinks it is swimming straight, but the pond has warm patches, reeds, and hidden currents that change the route.">The program sees virtual addresses. The CPU sees physical pages, cache lines, TLB entries, and prefetch queues. None of this is visible to your code, but it affects behaviour:</p>
 
             <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
                 <strong style="color:var(--wf-cyan);">Cache hits vs misses</strong> — same algorithm, 100× speed difference depending on what was accessed recently<br>

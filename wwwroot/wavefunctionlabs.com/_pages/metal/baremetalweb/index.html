@@ -5,7 +5,7 @@
         <a href="https://github.com/WillEastbury/BareMetalWeb" target="_blank" class="wf-repo-link" style="opacity: 0.7; margin-bottom: 0.5rem;">⌥ repo</a>
         <div class="wf-article-tags">C# · .NET · HttpListener · Roslyn · SSR</div>
         <div class="wf-article-body">
-            <p>A modular monolithic web host built from nothing. No ASP.NET. No middleware pipeline. No dependency injection container. Just a raw <code>HttpListener</code>, manual route dispatch, and server-side rendering driven by metadata.</p>
+            <p data-plain="This is a web server built without a big framework. It handles requests directly and builds pages on the server from simple data definitions." data-psi="A single-handler server keeps causality visible from socket to render. The application is an explicit transformation pipeline, not a maze of hidden middleware states." data-duck="One duck hears the quack at the gate and handles the bread straight away. No chain of middle ducks passing it around the pond first.">A modular monolithic web host built from nothing. No ASP.NET. No middleware pipeline. No dependency injection container. Just a raw <code>HttpListener</code>, manual route dispatch, and server-side rendering driven by metadata.</p>
 
             <p><strong>What's inside</strong></p>
             <ul>
@@ -17,7 +17,7 @@
             </ul>
 
             <p><strong>Why it exists</strong></p>
-            <p>Most web frameworks exist to make development feel nice. This one exists to make execution honest. Every request hits a single handler. Every response is built from bytes. There is no abstraction between your code and the socket.</p>
+            <p data-plain="Each request goes through one direct code path, and pages are assembled straight from raw data. The goal is to remove extra layers so the server does exactly what the code says." data-psi="Honest execution means the runtime shape matches the conceptual shape. Fewer interpretive layers mean less entropy between intent and response." data-duck="The pond works best when the duck that hears the first quack is basically the same duck that throws back the bread. Fewer ducks, fewer weird ripples.">Most web frameworks exist to make development feel nice. This one exists to make execution honest. Every request hits a single handler. Every response is built from bytes. There is no abstraction between your code and the socket.</p>
 
             <div class="wf-insight">The fastest framework is the one that doesn't exist.</div>
 

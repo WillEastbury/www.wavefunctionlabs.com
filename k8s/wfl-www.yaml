@@ -59,7 +59,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p32-b2pls-stats-1140
+          image: tileforgeacr.azurecr.io/wfl-www:p33-picowal-scores-1153
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 443
@@ -90,6 +90,9 @@ spec:
             - "--tls-cert=/certs/tls.crt"
             - "--tls-key=/certs/tls.key"
             - "--http-early-hints"
+            - "--picowal-device=/data/picowal.wal"
+            - "--picowal-prefix=/wal/"
+            - "--picowal-bytes=10485760"
             - "443"
             - "wwwroot"
             - "2"
@@ -115,6 +118,8 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+            - name: picowal-data
+              mountPath: /data
           # tcpSocket probe: cheap, doesn't churn a full TLS handshake
           # every 10s, verifies the listener is accepting. A wedged TLS
           # engine would still pass — accepted; the wedge is rare and
@@ -211,6 +216,24 @@ spec:
             secretName: wfl-www-tls
         - name: tmp
           emptyDir: {}
+        - name: picowal-data
+          persistentVolumeClaim:
+            claimName: wfl-www-picowal
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wfl-www-picowal
+  namespace: wfl-www
+  labels:
+    app: wfl-www
+    env: prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -254,15 +277,3 @@ spec:
     algorithm: ECDSA
     size: 256
     rotationPolicy: Always
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: wfl-www-scores
-  namespace: wfl-www
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
