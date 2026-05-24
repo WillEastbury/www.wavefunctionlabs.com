@@ -69,6 +69,7 @@ grep -q '^picoweb_requests_total' "$BODY"
 grep -q '^picowal_recovery_status ' "$BODY"
 grep -q '^picowal_used_bytes ' "$BODY"
 grep -q '^picowal_free_bytes ' "$BODY"
+grep -q '^picoweb_accept_drops_total{reason="pool_exhausted"} ' "$BODY"
 
 expect_code 404 "$(url /wal/42)"
 

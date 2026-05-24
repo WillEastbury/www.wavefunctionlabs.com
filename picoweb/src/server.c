@@ -271,7 +271,10 @@ static void try_accept(int listen_fd, int ep, pool_t* pool, int64_t batch_now_ms
         if (c < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) return;
             if (errno == EINTR) continue;
-            if (errno == EMFILE || errno == ENFILE) return;
+            if (errno == EMFILE || errno == ENFILE) {
+                metrics_accept_drop(METRICS_ACCEPT_DROP_FD_LIMIT);
+                return;
+            }
             metal_log("accept4: %s", strerror(errno));
             return;
         }
@@ -300,6 +303,7 @@ static void try_accept(int listen_fd, int ep, pool_t* pool, int64_t batch_now_ms
 
         conn_t* conn = pool_alloc(pool);
         if (!conn) {
+            metrics_accept_drop(METRICS_ACCEPT_DROP_POOL_EXHAUSTED);
             close(c);
             continue;
         }

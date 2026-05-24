@@ -66,6 +66,7 @@ static metrics_route_counter_t g_route_counters[METRICS_ROUTE_COUNT];
 static metrics_wal_counter_t g_wal_counters[METRICS_WAL_COUNT];
 static metrics_wal_recovery_t g_wal_recovery;
 static uint64_t g_score_rejects[METRICS_SCORE_REJECT_COUNT];
+static uint64_t g_accept_drops[METRICS_ACCEPT_DROP_COUNT];
 static bool g_access_log_enabled = false;
 
 /* ===========================================================
@@ -543,6 +544,19 @@ void metrics_score_reject(metrics_score_reject_t reason) {
     __atomic_add_fetch(&g_score_rejects[reason], 1, __ATOMIC_RELAXED);
 }
 
+void metrics_accept_drop(metrics_accept_drop_t reason) {
+    if ((unsigned)reason >= METRICS_ACCEPT_DROP_COUNT) return;
+    __atomic_add_fetch(&g_accept_drops[reason], 1, __ATOMIC_RELAXED);
+}
+
+static const char* accept_drop_name(metrics_accept_drop_t reason) {
+    switch (reason) {
+    case METRICS_ACCEPT_DROP_POOL_EXHAUSTED: return "pool_exhausted";
+    case METRICS_ACCEPT_DROP_FD_LIMIT:       return "fd_limit";
+    default:                                 return "unknown";
+    }
+}
+
 void metrics_set_picowal_recovery(uint64_t status_code,
                                   uint64_t records_scanned,
                                   uint64_t records_recovered,
@@ -693,6 +707,12 @@ char* metrics_render_text(size_t* out_len) {
         appendf(&p, &rem, "picoweb_score_rejects_total{reason=\"%s\"} %llu\n",
                 score_reject_name((metrics_score_reject_t)i),
                 (unsigned long long)__atomic_load_n(&g_score_rejects[i], __ATOMIC_RELAXED));
+    }
+    appendf(&p, &rem, "# TYPE picoweb_accept_drops_total counter\n");
+    for (int i = 0; i < METRICS_ACCEPT_DROP_COUNT; i++) {
+        appendf(&p, &rem, "picoweb_accept_drops_total{reason=\"%s\"} %llu\n",
+                accept_drop_name((metrics_accept_drop_t)i),
+                (unsigned long long)__atomic_load_n(&g_accept_drops[i], __ATOMIC_RELAXED));
     }
     if (out_len) *out_len = (size_t)(p - buf);
     return buf;

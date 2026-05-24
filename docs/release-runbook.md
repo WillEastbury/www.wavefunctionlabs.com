@@ -48,6 +48,12 @@ scripts/picowal-capacity-check.sh
 If usage is above the warning threshold, follow `k8s/picowal-capacity.md`
 before the bounded WAL reaches `507 Insufficient Storage`.
 
+## Overload controls
+
+Watch accept-drop and score-reject metrics during and after releases. Sustained
+growth in `picoweb_accept_drops_total` or `picoweb_score_rejects_total` should
+be handled with `k8s/overload-abuse.md`; do not mask it with a proxy.
+
 ## Rollback
 
 Roll back by setting the deployment image to the last known-good unique tag,
