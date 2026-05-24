@@ -60,13 +60,18 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p38-shutdown-1924
+          image: tileforgeacr.azurecr.io/wfl-www:p39-score-2111
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
               value: "15000"
             - name: PICOWEB_SHUTDOWN_DRAIN_MS
               value: "25000"
+            - name: PICOWEB_SCORE_TOKEN_KEYS_HEX
+              valueFrom:
+                secretKeyRef:
+                  name: wfl-score-token-keys
+                  key: keys_hex
           ports:
             - containerPort: 443
               name: https
