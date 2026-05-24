@@ -6,12 +6,14 @@
 #include <stdbool.h>
 
 #include "jumptable.h"
+#include "api.h"
 
 #define METAL_READ_BUF 8192
 
 typedef enum {
-    ST_READING = 0,
-    ST_WRITING = 1
+    ST_READING        = 0,
+    ST_READING_BODY   = 2,   /* request headers parsed; draining body bytes */
+    ST_WRITING        = 1
 } conn_state_t;
 
 typedef struct conn {
@@ -56,6 +58,44 @@ typedef struct conn {
     /* Inline read buffer — the only writable runtime memory on the
      * request path. */
     char     read_buf[METAL_READ_BUF];
+
+    /* ===== JSON-file API state =====
+     *
+     * When dispatch_one detects an API request whose body has not yet
+     * fully arrived, it stashes the request shape here, transitions to
+     * ST_READING_BODY, and resumes once `read_off >= api_total_needed`.
+     *
+     * `api_resp` holds the prepared response (status line + headers in
+     * api_resp.head, body in api_resp.body). The iovec segments point
+     * into `api_resp.head` and `api_resp.body` while ST_WRITING; both
+     * are released by api_resp_release() in post_send. */
+    api_resp_t api_resp;
+    bool       api_pending;             /* true => api_resp owns memory */
+    /* These mirror http_request_t fields needed to dispatch after the
+     * body fully arrives, since read-buffer compaction may invalidate
+     * the original pointers. The request body itself stays in
+     * read_buf at offset api_headers_len. */
+    http_method_t api_method;
+    uint16_t      api_headers_len;      /* bytes 0..api_headers_len = HTTP head */
+    uint16_t      api_body_needed;      /* Content-Length of the request */
+    uint16_t      api_cookie_len;       /* length of copied Cookie header */
+    uint16_t      api_host_len;         /* Host header length */
+    uint16_t      api_origin_len;       /* length of copied Origin header */
+    uint16_t      api_acr_headers_len;  /* Access-Control-Request-Headers length */
+    uint16_t      api_principal_len;    /* X-PW-Principal/X-Principal-Id length */
+    uint16_t      api_tenant_len;       /* X-PW-Tenant length */
+    uint16_t      api_score_token_len;  /* X-Score-Token length */
+    bool          api_has_pw_auth;      /* X-PW-Auth: 1 marker */
+    uint8_t       api_path_len;
+    char          api_path[256];        /* request-target copy (see above) */
+    char          api_cookie[512];      /* bounded Cookie copy */
+    char          api_host[256];        /* bounded Host copy */
+    char          api_origin[256];      /* bounded Origin copy */
+    char          api_acr_headers[256]; /* bounded ACR-Headers copy */
+    char          api_principal[128];   /* bounded principal id copy */
+    char          api_tenant[128];      /* bounded tenant hint copy */
+    char          api_score_token[160]; /* bounded score token copy */
+    char          peer_ip[64];          /* accept() peer IP for rate limits */
 } conn_t;
 
 /* A per-worker pool of connection slots, mmapped at startup. */

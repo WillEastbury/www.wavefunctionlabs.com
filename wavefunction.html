@@ -584,6 +584,8 @@ function showTitle() {
 
 function startGame() {
     game = initGame();
+    scoreToken = null;
+    issueScoreToken().catch(e => console.warn('Score token unavailable', e));
     hideUI();
     document.getElementById('hud').style.display = 'flex';
     document.getElementById('touch-left').style.display = 'block';
@@ -601,9 +603,9 @@ function endGame() {
     document.getElementById('touch-left').style.display = 'none';
     document.getElementById('touch-right').style.display = 'none';
 
-    // Check if high score (fetch from server)
+    // Check if high score.
     if (score > 0) {
-        fetch('/api/scores').then(r => r.json()).then(data => {
+        loadScores().then(data => {
             const alltime = data.alltime || [];
             const isHigh = alltime.length < 20 || score > (alltime[alltime.length - 1]?.score || 0);
             if (isHigh) {
@@ -628,18 +630,54 @@ function endGame() {
     showScreen('screen-gameover');
 }
 
-// ── High Scores (Server-side) ──
+// ── High Scores ──
+
+const SCORE_URL = '/api/scores';
+const SCORE_START_URL = '/api/scores/start';
+let scoreToken = null;
+
+function normalizeScores(rows) {
+    return (rows || [])
+        .map(row => ({
+            name: String(row.name || 'φ operator').slice(0, 24),
+            score: Number(row.score) || 0,
+            ts: String(row.ts || ''),
+            day: String(row.day || '')
+        }))
+        .filter(row => row.score > 0)
+        .sort((a, b) => b.score - a.score || a.ts.localeCompare(b.ts));
+}
+
+async function loadScores() {
+    const res = await fetch(SCORE_URL);
+    if (!res.ok) throw new Error(`scores failed: ${res.status}`);
+    const data = await res.json();
+    return {
+        alltime: normalizeScores(data.alltime).slice(0, 20),
+        today: normalizeScores(data.today).slice(0, 20)
+    };
+}
+
+async function issueScoreToken() {
+    const res = await fetch(SCORE_START_URL, { method: 'POST' });
+    if (!res.ok) throw new Error(`score token failed: ${res.status}`);
+    const data = await res.json();
+    scoreToken = data.token || null;
+}
 
 async function submitScore() {
-    const name = document.getElementById('name-input').value.trim() || 'φ operator';
+    const name = (document.getElementById('name-input').value.trim() || 'φ operator').slice(0, 24);
     const score = Math.floor(game.dist);
     try {
-        await fetch('/api/scores', {
+        if (!scoreToken) await issueScoreToken();
+        const res = await fetch(SCORE_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Score-Token': scoreToken },
             body: JSON.stringify({ name, score })
         });
+        if (!res.ok) throw new Error(`score submit failed: ${res.status}`);
     } catch (e) { console.warn('Score submit failed', e); }
+    scoreToken = null;
 
     document.getElementById('name-prompt').style.display = 'none';
     document.getElementById('gameover-buttons').style.display = 'block';
@@ -670,7 +708,7 @@ function escHtml(s) {
 }
 
 function showScores() {
-    fetch('/api/scores').then(r => r.json()).then(data => {
+    loadScores().then(data => {
         renderScoreList(document.getElementById('scores-alltime'), data.alltime || []);
         renderScoreList(document.getElementById('scores-today'), data.today || []);
     }).catch(() => {

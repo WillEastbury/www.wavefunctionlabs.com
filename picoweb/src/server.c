@@ -1,4 +1,5 @@
 #include "server.h"
+#include "api.h"
 #include "http.h"
 #include "metrics.h"
 #include "pool.h"
@@ -9,6 +10,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
@@ -165,6 +167,10 @@ static void close_conn(pool_t* pool, int ep, conn_t* c) {
         epoll_ctl(ep, EPOLL_CTL_DEL, c->fd, NULL);
         close(c->fd);
     }
+    if (c->api_pending) {
+        api_resp_release(&c->api_resp);
+        c->api_pending = false;
+    }
     pool_free(pool, c);
 }
 
@@ -174,7 +180,9 @@ static int g_listen_marker;
 
 static void try_accept(int listen_fd, int ep, pool_t* pool, int64_t batch_now_ms) {
     for (;;) {
-        int c = accept4(listen_fd, NULL, NULL,
+        struct sockaddr_storage peer;
+        socklen_t peer_len = sizeof(peer);
+        int c = accept4(listen_fd, (struct sockaddr*)&peer, &peer_len,
                         SOCK_NONBLOCK | SOCK_CLOEXEC);
         if (c < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) return;
@@ -212,6 +220,14 @@ static void try_accept(int listen_fd, int ep, pool_t* pool, int64_t batch_now_ms
             continue;
         }
         conn->fd = c;
+        conn->peer_ip[0] = '\0';
+        if (peer.ss_family == AF_INET) {
+            struct sockaddr_in* in = (struct sockaddr_in*)&peer;
+            (void)inet_ntop(AF_INET, &in->sin_addr, conn->peer_ip, sizeof(conn->peer_ip));
+        } else if (peer.ss_family == AF_INET6) {
+            struct sockaddr_in6* in6 = (struct sockaddr_in6*)&peer;
+            (void)inet_ntop(AF_INET6, &in6->sin6_addr, conn->peer_ip, sizeof(conn->peer_ip));
+        }
         conn->state = ST_READING;
         conn->read_off = 0;
         conn->res = NULL;
@@ -222,6 +238,19 @@ static void try_accept(int listen_fd, int ep, pool_t* pool, int64_t batch_now_ms
         conn->close_after = false;
         conn->req_count = 0;
         conn->peer_half_closed = false;
+        conn->api_pending = false;
+        conn->api_method = M_UNKNOWN;
+        conn->api_headers_len = 0;
+        conn->api_body_needed = 0;
+        conn->api_cookie_len = 0;
+        conn->api_host_len = 0;
+        conn->api_origin_len = 0;
+        conn->api_acr_headers_len = 0;
+        conn->api_principal_len = 0;
+        conn->api_tenant_len = 0;
+        conn->api_score_token_len = 0;
+        conn->api_has_pw_auth = false;
+        conn->api_path_len = 0;
         conn->last_active_ms = batch_now_ms;
 
         uint32_t mask = EPOLLIN | EPOLLRDHUP;
@@ -306,13 +335,131 @@ static __attribute__((hot)) int try_send(conn_t* c) {
 }
 
 /* ============================================================== */
+/* API path: build response from a finalised api_resp_t.          */
+/* ============================================================== */
+
+/* Wire up segs[] for an API response. The head buffer already contains
+ * the status line + headers (NO trailing blank line); CONN_KA / CONN_CLOSE
+ * supply the connection header + final CRLF. Body (if any) is the third
+ * segment. */
+static void api_finalise(conn_t* c, bool head_only, bool close_after) {
+    int ns = 0;
+    c->segs[ns].ptr = c->api_resp.head;
+    c->segs[ns].len = c->api_resp.head_len;
+    ns++;
+    c->segs[ns].ptr = close_after ? CONN_CLOSE : CONN_KA;
+    c->segs[ns].len = close_after ? CONN_CLOSE_LEN : CONN_KA_LEN;
+    ns++;
+    if (!head_only && c->api_resp.body && c->api_resp.body_len > 0) {
+        c->segs[ns].ptr = c->api_resp.body;
+        c->segs[ns].len = c->api_resp.body_len;
+        ns++;
+    }
+    c->seg_count   = (uint8_t)ns;
+    size_t total = 0;
+    for (int i = 0; i < ns; i++) total += c->segs[i].len;
+    c->wire_total  = total;
+    c->bytes_sent  = 0;
+    c->send_body   = !head_only;
+    c->close_after = close_after;
+    c->state       = ST_WRITING;
+}
+
+static bool is_ctx_token_char(char c) {
+    return (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') ||
+           c == '-' || c == '_';
+}
+
+static void resolve_api_request_context(const conn_t* c, api_request_context_t* ctx) {
+    memset(ctx, 0, sizeof(*ctx));
+    memcpy(ctx->tenant_system, "prod", 5);
+    memcpy(ctx->tenant_id, "default", 8);
+    memcpy(ctx->principal_id, "anonymous", 10);
+    if (c->peer_ip[0]) {
+        snprintf(ctx->client_ip, sizeof(ctx->client_ip), "%s", c->peer_ip);
+    }
+
+    (void)api_principal_from_cookie(c->api_cookie, c->api_cookie_len,
+                                    ctx->principal_id, sizeof(ctx->principal_id));
+
+    if (c->api_host_len > 0) {
+        const char* h = c->api_host;
+        size_t n = c->api_host_len;
+        size_t dot1 = 0;
+        while (dot1 < n && h[dot1] != '.') dot1++;
+        if (dot1 > 0) {
+            size_t o = 0;
+            for (size_t i = 0; i < dot1 && o + 1 < sizeof(ctx->tenant_id); i++) {
+                char ch = h[i];
+                if (!is_ctx_token_char(ch)) continue;
+                ctx->tenant_id[o++] = ch;
+            }
+            if (o > 0) ctx->tenant_id[o] = '\0';
+        }
+        if (dot1 + 1 < n) {
+            size_t s2 = dot1 + 1;
+            size_t e2 = s2;
+            while (e2 < n && h[e2] != '.') e2++;
+            size_t l2 = e2 - s2;
+            if ((l2 == 3 && memcmp(h + s2, "dev", 3) == 0) ||
+                (l2 == 2 && memcmp(h + s2, "qa", 2) == 0) ||
+                (l2 == 4 && memcmp(h + s2, "prod", 4) == 0)) {
+                snprintf(ctx->tenant_system, sizeof(ctx->tenant_system), "%.*s", (int)l2, h + s2);
+            }
+        }
+    }
+}
+
+static void api_apply_request_context_headers(api_resp_t* resp, const api_request_context_t* ctx) {
+    if (!resp || !ctx) return;
+    size_t rem = (resp->head_len < sizeof(resp->head)) ? (sizeof(resp->head) - resp->head_len) : 0;
+    if (rem < 8) return;
+    int n = snprintf(resp->head + resp->head_len, rem,
+                     "X-PW-Principal-Id: %s\r\n"
+                     "X-PW-Tenant-Id: %s\r\n"
+                     "X-PW-Tenant-System: %s\r\n",
+                     ctx->principal_id,
+                     ctx->tenant_id,
+                     ctx->tenant_system);
+    if (n > 0 && (size_t)n < rem) resp->head_len += (size_t)n;
+}
+
+/* Run api_dispatch for the body now sitting in c->read_buf and prime
+ * the response. Always sets close_after=true (any request that declared
+ * a body forces close per http_parse anyway, and matching that for the
+ * read paths keeps lifetimes simple). */
+static void api_run(conn_t* c) {
+    const char* body = c->read_buf + c->api_headers_len;
+    size_t body_len = c->api_body_needed;
+    api_request_context_t req_ctx;
+    resolve_api_request_context(c, &req_ctx);
+    api_dispatch(c->api_method, c->api_path, c->api_path_len,
+                 body, body_len,
+                 c->api_cookie, c->api_cookie_len,
+                 c->api_has_pw_auth,
+                 c->api_score_token, c->api_score_token_len,
+                 &req_ctx,
+                 &c->api_resp);
+    api_apply_request_context_headers(&c->api_resp, &req_ctx);
+    api_apply_cors(&c->api_resp,
+                   c->api_origin, c->api_origin_len,
+                   c->api_acr_headers, c->api_acr_headers_len);
+    c->api_pending = true;
+    api_finalise(c, /*head_only*/ c->api_method == M_HEAD,
+                 /*close_after*/ true);
+    c->read_off = 0;  /* request fully consumed; no leftover */
+}
+
+/* ============================================================== */
 /* Dispatch                                                       */
 /* ============================================================== */
 
 /* Try to parse one request from the front of c->read_buf and prime
  * the response. Returns:
  *   1  - request parsed & response primed; state = ST_WRITING
- *   0  - need more data; still ST_READING
+ *   0  - need more data; still ST_READING (or ST_READING_BODY)
  *  -1  - unrecoverable; caller should close (only for transient cases) */
 static __attribute__((hot)) int dispatch_one(conn_t* c, const jumptable_t* jt, uint32_t max_req) {
     http_request_t req;
@@ -329,6 +476,141 @@ static __attribute__((hot)) int dispatch_one(conn_t* c, const jumptable_t* jt, u
 
     /* Latency clock: from this point we will produce a response. */
     c->req_start_tsc = metal_tsc();
+
+    /* JSON-file API: route requests under the configured prefix
+     * (regardless of method, including GET/HEAD that the static
+     * jumptable would otherwise resolve). */
+    if (pr == HTTP_OK && api_path_matches(req.path, req.path_len)) {
+        c->req_count++;
+        if (req.path_len > sizeof(c->api_path)) {
+            /* Should be impossible — http_parse caps path at MAX_URI_LEN
+             * (2048), but our api_path stash is smaller. Treat as 414. */
+            pr = HTTP_ERR_414;
+            goto fallback_static;
+        }
+        if (req.content_length > api_max_request_body()) {
+            api_resp_release(&c->api_resp);
+            memset(&c->api_resp, 0, sizeof(c->api_resp));
+            c->api_resp.status = 413;
+            int n = snprintf(c->api_resp.head, sizeof(c->api_resp.head),
+                             "HTTP/1.1 413 Payload Too Large\r\n"
+                             "Server: picoweb\r\n"
+                             "Content-Length: 0\r\n");
+            c->api_resp.head_len = (n > 0) ? (size_t)n : 0;
+            c->api_pending = true;
+            api_finalise(c, /*head_only*/ false, /*close_after*/ true);
+            c->read_off = 0;
+            return 1;
+        }
+        /* Stash the request shape; body bytes (if any) sit at
+         * read_buf[req.consumed..]. */
+        c->api_method       = req.method;
+        c->api_headers_len  = (uint16_t)req.consumed;
+        c->api_body_needed  = (uint16_t)req.content_length;
+        c->api_has_pw_auth  = req.pw_auth_header;
+        c->api_cookie_len   = 0;
+        c->api_host_len = 0;
+        c->api_origin_len = 0;
+        c->api_acr_headers_len = 0;
+        c->api_principal_len = 0;
+        c->api_tenant_len = 0;
+        c->api_score_token_len = 0;
+        c->api_path_len     = (uint8_t)req.path_len;
+        memcpy(c->api_path, req.path, req.path_len);
+        if (req.cookie && req.cookie_len > 0) {
+            if (req.cookie_len >= sizeof(c->api_cookie)) {
+                pr = HTTP_ERR_400;
+                goto fallback_static;
+            }
+            memcpy(c->api_cookie, req.cookie, req.cookie_len);
+            c->api_cookie[req.cookie_len] = '\0';
+            c->api_cookie_len = (uint16_t)req.cookie_len;
+        }
+        if (req.host && req.host_len > 0) {
+            if (req.host_len >= sizeof(c->api_host)) {
+                pr = HTTP_ERR_400;
+                goto fallback_static;
+            }
+            memcpy(c->api_host, req.host, req.host_len);
+            c->api_host[req.host_len] = '\0';
+            c->api_host_len = (uint16_t)req.host_len;
+        }
+        if (req.origin && req.origin_len > 0) {
+            if (req.origin_len >= sizeof(c->api_origin)) {
+                pr = HTTP_ERR_400;
+                goto fallback_static;
+            }
+            memcpy(c->api_origin, req.origin, req.origin_len);
+            c->api_origin[req.origin_len] = '\0';
+            c->api_origin_len = (uint16_t)req.origin_len;
+        }
+        if (req.acr_headers && req.acr_headers_len > 0) {
+            if (req.acr_headers_len >= sizeof(c->api_acr_headers)) {
+                pr = HTTP_ERR_400;
+                goto fallback_static;
+            }
+            memcpy(c->api_acr_headers, req.acr_headers, req.acr_headers_len);
+            c->api_acr_headers[req.acr_headers_len] = '\0';
+            c->api_acr_headers_len = (uint16_t)req.acr_headers_len;
+        }
+        if (req.pw_principal && req.pw_principal_len > 0) {
+            if (req.pw_principal_len >= sizeof(c->api_principal)) {
+                pr = HTTP_ERR_400;
+                goto fallback_static;
+            }
+            memcpy(c->api_principal, req.pw_principal, req.pw_principal_len);
+            c->api_principal[req.pw_principal_len] = '\0';
+            c->api_principal_len = (uint16_t)req.pw_principal_len;
+        }
+        if (req.pw_tenant && req.pw_tenant_len > 0) {
+            if (req.pw_tenant_len >= sizeof(c->api_tenant)) {
+                pr = HTTP_ERR_400;
+                goto fallback_static;
+            }
+            memcpy(c->api_tenant, req.pw_tenant, req.pw_tenant_len);
+            c->api_tenant[req.pw_tenant_len] = '\0';
+            c->api_tenant_len = (uint16_t)req.pw_tenant_len;
+        }
+        if (req.score_token && req.score_token_len > 0) {
+            if (req.score_token_len >= sizeof(c->api_score_token)) {
+                pr = HTTP_ERR_400;
+                goto fallback_static;
+            }
+            memcpy(c->api_score_token, req.score_token, req.score_token_len);
+            c->api_score_token[req.score_token_len] = '\0';
+            c->api_score_token_len = (uint16_t)req.score_token_len;
+        }
+
+        /* Required header+body footprint must fit in read_buf so that
+         * we can hold the full body in place without reallocation. */
+        if ((size_t)req.consumed + (size_t)req.content_length > sizeof(c->read_buf)) {
+            api_resp_release(&c->api_resp);
+            memset(&c->api_resp, 0, sizeof(c->api_resp));
+            c->api_resp.status = 413;
+            int n = snprintf(c->api_resp.head, sizeof(c->api_resp.head),
+                             "HTTP/1.1 413 Payload Too Large\r\n"
+                             "Server: picoweb\r\n"
+                             "Content-Length: 0\r\n");
+            c->api_resp.head_len = (n > 0) ? (size_t)n : 0;
+            c->api_pending = true;
+            api_finalise(c, /*head_only*/ false, /*close_after*/ true);
+            c->read_off = 0;
+            return 1;
+        }
+
+        size_t have_body = c->read_off - req.consumed;
+        if (have_body < req.content_length) {
+            /* Need more bytes; switch to body-read state. */
+            c->state = ST_READING_BODY;
+            return 0;
+        }
+        /* Full body present (any extra bytes beyond Content-Length are
+         * a protocol error, but http_parse already returned, and we
+         * close after this response anyway). */
+        api_run(c);
+        return 1;
+    }
+fallback_static:
 
     bool close_after, head_only;
     const resource_t* r = http_select(jt, pr, &req, &close_after, &head_only);
@@ -477,7 +759,12 @@ static __attribute__((hot)) bool post_send(conn_t* c, int ep, pool_t* pool,
             return true;
         }
 
-        /* Reset write-side state for next request. */
+        /* Reset write-side state for next request. Release any API
+         * response that just finished being written. */
+        if (c->api_pending) {
+            api_resp_release(&c->api_resp);
+            c->api_pending = false;
+        }
         c->res         = NULL;
         c->seg_count   = 0;
         c->bytes_sent  = 0;
@@ -566,8 +853,31 @@ static __attribute__((hot)) void handle_readable(conn_t* c, int ep, pool_t* pool
 
     if (c->read_off == 0) return;  /* nothing to parse */
 
+    /* If we were waiting for an API request body to complete, check
+     * whether enough bytes have arrived. Other states fall through to
+     * the normal request parser. */
+    if (c->state == ST_READING_BODY) {
+        size_t need = (size_t)c->api_headers_len + (size_t)c->api_body_needed;
+        if (c->read_off < need) {
+            if (c->peer_half_closed) {
+                /* Truncated body — peer disconnected mid-upload. */
+                close_conn(pool, ep, c);
+            }
+            return;
+        }
+        api_run(c);
+        int sr = try_send(c);
+        if (sr < 0) { close_conn(pool, ep, c); return; }
+        if (sr == 0) {
+            ep_mod_if(ep, c, EPOLLOUT | EPOLLRDHUP);
+            return;
+        }
+        post_send(c, ep, pool, jt, max_req, batch_now_ms);
+        return;
+    }
+
     int dr = dispatch_one(c, jt, max_req);
-    if (dr == 0) return;          /* still ST_READING */
+    if (dr == 0) return;          /* still ST_READING (or ST_READING_BODY) */
 
     int sr = try_send(c);
     if (sr < 0) { close_conn(pool, ep, c); return; }
