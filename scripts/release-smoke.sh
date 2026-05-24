@@ -67,6 +67,8 @@ grep -q '"picowal":"ready"' "$BODY"
 curl "${curl_common[@]}" -o "$BODY" "$(url /metricsz)"
 grep -q '^picoweb_requests_total' "$BODY"
 grep -q '^picowal_recovery_status ' "$BODY"
+grep -q '^picowal_used_bytes ' "$BODY"
+grep -q '^picowal_free_bytes ' "$BODY"
 
 expect_code 404 "$(url /wal/42)"
 

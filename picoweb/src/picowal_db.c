@@ -601,6 +601,8 @@ bool picowal_db_recovery_info(picowal_db_t* db, picowal_recovery_info_t* out) {
     if (!db || !out) return false;
     pthread_mutex_lock(&db->mu);
     *out = db->recovery;
+    out->write_offset = db->write_off;
+    out->volume_bytes = db->volume_bytes;
     pthread_mutex_unlock(&db->mu);
     return true;
 }
