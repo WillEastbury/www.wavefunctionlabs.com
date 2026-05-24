@@ -57,13 +57,15 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p40-single-2120
+          image: tileforgeacr.azurecr.io/wfl-www:p41-http-2133
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
               value: "15000"
             - name: PICOWEB_SHUTDOWN_DRAIN_MS
               value: "25000"
+            - name: PICOWEB_INCOMPLETE_REQUEST_TIMEOUT_MS
+              value: "5000"
             - name: PICOWEB_SCORE_TOKEN_KEYS_HEX
               valueFrom:
                 secretKeyRef:
