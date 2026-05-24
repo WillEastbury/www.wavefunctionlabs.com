@@ -955,7 +955,10 @@ static void try_accept(tls_kworker_t* w, int64_t now_ms) {
         if (fd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) return;
             if (errno == EINTR) continue;
-            if (errno == EMFILE || errno == ENFILE) return;
+            if (errno == EMFILE || errno == ENFILE) {
+                metrics_accept_drop(METRICS_ACCEPT_DROP_FD_LIMIT);
+                return;
+            }
             metal_log("accept4: %s", strerror(errno));
             return;
         }
@@ -966,6 +969,7 @@ static void try_accept(tls_kworker_t* w, int64_t now_ms) {
 #endif
         kconn_t* c = kconn_alloc(w);
         if (!c) {
+            metrics_accept_drop(METRICS_ACCEPT_DROP_POOL_EXHAUSTED);
             close(fd);
             /* Pool exhausted. Drop on the floor; client will retry. */
             continue;

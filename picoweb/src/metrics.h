@@ -190,6 +190,12 @@ typedef enum {
         METRICS_SCORE_REJECT_COUNT,
 } metrics_score_reject_t;
 
+typedef enum {
+        METRICS_ACCEPT_DROP_POOL_EXHAUSTED = 0,
+        METRICS_ACCEPT_DROP_FD_LIMIT,
+        METRICS_ACCEPT_DROP_COUNT,
+} metrics_accept_drop_t;
+
 metrics_route_t metrics_route_for_path(const char* path, size_t path_len);
 const char* metrics_route_name(metrics_route_t route);
 
@@ -208,6 +214,7 @@ void metrics_observe_picowal(metrics_wal_op_t op,
                              bool ok);
 
 void metrics_score_reject(metrics_score_reject_t reason);
+void metrics_accept_drop(metrics_accept_drop_t reason);
 
 void metrics_set_picowal_recovery(uint64_t status_code,
                                   uint64_t records_scanned,
