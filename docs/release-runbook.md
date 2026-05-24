@@ -33,8 +33,20 @@ Run the release smoke after every rollout:
 scripts/release-smoke.sh
 ```
 
-The smoke checks TLS/static content, `/readyz`, `/metricsz`, score token
-issue/write/readback, and that raw `/wal/*` remains non-public.
+The smoke checks TLS/static content, `/readyz`, `/metricsz`, picowal capacity
+metrics, score token issue/write/readback, and that raw `/wal/*` remains
+non-public.
+
+## Picowal capacity
+
+Check WAL headroom before storage-sensitive work:
+
+```sh
+scripts/picowal-capacity-check.sh
+```
+
+If usage is above the warning threshold, follow `k8s/picowal-capacity.md`
+before the bounded WAL reaches `507 Insufficient Storage`.
 
 ## Rollback
 

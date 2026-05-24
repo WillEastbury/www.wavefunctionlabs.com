@@ -39,6 +39,20 @@ static bool   g_picowal_public_http = false;
 static char   g_picowal_prefix[64] = {0};
 static size_t g_picowal_prefix_len = 0;
 
+static void refresh_picowal_metrics(void) {
+    picowal_recovery_info_t ri;
+    if (g_picowal && picowal_db_recovery_info(g_picowal, &ri)) {
+        metrics_set_picowal_recovery((uint64_t)ri.status,
+                                     ri.records_scanned,
+                                     ri.records_recovered,
+                                     ri.corrupt_records,
+                                     ri.truncated_records,
+                                     ri.truncated_bytes,
+                                     ri.write_offset,
+                                     ri.volume_bytes);
+    }
+}
+
 #define SCORE_CARD_ID             42u
 #define SCORE_TOKEN_TTL_SEC       900
 #define SCORE_NONCES_MAX          4096
@@ -230,17 +244,7 @@ bool api_picowal_init(const char* device_path, uint64_t volume_bytes,
                 device_path, strerror(errno));
         return false;
     }
-    picowal_recovery_info_t ri;
-    if (picowal_db_recovery_info(g_picowal, &ri)) {
-        metrics_set_picowal_recovery((uint64_t)ri.status,
-                                     ri.records_scanned,
-                                     ri.records_recovered,
-                                     ri.corrupt_records,
-                                     ri.truncated_records,
-                                     ri.truncated_bytes,
-                                     ri.write_offset,
-                                     ri.volume_bytes);
-    }
+    refresh_picowal_metrics();
     size_t pl = strlen(prefix);
     memcpy(g_picowal_prefix, prefix, pl + 1);
     g_picowal_prefix_len = pl;
@@ -2054,6 +2058,7 @@ scores_oom:
             resp_text_error(resp, 500, "Internal Server Error", "score write failed\n");
             return;
         }
+        refresh_picowal_metrics();
         resp_status_only(resp, 201, "Created");
         return;
     }
@@ -2326,6 +2331,7 @@ static void dispatch_picowal_pack_record(http_method_t method, uint16_t meta_pac
             resp_text_error(resp, 500, "Internal Server Error", "metadata write failed\n");
             return;
         }
+        refresh_picowal_metrics();
         if (method == M_POST) {
             resp_created(resp, g_picowal_prefix, location_coll, strlen(location_coll), rec, rec_len);
         } else {
@@ -2344,6 +2350,7 @@ static void dispatch_picowal_pack_record(http_method_t method, uint16_t meta_pac
             resp_text_error(resp, 500, "Internal Server Error", "metadata delete failed\n");
             return;
         }
+        refresh_picowal_metrics();
         resp_status_only(resp, 204, "No Content");
         return;
     }
@@ -2687,6 +2694,7 @@ static void dispatch_picowal(http_method_t method,
             resp_text_error(resp, 500, "Internal Server Error", "wal write failed\n");
             return;
         }
+        refresh_picowal_metrics();
         resp_status_only(resp, 204, "No Content");
         return;
     }
@@ -2720,6 +2728,7 @@ static void dispatch_picowal(http_method_t method,
                 uint32_t key = 0;
                 if (!picowal_db_pack_key((uint16_t)card, record, &key)) continue;
                 if (picowal_db_put_key(g_picowal, key, body, (uint32_t)body_len, true) == 0) {
+                    refresh_picowal_metrics();
                     char rid[16];
                     size_t rid_len = u32_to_dec(rid, sizeof(rid), record);
                     if (rid_len == 0) {
@@ -2776,6 +2785,7 @@ static void dispatch_picowal(http_method_t method,
             resp_text_error(resp, 500, "Internal Server Error", "wal write failed\n");
             return;
         }
+        refresh_picowal_metrics();
         resp_created(resp, g_picowal_prefix, coll, coll_len, id, id_len);
         return;
     }
@@ -2815,6 +2825,7 @@ static void dispatch_picowal(http_method_t method,
             resp_text_error(resp, 500, "Internal Server Error", "wal delete failed\n");
             return;
         }
+        refresh_picowal_metrics();
         resp_status_only(resp, 204, "No Content");
         return;
     }

@@ -65,6 +65,8 @@ grep -Eq 'picowal_operations_total\{op="write"\} [1-9][0-9]*' "$BODY"
 grep -Eq 'picowal_operations_total\{op="read"\} [1-9][0-9]*' "$BODY"
 grep -Eq 'picowal_storage_latency_us_sum\{op="write"\} [0-9]+' "$BODY"
 grep -Eq 'picowal_lock_wait_us_sum\{op="write"\} [0-9]+' "$BODY"
+grep -Eq '^picowal_used_bytes [1-9][0-9]*$' "$BODY"
+grep -Eq '^picowal_free_bytes [1-9][0-9]*$' "$BODY"
 
 grep -q '"event":"access"' "$LOG"
 grep -q '"route":"scores"' "$LOG"

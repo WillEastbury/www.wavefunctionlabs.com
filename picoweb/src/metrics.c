@@ -679,6 +679,15 @@ char* metrics_render_text(size_t* out_len) {
             (unsigned long long)__atomic_load_n(&g_wal_recovery.write_offset, __ATOMIC_RELAXED));
     appendf(&p, &rem, "picowal_recovery_volume_bytes %llu\n",
             (unsigned long long)__atomic_load_n(&g_wal_recovery.volume_bytes, __ATOMIC_RELAXED));
+    uint64_t wal_used = __atomic_load_n(&g_wal_recovery.write_offset, __ATOMIC_RELAXED);
+    uint64_t wal_volume = __atomic_load_n(&g_wal_recovery.volume_bytes, __ATOMIC_RELAXED);
+    if (wal_used > wal_volume) wal_used = wal_volume;
+    appendf(&p, &rem, "# TYPE picowal_used_bytes gauge\n");
+    appendf(&p, &rem, "picowal_used_bytes %llu\n",
+            (unsigned long long)wal_used);
+    appendf(&p, &rem, "# TYPE picowal_free_bytes gauge\n");
+    appendf(&p, &rem, "picowal_free_bytes %llu\n",
+            (unsigned long long)(wal_volume - wal_used));
     appendf(&p, &rem, "# TYPE picoweb_score_rejects_total counter\n");
     for (int i = 0; i < METRICS_SCORE_REJECT_COUNT; i++) {
         appendf(&p, &rem, "picoweb_score_rejects_total{reason=\"%s\"} %llu\n",

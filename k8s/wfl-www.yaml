@@ -57,7 +57,7 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p41-http-2133
+          image: tileforgeacr.azurecr.io/wfl-www:p43-picowal-capacity-2229
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
