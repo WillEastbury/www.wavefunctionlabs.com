@@ -120,20 +120,20 @@ spec:
               mountPath: /tmp
             - name: picowal-data
               mountPath: /data
-          # tcpSocket probe: cheap, doesn't churn a full TLS handshake
-          # every 10s, verifies the listener is accepting. A wedged TLS
-          # engine would still pass — accepted; the wedge is rare and
-          # visible in logs.
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /readyz
               port: 443
+              scheme: HTTPS
             initialDelaySeconds: 3
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /healthz
               port: 443
+              scheme: HTTPS
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
