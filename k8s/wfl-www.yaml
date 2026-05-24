@@ -57,10 +57,16 @@ spec:
         fsGroup: 65532
         seccompProfile:
           type: RuntimeDefault
+      terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p37-integrity-1910
+          image: tileforgeacr.azurecr.io/wfl-www:p38-shutdown-1924
           imagePullPolicy: IfNotPresent
+          env:
+            - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
+              value: "15000"
+            - name: PICOWEB_SHUTDOWN_DRAIN_MS
+              value: "25000"
           ports:
             - containerPort: 443
               name: https
@@ -99,6 +105,13 @@ spec:
             - "100"
             - "0"
             - "64"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - "kill -TERM 1; sleep 20"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
