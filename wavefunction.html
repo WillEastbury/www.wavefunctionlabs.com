@@ -49,6 +49,8 @@ h2{font-size:1.4rem;color:#ffd700;margin-bottom:1rem}
 #name-input{background:transparent;border:1px solid #ffd700;color:#ffd700;font-family:inherit;
   font-size:1.1rem;padding:.5rem 1rem;text-align:center;width:200px;margin:.5rem 0;outline:none}
 #name-input:focus{border-color:#00d4ff;color:#00d4ff}
+.score-status{min-height:1rem;margin:.35rem auto .2rem;max-width:360px;color:#8899aa;font-size:.72rem;line-height:1.4}
+.score-status.ok{color:#7cffb2}.score-status.warn{color:#ffd700}.score-status.error{color:#ff7c7c}
 
 .back-link{position:fixed;top:1rem;left:1rem;z-index:25;font-size:.75rem;color:#8899aa;
   text-decoration:none;border-bottom:1px solid transparent;transition:all .2s}
@@ -93,8 +95,9 @@ h2{font-size:1.4rem;color:#ffd700;margin-bottom:1rem}
         <div id="name-prompt" style="display:none">
             <p style="color:#ffd700;font-size:.8rem;margin-bottom:.3rem;">NEW HIGH SCORE — ENTER YOUR NAME</p>
             <input type="text" id="name-input" maxlength="12" placeholder="φ operator">
+            <p id="score-status" class="score-status" aria-live="polite"></p>
             <br>
-            <button class="btn" onclick="submitScore()">RECORD</button>
+            <button class="btn" id="score-submit" onclick="submitScore()">RECORD</button>
         </div>
         <div id="gameover-buttons">
             <button class="btn" onclick="startGame()">TRY AGAIN</button>
@@ -116,6 +119,7 @@ h2{font-size:1.4rem;color:#ffd700;margin-bottom:1rem}
                 <ol id="scores-today"></ol>
             </div>
         </div>
+        <p id="scores-status" class="score-status" aria-live="polite"></p>
         <button class="btn" onclick="showTitle()">BACK</button>
     </div>
 </div>
@@ -585,6 +589,7 @@ function showTitle() {
 function startGame() {
     game = initGame();
     scoreToken = null;
+    setScoreStatus('');
     issueScoreToken().catch(e => console.warn('Score token unavailable', e));
     hideUI();
     document.getElementById('hud').style.display = 'flex';
@@ -612,6 +617,7 @@ function endGame() {
                 document.getElementById('name-prompt').style.display = 'block';
                 document.getElementById('gameover-buttons').style.display = 'none';
                 document.getElementById('name-input').value = '';
+                setScoreStatus('');
                 setTimeout(() => document.getElementById('name-input').focus(), 100);
             } else {
                 document.getElementById('name-prompt').style.display = 'none';
@@ -621,6 +627,7 @@ function endGame() {
             document.getElementById('name-prompt').style.display = 'block';
             document.getElementById('gameover-buttons').style.display = 'none';
             document.getElementById('name-input').value = '';
+            setScoreStatus('Scoreboard unreachable — you can still try to record this run.', 'warn');
         });
     } else {
         document.getElementById('name-prompt').style.display = 'none';
@@ -635,6 +642,37 @@ function endGame() {
 const SCORE_URL = '/api/scores';
 const SCORE_START_URL = '/api/scores/start';
 let scoreToken = null;
+let scoreSubmitInFlight = false;
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: ctrl.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function fetchWithSafeRetry(url, options = {}) {
+    let lastErr;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            const res = await fetchWithTimeout(url, options);
+            if (res.status !== 503 && res.status !== 504) return res;
+            lastErr = new Error(`request failed: ${res.status}`);
+            lastErr.status = res.status;
+        } catch (e) {
+            lastErr = e;
+        }
+        if (attempt === 0) await delay(500);
+    }
+    throw lastErr;
+}
 
 function normalizeScores(rows) {
     return (rows || [])
@@ -649,8 +687,12 @@ function normalizeScores(rows) {
 }
 
 async function loadScores() {
-    const res = await fetch(SCORE_URL);
-    if (!res.ok) throw new Error(`scores failed: ${res.status}`);
+    const res = await fetchWithSafeRetry(SCORE_URL);
+    if (!res.ok) {
+        const err = new Error(`scores failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
+    }
     const data = await res.json();
     return {
         alltime: normalizeScores(data.alltime).slice(0, 20),
@@ -659,28 +701,77 @@ async function loadScores() {
 }
 
 async function issueScoreToken() {
-    const res = await fetch(SCORE_START_URL, { method: 'POST' });
-    if (!res.ok) throw new Error(`score token failed: ${res.status}`);
+    const res = await fetchWithSafeRetry(SCORE_START_URL, { method: 'POST' });
+    if (!res.ok) {
+        const err = new Error(`score token failed: ${res.status}`);
+        err.status = res.status;
+        throw err;
+    }
     const data = await res.json();
     scoreToken = data.token || null;
+    if (!scoreToken) throw new Error('score token missing');
+}
+
+function setScoreStatus(message, kind = '') {
+    const el = document.getElementById('score-status');
+    if (!el) return;
+    el.textContent = message;
+    el.className = `score-status ${kind}`.trim();
+}
+
+function setScoresStatus(message, kind = '') {
+    const el = document.getElementById('scores-status');
+    if (!el) return;
+    el.textContent = message;
+    el.className = `score-status ${kind}`.trim();
+}
+
+function scoreFailureMessage(status) {
+    if (status === 429) return 'Too many attempts right now — wait a moment and try again.';
+    if (status === 507) return 'Score storage is full. Your run stayed local; try again later.';
+    if (status === 503 || status === 504) return 'Score storage is temporarily unavailable. Try again in a moment.';
+    if (status === 400 || status === 401 || status === 403) return 'Score token expired. Press RECORD again to retry safely.';
+    return 'Could not record this score. Check your connection and try again.';
 }
 
 async function submitScore() {
+    if (scoreSubmitInFlight) return;
+    const btn = document.getElementById('score-submit');
     const name = (document.getElementById('name-input').value.trim() || 'φ operator').slice(0, 24);
     const score = Math.floor(game.dist);
+    scoreSubmitInFlight = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'RECORDING...';
+    }
+    setScoreStatus('Recording score...', 'warn');
     try {
         if (!scoreToken) await issueScoreToken();
-        const res = await fetch(SCORE_URL, {
+        const res = await fetchWithTimeout(SCORE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Score-Token': scoreToken },
             body: JSON.stringify({ name, score })
         });
-        if (!res.ok) throw new Error(`score submit failed: ${res.status}`);
-    } catch (e) { console.warn('Score submit failed', e); }
-    scoreToken = null;
-
-    document.getElementById('name-prompt').style.display = 'none';
-    document.getElementById('gameover-buttons').style.display = 'block';
+        if (!res.ok) {
+            const err = new Error(`score submit failed: ${res.status}`);
+            err.status = res.status;
+            throw err;
+        }
+        scoreToken = null;
+        setScoreStatus('Score recorded.', 'ok');
+        document.getElementById('name-prompt').style.display = 'none';
+        document.getElementById('gameover-buttons').style.display = 'block';
+    } catch (e) {
+        console.warn('Score submit failed', e);
+        scoreToken = null;
+        setScoreStatus(scoreFailureMessage(e.status || 0), 'error');
+    } finally {
+        scoreSubmitInFlight = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'RECORD';
+        }
+    }
 }
 
 // Enter key submits score
@@ -708,12 +799,15 @@ function escHtml(s) {
 }
 
 function showScores() {
+    setScoresStatus('Loading scores...', 'warn');
     loadScores().then(data => {
         renderScoreList(document.getElementById('scores-alltime'), data.alltime || []);
         renderScoreList(document.getElementById('scores-today'), data.today || []);
+        setScoresStatus('');
     }).catch(() => {
         renderScoreList(document.getElementById('scores-alltime'), []);
         renderScoreList(document.getElementById('scores-today'), []);
+        setScoresStatus('Scoreboard unavailable — gameplay still works offline.', 'error');
     });
     showScreen('screen-scores');
 }
