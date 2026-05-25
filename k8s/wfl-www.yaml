@@ -57,7 +57,7 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p44-overload-2237
+          image: tileforgeacr.azurecr.io/wfl-www:p45-log-privacy-0034
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
@@ -66,6 +66,8 @@ spec:
               value: "25000"
             - name: PICOWEB_INCOMPLETE_REQUEST_TIMEOUT_MS
               value: "5000"
+            - name: PICOWEB_ACCESS_LOG_IP
+              value: "redacted"
             - name: PICOWEB_SCORE_TOKEN_KEYS_HEX
               valueFrom:
                 secretKeyRef:

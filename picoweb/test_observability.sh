@@ -73,5 +73,7 @@ grep -q '^picoweb_accept_drops_total{reason="fd_limit"} ' "$BODY"
 grep -q '"event":"access"' "$LOG"
 grep -q '"route":"scores"' "$LOG"
 grep -q '"status":201' "$LOG"
+grep -q '"client_ip":"redacted"' "$LOG"
+! grep -q '"client_ip":"127.0.0.1"' "$LOG"
 
 echo "observability ok"
