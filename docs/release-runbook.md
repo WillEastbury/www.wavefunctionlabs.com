@@ -17,6 +17,12 @@ az acr build --registry tileforgeacr \
   --file Dockerfile .
 ```
 
+Record the image and base-image digests:
+
+```sh
+scripts/image-provenance.sh --image "tileforgeacr.azurecr.io/wfl-www:${TAG}"
+```
+
 Update `k8s/wfl-www.yaml` to `tileforgeacr.azurecr.io/wfl-www:${TAG}` and apply
 it:
 
@@ -64,6 +70,11 @@ scripts/alerting-slo-check.sh
 
 Alert thresholds, Prometheus-style queries, and first-response actions live in
 `k8s/alerting-slo.md`.
+
+## Image provenance
+
+Keep release digest notes and dependency update discipline in
+`docs/image-provenance.md`.
 
 ## Rollback
 
