@@ -4,6 +4,7 @@
 <script src="/js/BareMetal.Components.min.js"></script>
 <script>if(location.hash.startsWith('#/')){location.replace('/'+location.hash.slice(2).split('/')[0])}</script>
 <script>
+(function(){
 // ── Wave Canvas ──
 const canvas = document.getElementById('waveCanvas');
 const ctx = canvas.getContext('2d');
@@ -69,6 +70,7 @@ function spawn() {
 }
 setInterval(spawn, 2200);
 for (let i = 0; i < 6; i++) setTimeout(spawn, i * 350);
+})();
 </script>
 <style>
 #wtf-btn,#psi-btn,#duck-btn{position:fixed;right:1.5rem;z-index:10000;display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1rem;background:rgba(4,4,14,.94);border-radius:6px;font-family:'BareMetalMono',SFMono-Regular,Menlo,monospace;font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);transition:box-shadow .25s,transform .12s,opacity .2s;user-select:none;border-style:solid;border-width:1px}

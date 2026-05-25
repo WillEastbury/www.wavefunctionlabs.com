@@ -49,6 +49,22 @@ For a faster manual sample while iterating:
 GATE_SAMPLE_SECONDS=1 scripts/release-gate.sh
 ```
 
+## Browser smoke
+
+For browser-level coverage of the main SPA routes and wavefunction game page,
+run the Playwright smoke suite:
+
+```sh
+npm run smoke:playwright
+```
+
+The suite targets `https://wavefunctionlabs.com` by default. To test another
+deployment:
+
+```sh
+BASE_URL=https://example.test npm run smoke:playwright
+```
+
 ## Post-rollout smoke
 
 The release gate runs the smoke automatically. To run just the smoke:

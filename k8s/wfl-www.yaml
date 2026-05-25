@@ -57,7 +57,7 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p46-score-ux-0041
+          image: tileforgeacr.azurecr.io/wfl-www:p47-playwright-smoke-1350
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS

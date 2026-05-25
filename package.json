@@ -1,0 +1,12 @@
+{
+  "name": "www.wavefunctionlabs.com",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WaveFunctionLabs static site smoke tests",
+  "scripts": {
+    "smoke:playwright": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}
