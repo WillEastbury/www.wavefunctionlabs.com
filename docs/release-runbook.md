@@ -77,6 +77,12 @@ Run `scripts/dr-readiness-check.sh` after infrastructure changes that touch DNS,
 cert-manager, the LoadBalancer Service, snapshot classes, or the picowal PVC.
 Full node/PVC/cluster recovery steps live in `k8s/disaster-recovery-dns.md`.
 
+## Access logs
+
+Access logs are minimized NDJSON on container stderr. Production keeps client IP
+redacted with `PICOWEB_ACCESS_LOG_IP=redacted`; policy lives in
+`k8s/access-log-privacy.md`.
+
 ## Image provenance
 
 Keep release digest notes and dependency update discipline in
