@@ -31,9 +31,27 @@ kubectl apply -f k8s/wfl-www.yaml
 kubectl rollout status deployment/wfl-www -n wfl-www --timeout=180s
 ```
 
+## Release gate
+
+After every rollout, run the full release gate:
+
+```sh
+scripts/release-gate.sh
+```
+
+The gate verifies rollout completion, manifest/live image consistency, live image
+provenance, TLS certificate Secret parity, static/TLS/security-header smoke,
+picowal readiness and capacity, score persistence, and a short alert/SLO sample.
+
+For a faster manual sample while iterating:
+
+```sh
+GATE_SAMPLE_SECONDS=1 scripts/release-gate.sh
+```
+
 ## Post-rollout smoke
 
-Run the release smoke after every rollout:
+The release gate runs the smoke automatically. To run just the smoke:
 
 ```sh
 scripts/release-smoke.sh
