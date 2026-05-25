@@ -108,6 +108,9 @@ the drill: quiesce and snapshot readiness, restore PVC binding, restore pod
 readiness, and validation. Use the latest successful drill output as the live
 RTO expectation rather than a guessed number.
 
+For cluster, region, or DNS cutover recovery, use
+`k8s/disaster-recovery-dns.md`.
+
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim

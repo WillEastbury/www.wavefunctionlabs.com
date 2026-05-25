@@ -71,6 +71,12 @@ scripts/alerting-slo-check.sh
 Alert thresholds, Prometheus-style queries, and first-response actions live in
 `k8s/alerting-slo.md`.
 
+## Disaster recovery
+
+Run `scripts/dr-readiness-check.sh` after infrastructure changes that touch DNS,
+cert-manager, the LoadBalancer Service, snapshot classes, or the picowal PVC.
+Full node/PVC/cluster recovery steps live in `k8s/disaster-recovery-dns.md`.
+
 ## Image provenance
 
 Keep release digest notes and dependency update discipline in
