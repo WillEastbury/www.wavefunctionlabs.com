@@ -54,6 +54,17 @@ Watch accept-drop and score-reject metrics during and after releases. Sustained
 growth in `picoweb_accept_drops_total` or `picoweb_score_rejects_total` should
 be handled with `k8s/overload-abuse.md`; do not mask it with a proxy.
 
+## Alerting and SLOs
+
+After production changes that affect serving, storage, TLS, or probes, run:
+
+```sh
+scripts/alerting-slo-check.sh
+```
+
+Alert thresholds, Prometheus-style queries, and first-response actions live in
+`k8s/alerting-slo.md`.
+
 ## Rollback
 
 Roll back by setting the deployment image to the last known-good unique tag,
