@@ -1,13 +1,13 @@
-# Playwright smoke test
+# Playwright smoke tests
 
-Validates www.wavefunctionlabs.com renders a 200, has the right title,
-and has non-empty body content.
+The active Playwright suite is at `../site-smoke.spec.js` and runs from the
+repository root.
 
 ```sh
-cd tests/playwright
-npm init -y
-npm install @playwright/test
-npx playwright install chromium --with-deps
-npx playwright test                                  # default: https://legacy.wavefunctionlabs.com/
-SITE_URL=https://www.wavefunctionlabs.com/ npx playwright test
+npm install
+npm run smoke:playwright
+BASE_URL=https://staging.wavefunctionlabs.com npm run smoke:playwright
 ```
+
+Use the `BASE_URL` form as the browser-level staging deployment gate after the
+staging rollout has completed.

@@ -32,13 +32,13 @@ the site up; if they conflict with reality, stop and ask the user.
 
 ## Architecture
 
-Static marketing site for WaveFunctionLabs, served via Nginx in a Docker container and deployed to Kubernetes on Azure (ACR: `tileforgeacr.azurecr.io`).
+Static marketing site for WaveFunctionLabs, served by picoweb in a Docker container and deployed to Kubernetes on Azure (ACR: `tileforgeacr.azurecr.io`).
 
-- `index.html` — Main landing page. Single self-contained HTML file with inline CSS/JS. Uses [BareMetalJsTools](https://github.com/WillEastbury/BareMetalJsTools) for base styling via CDN.
-- `phi.html` — Interactive canvas-based easter egg (wavefunction collapse animation). Standalone, no shared dependencies with `index.html`.
-- `nginx.conf` — Nginx server config with SPA-style fallback (`try_files`), gzip, and 1-hour cache on static assets.
-- `Dockerfile` — Builds from `tileforgeacr.azurecr.io/nginx:alpine` (private base image, not Docker Hub).
-- `k8s/wfl-www.yaml` — Deployment, Service, and Ingress for the main site (`wavefunctionlabs.com` + `www.`).
+- `wwwroot/wavefunctionlabs.com/` — Main static site tree served by picoweb.
+- `wwwroot/wavefunctionlabs.com/_pages/` — Clean URL page content wrapped with shared chrome.
+- `wwwroot/wavefunctionlabs.com/wavefunction.html` — Interactive canvas game with high scores.
+- `Dockerfile` — Builds picoweb from the vendored `picoweb/` source and packages `wwwroot/`.
+- `k8s/wfl-www.yaml` — Deployment, Service, Certificate, and picowal PVC for the main site (`wavefunctionlabs.com` + `www.`).
 - `k8s/games.yaml` — Deployment, Service, and Ingress for game subdomains (`bedlam.`, `hambargness.`). These are separate container images, not part of this site's build.
 
 ## Build & Deploy
@@ -70,11 +70,27 @@ To apply manifest changes (only needed if `k8s/*.yaml` files change):
 kubectl apply -f k8s/wfl-www.yaml
 ```
 
-There are no build steps, test suites, or linters — the site is raw HTML/CSS/JS served as static files.
+## Browser smoke / staging gate
+
+Playwright browser smoke tests live under `tests/site-smoke.spec.js`.
+
+```sh
+npm install
+npm run smoke:playwright
+```
+
+The suite targets `https://wavefunctionlabs.com` by default. Use `BASE_URL` to gate staging before promotion:
+
+```sh
+kubectl rollout status deployment/wfl-www -n wfl-www-staging --timeout=180s
+BASE_URL=https://staging.wavefunctionlabs.com npm run smoke:playwright
+```
+
+This is a browser-behaviour gate for the home page, top-level pages, clean deep routes, and wavefunction game/high-score UI. It complements, but does not replace, the production release gate (`scripts/release-gate.sh`) for image provenance, cert parity, picowal capacity, smoke, and SLO checks.
 
 ## Conventions
 
-- **No build tooling**: All pages are self-contained HTML files with inline styles and scripts. No bundler, no npm, no framework.
-- **Private ACR base image**: The Dockerfile pulls from `tileforgeacr.azurecr.io/nginx:alpine`, not `nginx:alpine`. Keep this when modifying the Dockerfile.
+- **No app build tooling**: The site is static HTML/CSS/JS served directly by picoweb. npm is present only for Playwright smoke tests.
+- **Private ACR base image**: The Dockerfile pulls from `tileforgeacr.azurecr.io/alpine:3.19`, not Docker Hub. Keep this when modifying the Dockerfile.
 - **TLS via cert-manager**: Ingress resources use `cert-manager.io/cluster-issuer: letsencrypt-prod` for automatic certificate management.
 - **New pages**: Add a `COPY` line to the Dockerfile and ensure `nginx.conf` routing covers the new path. No routing framework exists — Nginx `try_files` handles fallback.
