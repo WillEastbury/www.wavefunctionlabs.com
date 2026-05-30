@@ -271,7 +271,6 @@ spec:
         - "--tls"
         - "--tls-cert=/certs/tls.crt"
         - "--tls-key=/certs/tls.key"
-        - "--http-early-hints"
         - "--picowal-device=/data/picowal.wal"
         - "--picowal-prefix=/wal/"
         - "--picowal-bytes=10485760"
