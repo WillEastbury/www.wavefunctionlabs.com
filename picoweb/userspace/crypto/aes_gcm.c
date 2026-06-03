@@ -7,8 +7,9 @@
  *          bit ordering). H = AES_K(0^128).
  * - For the standard 96-bit IV case, J0 = IV || 0x00000001.
  *
- * Pure C, no T-tables. Spike-grade reference. Not constant-time.
- * Production hardening will use ARMv8 PMULL + AES intrinsics.
+ * Pure C, no AES T-tables. GHASH uses a precomputed positional
+ * nibble table per AEAD operation; production hardening can replace
+ * this with ARMv8 PMULL / x86 CLMUL while keeping the same tests.
  */
 #include "aes_gcm.h"
 
@@ -24,38 +25,57 @@ static void xor16_inplace(uint8_t* dst, const uint8_t* a) {
     for (int i = 0; i < 16; i++) dst[i] ^= a[i];
 }
 
+typedef struct {
+    uint8_t row[32][16][16];
+} ghash_table_t;
+
+static void gf128_shift_x(uint8_t v[16]) {
+    int lsb = v[15] & 1;
+    for (int j = 15; j > 0; j--) {
+        v[j] = (uint8_t)((v[j] >> 1) | ((v[j-1] & 1) << 7));
+    }
+    v[0] >>= 1;
+    if (lsb) v[0] ^= 0xe1;
+}
+
+static void ghash_table_build(ghash_table_t* t, const uint8_t H[16]) {
+    uint8_t v[16];
+    memcpy(v, H, 16);
+    memset(t, 0, sizeof(*t));
+
+    for (int pos = 0; pos < 32; pos++) {
+        uint8_t powers[4][16];
+        for (int bit = 0; bit < 4; bit++) {
+            memcpy(powers[bit], v, 16);
+            gf128_shift_x(v);
+        }
+        for (int n = 0; n < 16; n++) {
+            if (n & 8) xor16_inplace(t->row[pos][n], powers[0]);
+            if (n & 4) xor16_inplace(t->row[pos][n], powers[1]);
+            if (n & 2) xor16_inplace(t->row[pos][n], powers[2]);
+            if (n & 1) xor16_inplace(t->row[pos][n], powers[3]);
+        }
+    }
+}
+
 /* GF(2^128) multiply, NIST big-endian convention.
  * Inputs and output are 16-byte big-endian field elements.
  *
- * Algorithm: bit-serial right-shift method over Y, conditional XOR
- * of X into Z, with reduction by R = 0xE1 || 0^120 whenever the
- * bottom bit of V (initially X) is shifted out.
+ * Algorithm: positional 4-bit table over X. Each table row encodes
+ * H*x^pos for one nibble position and preserves the same 0xE1
+ * reduction convention as NIST SP 800-38D Algorithm 1.
  *
  * Reference: NIST SP 800-38D, Algorithm 1 ("Multiplication on Blocks").
  */
-static void gf128_mul(uint8_t z[16], const uint8_t x[16], const uint8_t y[16]) {
-    uint8_t v[16];
-    memcpy(v, x, 16);
+static void gf128_mul_table(uint8_t z[16], const ghash_table_t* t, const uint8_t x[16]) {
+    uint8_t in[16];
+    memcpy(in, x, 16);
     memset(z, 0, 16);
 
-    for (int i = 0; i < 128; i++) {
-        /* If bit (15 - i/8)*8 + (7 - i%8) of Y is set... actually,
-         * NIST bit numbering: bit i of byte j is the (7-i)-th MSB.
-         * Y_i in NIST is the i-th bit of Y read MSB-first across
-         * the 16 bytes: byte = i / 8, bit = 7 - (i % 8). */
-        int byte = i >> 3;
-        int bit  = 7 - (i & 7);
-        if ((y[byte] >> bit) & 1) {
-            xor16_inplace(z, v);
-        }
-        /* V = V >> 1, with reduction if low bit was 1.
-         * Low bit in NIST = bit 127 = byte 15, bit 0 (LSB). */
-        int lsb = v[15] & 1;
-        for (int j = 15; j > 0; j--) {
-            v[j] = (uint8_t)((v[j] >> 1) | ((v[j-1] & 1) << 7));
-        }
-        v[0] >>= 1;
-        if (lsb) v[0] ^= 0xe1;
+    int pos = 0;
+    for (int i = 0; i < 16; i++) {
+        xor16_inplace(z, t->row[pos++][in[i] >> 4]);
+        xor16_inplace(z, t->row[pos++][in[i] & 0x0f]);
     }
 }
 
@@ -67,33 +87,35 @@ static void ghash(uint8_t y[16],
                   const uint8_t* ct,  size_t ct_len) {
     memset(y, 0, 16);
     uint8_t blk[16];
+    ghash_table_t table;
+    ghash_table_build(&table, H);
 
     /* AAD blocks. */
     size_t off = 0;
     while (off + 16 <= aad_len) {
         xor16_inplace(y, aad + off);
-        gf128_mul(y, y, H);
+        gf128_mul_table(y, &table, y);
         off += 16;
     }
     if (off < aad_len) {
         memset(blk, 0, 16);
         memcpy(blk, aad + off, aad_len - off);
         xor16_inplace(y, blk);
-        gf128_mul(y, y, H);
+        gf128_mul_table(y, &table, y);
     }
 
     /* Ciphertext blocks. */
     off = 0;
     while (off + 16 <= ct_len) {
         xor16_inplace(y, ct + off);
-        gf128_mul(y, y, H);
+        gf128_mul_table(y, &table, y);
         off += 16;
     }
     if (off < ct_len) {
         memset(blk, 0, 16);
         memcpy(blk, ct + off, ct_len - off);
         xor16_inplace(y, blk);
-        gf128_mul(y, y, H);
+        gf128_mul_table(y, &table, y);
     }
 
     /* Final block: 64-bit big-endian bit-lengths. */
@@ -103,7 +125,7 @@ static void ghash(uint8_t y[16],
     for (int i = 0; i < 8; i++) blk[i]     = (uint8_t)(aad_bits >> (56 - 8*i));
     for (int i = 0; i < 8; i++) blk[8 + i] = (uint8_t)(ct_bits  >> (56 - 8*i));
     xor16_inplace(y, blk);
-    gf128_mul(y, y, H);
+    gf128_mul_table(y, &table, y);
 }
 
 /* GCTR with starting counter J = J0 + 1 (i.e. the IV-derived block
