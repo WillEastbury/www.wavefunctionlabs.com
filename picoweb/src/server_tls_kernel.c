@@ -41,8 +41,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <brotli/decode.h>
-
 #include "../userspace/tls/cert.h"
 #include "../userspace/tls/engine.h"
 #include "../userspace/tls/pem.h"
@@ -530,35 +528,6 @@ static int build_http_response_iov(kconn_t* c,
         }
     }
 
-    const uint8_t* decoded_body = NULL;
-    size_t decoded_body_len = 0;
-    if (pr == HTTP_OK && !head_only && !variant &&
-        r->brotli_primary && r->brotli) {
-        size_t need = r->identity_len ? r->identity_len : r->brotli->decoded_len;
-        if (!w->br_identity_scratch || need > w->br_identity_scratch_len) {
-            metal_log("brotli identity scratch too small: need=%zu have=%zu",
-                      need, w->br_identity_scratch_len);
-            r = w->cfg->jt->err_500;
-            close_after = true;
-        } else {
-            size_t out_len = need;
-            BrotliDecoderResult brc = BrotliDecoderDecompress(
-                r->brotli->body_len,
-                (const uint8_t*)r->brotli->body,
-                &out_len,
-                w->br_identity_scratch);
-            if (brc != BROTLI_DECODER_RESULT_SUCCESS || out_len != need) {
-                metal_log("brotli identity decode failed: rc=%d out=%zu need=%zu",
-                          (int)brc, out_len, need);
-                r = w->cfg->jt->err_500;
-                close_after = true;
-            } else {
-                decoded_body = w->br_identity_scratch;
-                decoded_body_len = out_len;
-            }
-        }
-    }
-
     unsigned n = 0;
     out[n++] = (pw_iov_t){
         .base = (const uint8_t*)(variant ? variant->head : r->head),
@@ -572,8 +541,6 @@ static int build_http_response_iov(kconn_t* c,
     if (!head_only) {
         if (variant) {
             out[n++] = (pw_iov_t){ .base = (const uint8_t*)variant->body, .len = variant->body_len };
-        } else if (decoded_body) {
-            out[n++] = (pw_iov_t){ .base = decoded_body, .len = decoded_body_len };
         } else {
             if (r->chrome && r->chrome->hdr_len)
                 out[n++] = (pw_iov_t){ .base = (const uint8_t*)r->chrome->hdr, .len = r->chrome->hdr_len };

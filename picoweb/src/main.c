@@ -483,17 +483,15 @@ int main(int argc, char** argv) {
     case PICOWEB_BACKEND_DPDK:  worker_fn = dpdk_worker_main;  backend_name = "dpdk";  break;
     case PICOWEB_BACKEND_TLS:   worker_fn = tls_worker_main;   backend_name = "tls";   break;
     }
-    if (backend != PICOWEB_BACKEND_TLS) {
-        const char* br_primary = getenv("PICOWEB_BROTLI_PRIMARY");
-        if (br_primary && (br_primary[0] == '1' || br_primary[0] == 't' ||
-                           br_primary[0] == 'T' || br_primary[0] == 'y' ||
-                           br_primary[0] == 'Y')) {
-            fprintf(stderr,
-                "picoweb: PICOWEB_BROTLI_PRIMARY requires the TLS backend; "
-                "disabling for backend=%s.\n",
-                backend_name);
-            unsetenv("PICOWEB_BROTLI_PRIMARY");
-        }
+    const char* br_primary = getenv("PICOWEB_BROTLI_PRIMARY");
+    if (br_primary && (br_primary[0] == '1' || br_primary[0] == 't' ||
+                       br_primary[0] == 'T' || br_primary[0] == 'y' ||
+                       br_primary[0] == 'Y')) {
+        fprintf(stderr,
+            "picoweb: PICOWEB_BROTLI_PRIMARY disabled for backend=%s; "
+            "micro-brotli is encoder-only and identity fallback has no in-tree decoder.\n",
+            backend_name);
+        unsetenv("PICOWEB_BROTLI_PRIMARY");
     }
 
     /* SIGPIPE: ignore so writes to a peer-closed socket return EPIPE

@@ -41,8 +41,11 @@ static bool brotli_primary_enabled(void) {
     static int cached = -1;
     if (cached < 0) {
         const char* v = getenv("PICOWEB_BROTLI_PRIMARY");
-        cached = (v && (v[0] == '1' || v[0] == 't' || v[0] == 'T'
-                         || v[0] == 'y' || v[0] == 'Y')) ? 1 : 0;
+        if (v && (v[0] == '1' || v[0] == 't' || v[0] == 'T'
+                  || v[0] == 'y' || v[0] == 'Y')) {
+            metal_log("PICOWEB_BROTLI_PRIMARY disabled: micro-brotli is encoder-only");
+        }
+        cached = 0;
     }
     return cached != 0;
 }
