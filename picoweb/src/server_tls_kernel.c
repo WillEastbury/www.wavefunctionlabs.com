@@ -46,6 +46,7 @@
 #include "../userspace/tls/pem.h"
 #include "../userspace/tls/ticket_store.h"
 #include "http.h"
+#include "brotli.h"
 #include "metrics.h"
 #include "tls_bridge.h"
 #include "util.h"
@@ -504,6 +505,33 @@ static int build_http_response_iov(kconn_t* c,
         else if (req->accept_pc && r->compressed) variant = r->compressed;
     }
 
+    const uint8_t* decoded_body = NULL;
+    size_t decoded_body_len = 0;
+    if (pr == HTTP_OK && !head_only && !variant &&
+        r->brotli_primary && r->brotli) {
+        size_t need = r->identity_len ? r->identity_len : r->brotli->decoded_len;
+        if (!w->br_identity_scratch || need > w->br_identity_scratch_len) {
+            metal_log("brotli identity scratch too small: need=%zu have=%zu",
+                      need, w->br_identity_scratch_len);
+            r = w->cfg->jt->err_500;
+            close_after = true;
+        } else {
+            int out_len = brotli_decode((const uint8_t*)r->brotli->body,
+                                        r->brotli->body_len,
+                                        w->br_identity_scratch,
+                                        need);
+            if (out_len < 0 || (size_t)out_len != need) {
+                metal_log("brotli identity decode failed: out=%d need=%zu",
+                          out_len, need);
+                r = w->cfg->jt->err_500;
+                close_after = true;
+            } else {
+                decoded_body = w->br_identity_scratch;
+                decoded_body_len = (size_t)out_len;
+            }
+        }
+    }
+
     if (pr == HTTP_OK && req->if_none_match &&
         (req->method == M_GET || req->method == M_HEAD)) {
         const char* etag = NULL;
@@ -541,6 +569,8 @@ static int build_http_response_iov(kconn_t* c,
     if (!head_only) {
         if (variant) {
             out[n++] = (pw_iov_t){ .base = (const uint8_t*)variant->body, .len = variant->body_len };
+        } else if (decoded_body) {
+            out[n++] = (pw_iov_t){ .base = decoded_body, .len = decoded_body_len };
         } else {
             if (r->chrome && r->chrome->hdr_len)
                 out[n++] = (pw_iov_t){ .base = (const uint8_t*)r->chrome->hdr, .len = r->chrome->hdr_len };

@@ -8,7 +8,7 @@
  * Uses LZ77 + Huffman coding in a single meta-block.
  * Falls back to uncompressed meta-blocks when LZ77 doesn't help.
  *
- * Encoder only — browsers provide the decoder.
+ * Encoder plus a small decoder for the subset emitted by this encoder.
  * Zero external dependencies.
  */
 
@@ -19,6 +19,11 @@
 /* Encode `input` into a valid Brotli stream in `output`.
  * Returns bytes written, or -1 on error. */
 int brotli_encode(const uint8_t* input, size_t input_len,
+                  uint8_t* output, size_t output_cap);
+
+/* Decode streams produced by brotli_encode().
+ * Returns bytes written, or -1 on unsupported/corrupt input or too-small output. */
+int brotli_decode(const uint8_t* input, size_t input_len,
                   uint8_t* output, size_t output_cap);
 
 /* Worst-case output size. */
