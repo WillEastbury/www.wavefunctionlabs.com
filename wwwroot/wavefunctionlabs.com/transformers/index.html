@@ -40,7 +40,7 @@
 
     <div class="tf-arrow">↓</div>
     <div class="tf-step"><span class="tf-name tf-gold">Embedding Lookup <span class="tf-tech">(Embedding Matrix E)</span></span><p>Use each ID as a row number into a giant table. Copy out that row — 4,096 numbers per token.</p>
-    <details class="tf-math"><summary>🔢 the lookup</summary><div class="tf-math-body"><strong>X = E[token_id]</strong> — that's it. E is a table with 128,000 rows × 4,096 columns. Each token ID is an integer index. We copy one row. No multiplication, just a read.</div></details>
+    <details class="tf-math"><summary>🔢 the lookup</summary><div class="tf-math-body"><strong>X = E[token_id]</strong> — that's it. E is a table with 128,000 rows × 4,096 columns. Each token ID is a whole number addressing a row. We copy one row. No multiplication, just a read.</div></details>
     <div class="tf-link"><a href="ch3.html">→ ch3</a></div></div>
     <div class="tf-state tf-state-gold"><strong>state:</strong> 5 rows × 4,096 numbers each = <strong>20,480 floats</strong><br>
 row 0: [-0.22, 0.74, 0.04, -0.16, …]  ← "The"<br>
