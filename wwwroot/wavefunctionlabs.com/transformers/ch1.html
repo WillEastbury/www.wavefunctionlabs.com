@@ -1,95 +1,382 @@
 <style>
 .wf-section { display: block !important; }
-.wf-tabs { margin: 1.5rem 0; border: 1px solid var(--wf-border); border-radius: 12px; background: rgba(14,14,22,0.5); overflow: hidden; }
-.wf-tab-bar { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--wf-border); background: rgba(14,14,22,0.7); padding: 0.4rem 0.5rem 0; }
-.wf-tab { padding: 0.55rem 1rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--wf-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; border-radius: 6px 6px 0 0; }
-.wf-tab:hover { color: #e2e8f0; background: rgba(99,102,241,0.08); }
-.wf-tab.active { color: var(--wf-cyan); border-bottom-color: var(--wf-cyan); background: rgba(6,182,212,0.06); }
-.wf-tab-panel { display: none; padding: 1.2rem 1.3rem; font-size: 0.88rem; line-height: 1.85; color: var(--bs-body-color); }
-.wf-tab-panel.active { display: block; }
-.wf-tab-panel p { margin: 0 0 0.9rem; }
-.wf-tab-panel strong { color: #e2e8f0; }
-.wf-tab-panel .wf-code, .wf-tab-panel .wf-math, .wf-tab-panel .wf-table-wrap { margin: 0.8rem 0; }
-#wtf-btn, #psi-btn, #duck-btn { position: fixed; right: 1.5rem; z-index: 10000; display: none; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; background: rgba(4,4,14,0.94); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); transition: box-shadow 0.25s, transform 0.12s, opacity 0.2s; user-select: none; border-style: solid; border-width: 1px; }
-#wtf-btn { bottom: 1.5rem; color: #00c8ff; border-color: rgba(0,200,255,.55); box-shadow: 0 0 14px rgba(0,200,255,.2), 0 2px 10px rgba(0,0,0,.7); }
-#wtf-btn:hover { box-shadow: 0 0 26px rgba(0,200,255,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
-#psi-btn { bottom: 4.5rem; color: #f0c040; border-color: rgba(240,192,64,.55); box-shadow: 0 0 14px rgba(240,192,64,.2), 0 2px 10px rgba(0,0,0,.7); }
-#psi-btn:hover { box-shadow: 0 0 26px rgba(240,192,64,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
-#duck-btn { bottom: 7.5rem; color: #f97316; border-color: rgba(249,115,22,.55); box-shadow: 0 0 14px rgba(249,115,22,.2), 0 2px 10px rgba(0,0,0,.7); }
-#duck-btn:hover { box-shadow: 0 0 26px rgba(249,115,22,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
-#wtf-btn:active, #psi-btn:active, #duck-btn:active { transform: translateY(0); }
-#wtf-btn.busy, #psi-btn.busy, #duck-btn.busy { opacity: 0.45; cursor: wait; pointer-events: none; }
-.wf-gloss-entry { padding: 1rem 0; border-bottom: 1px solid var(--wf-border); }
-.wf-gloss-entry:last-child { border-bottom: none; }
-a.wf-gloss { color: var(--wf-cyan); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
-a.wf-gloss:hover { color: #e2e8f0; text-decoration-style: solid; }
-@media (max-width: 760px) {
-  .wf-tab { padding: 0.4rem 0.7rem; font-size: 0.68rem; }
-  #wtf-btn, #psi-btn, #duck-btn { right: 0.8rem; padding: 0.4rem 0.7rem; font-size: 0.68rem; }
-}
+.wf-tabs{margin:1.5rem 0;border:1px solid var(--wf-border);border-radius:12px;background:rgba(14,14,22,0.5);overflow:hidden}
+.wf-tab-bar{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--wf-border);background:rgba(14,14,22,0.7);padding:0.4rem 0.5rem 0}
+.wf-tab{padding:0.55rem 1rem;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--wf-muted);font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;border-radius:6px 6px 0 0}
+.wf-tab:hover{color:#e2e8f0;background:rgba(99,102,241,0.08)}
+.wf-tab.active{color:var(--wf-cyan);border-bottom-color:var(--wf-cyan);background:rgba(6,182,212,0.06)}
+.wf-tab-panel{display:none;padding:1.2rem 1.3rem;font-size:0.88rem;line-height:1.85;color:var(--bs-body-color)}
+.wf-tab-panel.active{display:block}
+.wf-tab-panel p{margin:0 0 0.9rem}
+.wf-tab-panel strong{color:#e2e8f0}
+#wtf-btn,#psi-btn,#duck-btn{position:fixed;right:1.5rem;z-index:10000;display:none;align-items:center;gap:0.35rem;padding:0.5rem 1rem;background:rgba(4,4,14,0.94);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);transition:box-shadow .25s,transform .12s,opacity .2s;user-select:none;border-style:solid;border-width:1px}
+#wtf-btn{bottom:1.5rem;color:#00c8ff;border-color:rgba(0,200,255,.55);box-shadow:0 0 14px rgba(0,200,255,.2),0 2px 10px rgba(0,0,0,.7)}
+#psi-btn{bottom:4.5rem;color:#f0c040;border-color:rgba(240,192,64,.55);box-shadow:0 0 14px rgba(240,192,64,.2),0 2px 10px rgba(0,0,0,.7)}
+#duck-btn{bottom:7.5rem;color:#f97316;border-color:rgba(249,115,22,.55);box-shadow:0 0 14px rgba(249,115,22,.2),0 2px 10px rgba(0,0,0,.7)}
+#wtf-btn:hover{box-shadow:0 0 26px rgba(0,200,255,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}
+#psi-btn:hover{box-shadow:0 0 26px rgba(240,192,64,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}
+#duck-btn:hover{box-shadow:0 0 26px rgba(249,115,22,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}
+#wtf-btn:active,#psi-btn:active,#duck-btn:active{transform:translateY(0)}
+#wtf-btn.busy,#psi-btn.busy,#duck-btn.busy{opacity:.45;cursor:wait;pointer-events:none}
+.wf-progress{margin:2rem 0;padding:1.2rem 1.4rem;border:1px solid var(--wf-border);border-radius:10px;background:rgba(14,14,22,0.6)}
+.wf-progress-title{color:var(--wf-cyan);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.8rem}
+.wf-progress-done{color:#4ade80;font-size:.82rem;line-height:1.9}
+.wf-progress-todo{color:var(--wf-muted);font-size:.82rem;line-height:1.9}
+.wf-trace{margin:.8rem 0;padding:.6rem 1rem;border-left:2px solid var(--wf-cyan);background:rgba(6,182,212,0.03);font-size:.84rem;line-height:1.7}
+.wf-trace-gold{border-left-color:var(--wf-gold);background:rgba(240,192,64,0.03)}
+.wf-trace-accent{border-left-color:var(--wf-accent);background:rgba(168,85,247,0.03)}
+.wf-register{display:inline-block;padding:.15rem .5rem;border:1px solid var(--wf-border);border-radius:4px;background:rgba(14,14,22,0.8);font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--wf-cyan)}
+.wf-arrow{text-align:center;color:var(--wf-muted);font-size:1.2rem;margin:.4rem 0;letter-spacing:.3em}
 </style>
 
-<div id="ch1" class="wf-section wf-article"><div class="wf-article-head"><a class="wf-back" href="index.html">← chapter index</a><div class="wf-kicker">Part 1 — The Big Picture</div><h1 class="wf-section-hdr">Overview of the Full Inference Pipeline</h1><p class="wf-section-desc">From raw text to one sampled token at a time. This chapter gives you the whole machine before later chapters zoom into the individual gears.</p></div><div class="wf-article-body"><p>If you have spent years building systems, the most useful first move is to stop thinking of a transformer as a mystical language object and start thinking of it as a numerical execution pipeline. At inference time it takes an input sequence, turns that sequence into integers, turns those integers into vectors, repeatedly transforms those vectors with a fixed stack of operators, projects the final state into vocabulary-sized scores, chooses one next token, appends it, and repeats. That is the entire loop. The behavior can be astonishing, but the mechanics are not supernatural. They are rigid, inspectable, and mostly built out of the same few primitives repeated at scale.</p><p>Our running example for the whole book is the prompt <strong>"What is the capital of France?"</strong> For a human, the answer <strong>Paris</strong> feels immediate. For a transformer, there is no symbolic country table, no explicit reasoning object called capital-city, and no hidden librarian. There is only a trained set of weight tensors and a forward pass. The model receives a sequence of token IDs representing the prompt, pushes them through the network, and produces logits: one numeric score for every token in its vocabulary. If the model is good, the token corresponding to something like <strong>" Paris"</strong> gets a high score. Sampling then turns those scores into an actual choice. The model emits that token, appends it to the context, and begins the next step from the new longer sequence.</p><div class="wf-callout"><p><strong>Key claims for the rest of the book:</strong> transformers are execution engines, not magic; almost everything is matrix multiplication or a lightweight operation wrapped around matrix multiplication; inference never modifies weights; a model is a large collection of number matrices loaded from disk into memory; and generation is autoregressive, meaning one token is generated at a time and fed back into the next step.</p></div><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The full pipeline in one screen</h3><div class="wf-code"><pre>Input Text
-   ↓
-Tokenizer
-   ↓
-Embeddings
-   ↓
-Positional Encoding
-   ↓
-N × Transformer Layers
-   ↓
-Final RMSNorm
-   ↓
-lm_head (vocabulary projection)
-   ↓
-Sampling
-   ↓
-Next Token
-   ↓
-(repeat until stop)</pre></div><p>The diagram is short because the outer structure really is short. The complexity is hidden inside the repeated transformer layers and in the scale of the matrices. In a modern model, those layers may repeat dozens of times, hidden widths may be in the thousands, and the vocabulary projection may score tens of thousands of candidate tokens every step. But the control flow is still the same ten-line pipeline shown above.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">A tensor map for the running example</h3><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Symbol</th><th>Meaning</th><th>Example for “What is the capital of France?”</th><th>Typical shape</th></tr></thead><tbody><tr><td><strong>T</strong></td><td>Current sequence length in tokens</td><td>Conceptually 7 prompt tokens before generation starts</td><td>scalar</td></tr><tr><td><strong>token_ids</strong></td><td>Tokenizer output</td><td>[w₀, w₁, w₂, …, w₆]</td><td>[T]</td></tr><tr><td><strong>E</strong></td><td>Embedding table</td><td>One row per vocabulary item</td><td>[V, d_model]</td></tr><tr><td><strong>X</strong></td><td>Token representations in the model</td><td>One vector per prompt token</td><td>[T, d_model]</td></tr><tr><td><strong>Q, K, V</strong></td><td>Attention projections</td><td>Queries, keys, and values for each token</td><td>[T, H, d_head]</td></tr><tr><td><strong>A</strong></td><td>Attention weights</td><td>How strongly each token attends to earlier tokens</td><td>[H, T, T]</td></tr><tr><td><strong>cache</strong></td><td>Stored past keys and values</td><td>Needed after the first emitted token</td><td>[layer, time, H_kv, d_head]</td></tr><tr><td><strong>h</strong></td><td>Final hidden state of the last token</td><td>Representation of the question at the decision point</td><td>[d_model]</td></tr><tr><td><strong>logits</strong></td><td>Unnormalised vocabulary scores</td><td>High score for “ Paris” if the model behaves well</td><td>[V]</td></tr></tbody></table></div><p>We will keep coming back to these shapes because most confusion about transformer inference disappears once you track dimensions honestly. A layer is not performing poetry. It is transforming arrays of known shape into other arrays of known shape, with learned parameters supplying the coefficients.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 1 — Tokenizer</h3><p>The tokenizer is the front door. It converts raw text into integer token IDs. Those tokens may look like words, subwords, punctuation marks, or byte-oriented fragments depending on the tokenizer family. For our prompt, the conceptual sequence is something like <strong>[“What”, “ is”, “ the”, “ capital”, “ of”, “ France”, “?”]</strong>, although a real tokenizer may split it differently. The important point is that the model itself does not read Unicode strings. It reads integer IDs. Tokenization is therefore a lossy interface boundary between text and model space: every later operation depends on how the tokenizer segmented the input, but once the IDs exist, the neural network never sees the original characters again.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 2 — Embeddings</h3><p>Each token ID indexes a row in an embedding table. If the vocabulary size is <strong>V</strong> and the model width is <strong>d_model</strong>, the embedding matrix has shape <strong>[V, d_model]</strong>. The operation is often written as <strong>X₀ = E[token_ids]</strong>.</p><div class="wf-math"><pre>X₀ = E[token_ids]</pre></div><p>In English: take each token ID, look up its row in the embedding matrix, and return the corresponding vector. This is a lookup, not a computation-heavy transformation. The meaning of “France” is not stored as a dictionary definition, but as a learned point in a high-dimensional space. The same applies to “capital”, “What”, and every other token. The result is a sequence of vectors, one per token, ready for the rest of the network.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 3 — Positional encoding</h3><p>Embeddings alone do not encode order. If you hand a model the same token vectors in a different sequence, the bare lookup stage does not know the difference. Positional encoding injects order information. Older models added a position vector directly to each token vector. Many current LLMs instead use rotary position encoding, which rotates query and key components in a position-dependent way inside attention. Either way, the job is the same: distinguish <strong>“France capital”</strong> from <strong>“capital France”</strong> and preserve where each token sits in the sequence. Without this stage, the network would know what tokens are present but not where they occurred.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 4 — N × transformer layers</h3><p>This is where almost all of the interesting work happens. Each layer takes the current token representations, computes attention so tokens can condition on other tokens, runs a per-token feed-forward network, and uses residual connections so information survives depth. The same prompt vectors are refined repeatedly. By the time the last layer finishes, the final token’s hidden state is no longer just “the vector for question mark” or “the vector for France”. It is a context-sensitive representation of the entire prompt, shaped by every earlier layer’s learned projections. Later chapters will break this apart in detail, but for now the key idea is simple: the layer stack is the execution core.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 5 — Final RMSNorm</h3><p>After the last transformer block, many modern LLMs apply one more RMSNorm before the output projection. RMSNorm rescales activations based on their root-mean-square magnitude and multiplies by a learned gain vector. It does not invent new information; it stabilises the scale of what is already there so the next projection behaves predictably. From a systems perspective, think of it as a cheap calibration step inserted before the final large matrix multiply. It is small compared with attention or the feed-forward network, but it matters because the output head expects inputs with a consistent scale distribution.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 6 — lm_head (vocabulary projection)</h3><p>The model now takes the hidden state for the last position and projects it into vocabulary space. If the hidden width is <strong>d_model</strong> and the vocabulary size is <strong>V</strong>, the output head has shape <strong>[V, d_model]</strong> or equivalent depending on layout. The usual shorthand is <strong>logits = h · W_vocabᵀ</strong>.</p><div class="wf-math"><pre>logits = h · W_vocabᵀ</pre></div><p>In English: produce one score per vocabulary token by taking dot products between the final hidden state and every output embedding row. High score means “this token fits well here according to the learned model”. At this point there is still no chosen word, only a large vector of candidate scores. For our running example, one of those scores should correspond to a token like <strong>“ Paris”</strong>. Whether it becomes the actual next token depends on the sampling step.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 7 — Sampling</h3><p>Sampling converts logits into a decision. The standard first step is softmax, optionally after dividing logits by temperature. Then decoding policy trims or biases the distribution: greedy selection, top-k, top-p, repetition penalties, minimum probability thresholds, or something similar. The canonical equation is <strong>pᵢ = exp(logitᵢ / τ) / Σⱼ exp(logitⱼ / τ)</strong>.</p><div class="wf-math"><pre>pᵢ = exp(logitᵢ / τ) / Σⱼ exp(logitⱼ / τ)</pre></div><p>In English: turn raw scores into probabilities, optionally sharpen or flatten them with temperature <strong>τ</strong>, then choose the next token according to the selected policy. If you set temperature to zero and always take the maximum, generation becomes deterministic for a fixed implementation. If you allow stochastic sampling, the same prompt can produce different continuations. Either way, the model is choosing the next token from a scored vocabulary, not composing a whole sentence in one operation.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 8 — Repeat until stop</h3><p>Generation is autoregressive. Once a token is chosen, it is appended to the existing token sequence, and the model runs again to choose the next one. If the first generated token is <strong>“ Paris”</strong>, the next pass operates on something equivalent to <strong>“What is the capital of France? Paris”</strong> in token space. The process stops when the model emits an end token, reaches a configured limit, or satisfies an external stop condition. This one-token-at-a-time loop is why latency matters so much in user-facing inference. Even if each step is fast, you pay for dozens or hundreds of them in sequence.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">What the model actually is</h3><p>It helps to state this bluntly. A deployed transformer is not a thinking object sitting in memory. It is a serialized parameter set plus code that knows how to execute a forward pass. The weight files contain large tensors: embedding matrices, projection matrices, normalisation weights, and sometimes quantized variants of those tensors. Loading the model means reading those numbers from disk and placing them into CPU memory, GPU memory, or both. Inference means applying those numbers to live inputs. Nothing in that description requires anthropomorphic language.</p><p>Because the parameters are fixed during inference, the only mutable state is operational state: the current tokens, temporary activations, random-number state if sampling is stochastic, and the KV cache that stores prior keys and values for each layer. The phrase <strong>“the model knows Paris is the capital of France”</strong> is a useful shorthand, but mechanically it means something narrower: the trained weight tensors encode statistical structure such that, in contexts like this prompt, the output projection tends to score tokens associated with Paris very highly. The knowledge is distributed numerically across many weights, not stored as a single symbolic cell.</p><div class="wf-callout accent"><p><strong>Inference never modifies weights.</strong> If the model answers badly, it does not learn from the mistake during ordinary generation. Changing the weights requires training or fine-tuning, which means computing gradients, running an optimizer, and writing updated parameters back out. Normal inference is read-mostly on weights.</p></div><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Almost everything is matrix multiplication</h3><p>The slogan is only slightly exaggerated. Embedding lookup is not matrix multiplication, RMSNorm is not matrix multiplication, softmax is not matrix multiplication, and sampling is not matrix multiplication. But the expensive, expressive center of the model overwhelmingly is. Queries, keys, values, output projections, feed-forward expansions, gating projections, down projections, and the final vocabulary head are all matrix-vector or matrix-matrix operations under different batching layouts. If you stripped away the bookkeeping, a large fraction of the FLOPs in transformer inference comes from multiplying activation matrices by weight matrices.</p><div class="wf-math"><pre>Q = X · WQ
-K = X · WK
-V = X · WV
-A = softmax((Q · Kᵀ) / √d_head + mask)
-O = A · V</pre></div><p>In English: first project the current token representations into three new views called queries, keys, and values. Then compare queries against keys to produce relevance scores, normalise those scores, and use them to blend values into updated token representations. This is the core of attention. The symbols can look abstract, but operationally they are ordinary dense tensor operations repeated across layers and heads.</p><p>The feed-forward block is the same story at a different shape. In a gated LLM variant you often see something like <strong>FFN(x) = W_down(σ(W_gate x) ⊙ W_up x)</strong>.</p><div class="wf-math"><pre>FFN(x) = Wdown(σ(Wgate x) ⊙ Wup x)</pre></div><p>In English: project the token representation into a wider space, apply a nonlinearity and gate, combine the results elementwise, and project back down to the model width. Again, the learned behavior lives in the matrices. The nonlinearities and elementwise multiplies are necessary, but the bulk of the heavy lifting is still in the projections.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Training versus inference</h3><p>Training and inference share the same forward computation, but they are operationally different worlds. In inference, you run the forward pass to obtain logits and maybe a sampled token. In training, you also know the correct next token for each position, compute a loss, backpropagate gradients through the entire network, and use an optimizer to update the weights. Training therefore needs to store or recompute much more intermediate state, performs both forward and backward passes, and changes model parameters after each optimization step or batch. Inference is the cheap relative: read weights, compute outputs, keep weights fixed.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Aspect</th><th>Training</th><th>Inference</th></tr></thead><tbody><tr><td><strong>Goal</strong></td><td>Improve weights so future predictions are better</td><td>Use existing weights to generate predictions now</td></tr><tr><td><strong>Passes</strong></td><td>Forward + backward + optimizer update</td><td>Forward only</td></tr><tr><td><strong>Weight updates</strong></td><td>Yes</td><td>No</td></tr><tr><td><strong>Stored intermediates</strong></td><td>Many activations for gradients</td><td>Mainly activations for the current step and KV cache</td></tr><tr><td><strong>Operational flavour</strong></td><td>Expensive optimisation job</td><td>Low-latency serving job</td></tr></tbody></table></div><p>That distinction matters because a lot of public explanation accidentally mixes them. If someone says “the model adjusts itself as it thinks through the answer”, that is usually wrong for ordinary inference. The model may update the sequence state as it generates, but it is not performing online learning on its main weights.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The primitive operations underneath the whole pipeline</h3><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Primitive</th><th>Where it appears</th><th>Plain-English role</th></tr></thead><tbody><tr><td><strong>Lookup</strong></td><td>Token embeddings, sometimes output embedding reuse, tokenizer tables</td><td>Fetch a prelearned row or rule by ID rather than recomputing it</td></tr><tr><td><strong>Projection</strong></td><td>QKV, attention output, FFN up/down, lm_head</td><td>Remix one vector space into another by weighted sums</td></tr><tr><td><strong>Reduction</strong></td><td>Dot products, softmax denominator, max search, top-k selection</td><td>Collapse many numbers into fewer summary numbers</td></tr><tr><td><strong>Normalisation</strong></td><td>RMSNorm</td><td>Rescale activations so later layers see stable magnitudes</td></tr><tr><td><strong>Activation</strong></td><td>SiLU, GeLU, gated FFN paths</td><td>Add nonlinearity so the network is more than one giant linear map</td></tr><tr><td><strong>Sampling</strong></td><td>Final decoding step</td><td>Turn a probability distribution into one concrete next token</td></tr></tbody></table></div><p>If you internalize those six primitives, most transformer code stops looking alien. Frameworks, kernels, quantization formats, and fused implementations add engineering detail, but they do not fundamentally change what the machine is doing.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">A systems programmer’s mental model</h3><p>There are at least two mental models that work well. The first is a CPU pipeline analogy. The prompt tokens are your input stream. Each layer is a processing stage. Residual paths are bypass lanes that stop deep pipelines from discarding earlier signal. The weight tensors are not instruction code in the normal sense, but they do define the fixed transformation behavior of the machine. Activations are transient register-like state flowing through the stages. The KV cache is a persistent side buffer that prevents recomputing history for every decode step. Viewed that way, inference is a deeply pipelined dataflow program with an unusually large constant memory footprint.</p><p>The second useful analogy is a database query executor. The tokenizer is a parser that produces an internal representation. Embeddings are table lookups. Attention is an all-to-all relevance join constrained by causal masking, where each token can look backward but not forward. The feed-forward block is a per-row expression evaluator running after contextual enrichment. The output head is a large scoring projection over the vocabulary relation. Sampling is the final row selection policy. This analogy is imperfect, but it highlights something important: the model is executing a learned plan over structured data, not free-associating in the abstract.</p><div class="wf-grid"><div class="wf-card tone-cyan"><div class="wf-placeholder-title">CPU lens</div><p class="wf-note">Think in terms of stages, registers, cache lines, arithmetic intensity, and dependency chains. The autoregressive loop is the serial dependency that dominates latency.</p></div><div class="wf-card tone-gold"><div class="wf-placeholder-title">Database lens</div><p class="wf-note">Think in terms of parsing, lookup, projection, join-like context aggregation, and final selection. Attention behaves like a learned, soft, vectorized relevance join over prior tokens.</p></div></div><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Where the time goes</h3><p>The answer depends on whether you are processing the initial prompt or generating additional tokens. The first pass over the prompt is often called <strong>prefill</strong>. During prefill, all prompt tokens are processed together, so matrix multiplications are large and parallel enough for GPUs to use well. Attention here includes full token-token comparisons inside the prompt, so sequence length matters quadratically in the raw attention score matrix. If <strong>T</strong> doubles, the number of pairwise attention comparisons grows by roughly four times.</p><div class="wf-math"><pre>Attention score cost per head during prefill ≈ O(T² · d_head)</pre></div><p>In English: every token compares itself against many other tokens, so longer prompts produce disproportionately more attention work. This is why very long context windows are expensive even before generation begins.</p><p>After prefill comes <strong>decode</strong>: generating one token at a time. With a KV cache, you do not recompute keys and values for the entire prefix on every step. You only compute them for the new token and attend against cached history. That changes the scaling shape, but it also makes inference more bandwidth-sensitive. The model still has to read large weight tensors every step, and now the arithmetic per step is smaller. On many deployments, interactive decode becomes limited less by peak FLOPs and more by memory traffic, kernel launch overhead, and cache behavior.</p><div class="wf-math"><pre>FFN cost per token per layer ≈ O(d_model · d_ff)</pre></div><p>In English: the feed-forward network scales linearly with sequence length, but the hidden expansion is wide enough that it still consumes a large share of total compute. Attention gets the headlines, yet feed-forward blocks often dominate raw multiply-add volume in real models.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Pipeline stage</th><th>Typical bound</th><th>Why</th></tr></thead><tbody><tr><td><strong>Tokenizer</strong></td><td>Memory / branch / CPU-bound</td><td>Table-driven text processing, not big dense math</td></tr><tr><td><strong>Embedding lookup</strong></td><td>Memory-bound</td><td>Mostly fetching rows from a large table</td></tr><tr><td><strong>Positional encoding</strong></td><td>Light compute or bandwidth-bound</td><td>Cheap relative to the big projections</td></tr><tr><td><strong>QKV projections</strong></td><td>Compute-bound</td><td>Dense matrix multiplies with substantial arithmetic work</td></tr><tr><td><strong>Attention score matmul</strong></td><td>Compute-bound during prefill</td><td>Large pairwise dot-product workload</td></tr><tr><td><strong>Softmax + masking</strong></td><td>Reduction / latency-bound</td><td>Requires exponentials, reductions, and normalization per row</td></tr><tr><td><strong>Attention apply (A · V)</strong></td><td>Compute-bound</td><td>Another dense multiply once weights are known</td></tr><tr><td><strong>RMSNorm</strong></td><td>Memory-bound</td><td>Read, reduce, rescale, write; little arithmetic per byte</td></tr><tr><td><strong>Feed-forward network</strong></td><td>Compute-bound</td><td>Very large projection matrices, often a major FLOP sink</td></tr><tr><td><strong>lm_head</strong></td><td>Compute + bandwidth-heavy</td><td>Project one hidden state against the whole vocabulary</td></tr><tr><td><strong>Sampling</strong></td><td>Reduction / control-bound</td><td>Top-k, top-p, and token selection are small but serially important</td></tr><tr><td><strong>KV cache reads/writes</strong></td><td>Memory-bound</td><td>Decode speed depends heavily on cache layout and bandwidth</td></tr></tbody></table></div><p>That table is one reason performance work on LLM inference often looks like systems work rather than pure math work. Once the model architecture is fixed, throughput and latency are largely questions of memory layout, quantization, kernel fusion, batching strategy, device placement, and how often you can avoid moving the same data twice.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Pseudocode for the whole inference loop</h3><div class="wf-code"><pre>weights    = load_model_tensors_from_disk()
-tokenizer  = load_tokenizer()
-kv_cache   = allocate_empty_cache(weights.num_layers, max_context)
-tokens     = tokenizer.encode("What is the capital of France?")
-positions  = [0 .. len(tokens)-1]
+<div id="ch1" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="index.html">← chapter index</a>
+        <div class="wf-kicker">Chapter 1</div>
+        <h1 class="wf-section-hdr">A Single Token's Journey Through 7 Billion Parameters</h1>
+        <p class="wf-section-desc">We type "The capital of France is" and watch, step by step, how " Paris" falls out.</p>
+    </div>
+    <div class="wf-article-body">
+        <p data-plain="We feed in six words and trace the machinery, not the meaning." data-psi="Treat the prompt as an execution trace entering a fixed numeric pipeline." data-duck="We hand six word-cards to a duck machine and watch every lever move.">We begin with six words:</p>
+        <div class="wf-code"><pre style="font-size:1.32rem;line-height:1.6;text-align:center;font-weight:700;">The capital of France is</pre></div>
+        <p>We don't ask why the model chooses Paris. We simply watch what physically happens.</p>
+        <div class="wf-callout"><p><strong>Frame the chapter correctly:</strong> this is not a philosophy of language. It is a register dump. We follow one prompt through a frozen runtime the way you would follow one packet through a NIC, one query through a query plan, or one instruction through a pipeline stage by stage.</p></div>
 
-for step in 0 .. max_new_tokens-1:
-    if step == 0:
-        active_tokens    = tokens          # prefill on the whole prompt
-        active_positions = positions
-    else:
-        active_tokens    = [tokens[-1]]    # decode one token at a time
-        active_positions = [len(tokens)-1]
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 1: Characters to tokens</h3>
+        <p>Start with the actual character stream. At the front of the engine there is no concept of truth, geography, or capitals. There is only text and a tokenizer that knows how to split that text into discrete pieces the model was trained to consume.</p>
+        <div class="wf-code"><pre>T h e ⎵ c a p i t a l ⎵ o f ⎵ F r a n c e ⎵ i s</pre></div>
+        <p data-plain="The tokenizer is a frozen table-driven parser, not a neural net." data-psi="BPE is the discrete boundary condition of the whole system: a deterministic merge process replayed from training-time statistics." data-duck="A duck clerk has a fixed phrasebook and keeps grabbing the longest ticket it recognizes.">The tokenizer has a fixed merge table, learned during training and frozen at inference time. This stage is a dictionary lookup, not a neural network. Operationally, it scans left to right and keeps trying to match the longest piece in its vocabulary. When it sees <strong>The</strong>, it finds a stored entry for that exact span. When it moves forward and sees a leading space plus the next word, it may match <strong> capital</strong> as one piece because the space-prefixed form was common enough in the training corpus to earn its own entry. That is what byte-pair encoding looks like when stripped of mythology: a deterministic table walk over a frozen lexicon.</p>
+        <div class="wf-code"><pre>"The"         → vocabulary entry 450
+" capital"    → vocabulary entry 3007
+" of"         → vocabulary entry 310
+" France"     → vocabulary entry 3444
+" is"         → vocabulary entry 338</pre></div>
+        <div class="wf-code"><pre>"The capital of France is"
+        ↓
+  BPE merge table lookup
+        ↓
+  [450, 3007, 310, 3444, 338]</pre></div>
+        <p data-plain="The text has become five integers, and the characters are now out of the picture." data-psi="After tokenization the prompt exists only as a path through a finite symbol space; every downstream operator depends on those IDs." data-duck="The sentence is gone. All the ducks keep now is a five-number claim ticket.">Five integers. That's all the model will ever see. The original characters are gone.</p>
+        <p>That sentence matters. From this point onward, nothing inside the network has access to the raw spelling of France or Paris. If the tokenizer had split the string differently, every subsequent memory access would change. Different IDs mean different rows, different projections, different dot products, and eventually different logits. The rest of the pipeline is numerically heavy, but its first branching decision happened here.</p>
 
-    x = embedding_lookup(weights.embedding_table, active_tokens)
-    x = apply_positional_scheme(x, active_positions)
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 2: Token IDs → Embedding vectors</h3>
+        <p data-plain="Each token ID gets used as a table key to fetch one long row of numbers." data-psi="Embedding lookup is a primary-key read from a learned basis table whose geometry later linear maps exploit." data-duck="Each token number sends a duck to one drawer in a huge cabinet, and the duck copies out the card inside.">Each token ID is a primary key into a table.</p>
+        <div class="wf-code"><pre>Embedding table E
+  Shape: [131,072 rows × 4,096 columns]
+  
+  Row 0:    [-0.012, 0.034, -0.067, 0.019, ...]
+  Row 1:    [ 0.041, -0.055, 0.023, 0.088, ...]
+  ...
+  Row 450:  [-0.221, 0.738, 0.042, -0.156, ...]  ← "The"
+  ...
+  Row 3007: [ 0.519, -0.103, 0.271, 0.044, ...]  ← " capital"
+  ...</pre></div>
+        <p>This is an indexed lookup. Not a computation. Not a transformation. We copy row 450 into position 0 of our working buffer. We copy row 3007 into position 1. And so on.</p>
+        <div class="wf-code"><pre>Working buffer X — shape: [5 tokens × 4,096 floats]
 
-    for layer in weights.layers:
-        residual = x
-        u = rmsnorm(x, layer.attn_norm)
-        q, k, v = project_qkv(u, layer)
-        q, k = apply_rope_or_other_positioning(q, k, active_positions)
-        kv_cache[layer].append(k, v)
-        attn = causal_attention(q, kv_cache[layer].keys, kv_cache[layer].values)
-        x = residual + project_attention_out(attn, layer)
+Position 0 ("The"):      [-0.221,  0.738,  0.042, -0.156, ... ]  ← copied from row 450
+Position 1 (" capital"):  [ 0.519, -0.103,  0.271,  0.044, ... ]  ← copied from row 3007
+Position 2 (" of"):       [-0.088,  0.412, -0.331,  0.207, ... ]  ← copied from row 310
+Position 3 (" France"):   [ 0.672, -0.041,  0.183, -0.295, ... ]  ← copied from row 3444
+Position 4 (" is"):       [ 0.114,  0.556, -0.089,  0.378, ... ]  ← copied from row 338</pre></div>
+        <p data-plain="Each word gets a row of 4,096 numbers copied from a lookup table. No computation — just a table read." data-psi="The working state is now a dense tensor X∈R^(5×4096), a small slice cut out of a much larger learned memory." data-duck="Five ducks each carry a 4,096-slot punch card from storage into the active tray.">Five rows. Each 4,096 numbers wide. 20,480 floats total. This is the starting state of our execution.</p>
+        <p>Think of this like loading registers from RAM into an execution buffer. The embedding matrix is persistent storage. The working buffer is live state. At this instant nothing has been inferred yet. We have only materialized the learned representation for each token into active memory so the arithmetic core can begin. If you inspected device memory at this point, you would see dense rows of floats, not symbols.</p>
 
-        residual = x
-        u = rmsnorm(x, layer.ffn_norm)
-        x = residual + feed_forward(u, layer)
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 3: RoPE — Rotate by position</h3>
+        <p>The embedding table has no concept of order. If we shuffled these five rows, the table wouldn't know.</p>
+        <p data-plain="RoPE injects position by rotating pairs of numbers based on where the token sits." data-psi="Rotary position encoding makes later dot products sensitive to relative displacement by applying complex-plane phase shifts to paired coordinates." data-duck="Each duck card gets twisted by a slightly different angle depending on which place in line the duck stands.">RoPE fixes this by rotating pairs of numbers based on position.</p>
+        <div class="wf-code"><pre>Take two adjacent numbers from position 4 (" is"):
 
-    h = final_rmsnorm(last_token(x), weights.final_norm)
-    logits = vocabulary_projection(h, weights.lm_head)
-    next_token = sample(logits, temperature, top_k, top_p)
-    tokens.append(next_token)
+  Before:  [0.114, 0.556]
 
-    if next_token in stop_tokens:
-        break
+  Position 4, dimension pair 0
+  Angle θ = 4 × 0.01 = 0.04 radians ≈ 2.3°
 
-text = tokenizer.decode(tokens)</pre></div><p>The important thing about this pseudocode is not the exact function names. It is the control shape. Prefill the prompt. Cache keys and values. Decode one token at a time. Keep weights fixed. Project the final hidden state to logits. Sample. Append. Loop. If you can explain those lines clearly, you understand the outer mechanics of transformer inference.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself…</h3><p>Start with the boring pieces. Load a tiny model. Get tokenization correct. Load tensors with verified shapes. Write the embedding lookup. Implement RMSNorm. Implement a single attention head without optimization and compare against a known reference. Then add multi-head attention, residuals, and the feed-forward block. Once the math is correct, add the output projection and a basic sampler. Only after that should you introduce a KV cache, quantization, fused kernels, batching, or device-specific acceleration.</p><p>If you come from systems programming, the surprises are rarely in the equations themselves. They are in layout and movement. You will spend real time on how tensors are packed, when transposes happen, whether weights should be pre-sharded, how to keep cache writes contiguous, where quantization scales live, and how to avoid copying activations between buffers. You will also discover that “one token at a time” is a ruthless latency constraint. Small inefficiencies that would disappear inside a batch job remain visible to users when repeated for every generated token.</p><p>So the practical closing advice is this: treat the transformer like an execution engine with a strict state model. Know which buffers are immutable, which are per-request, and which are per-step. Know which operations are lookups, which are projections, and which are reductions. Measure prefill separately from decode. Do not describe hidden state as magic when you can describe it as a tensor. And when the model answers <strong>“Paris”</strong>, remember what actually happened: a fixed numerical machine scored a vocabulary, one token won, and the loop advanced by exactly one step.</p><div class="wf-inline-nav"><a href="index.html">← chapter index</a><a href="ch2.html">Part 2: Tokenization →</a></div></div></div>
+  cos(0.04) = 0.9992
+  sin(0.04) = 0.0400
+
+  After:
+    new_a = 0.114 × 0.9992 − 0.556 × 0.0400 = 0.0917
+    new_b = 0.114 × 0.0400 + 0.556 × 0.9992 = 0.5601
+
+  Result: [0.0917, 0.5601]</pre></div>
+        <p>That's it. A 2D rotation. Different pairs rotate at different frequencies — fast-varying pairs change rapidly with position, slow-varying pairs change gradually. This creates a unique rotational signature for each position.</p>
+        <p>Every pair of numbers in the vector gets rotated. 4,096 floats = 2,048 rotation operations per token.</p>
+        <p>It helps to separate what changed from what did not. The token still represents <strong> is</strong>. We did not fetch a new embedding row. We altered how its coordinates line up with other coordinates when later dot products happen. RoPE does not add a separate position column; it rewrites the vector so position becomes inseparable from content during similarity checks.</p>
+        <div class="wf-callout"><p><strong>Placement detail:</strong> RoPE is applied to the attention projections, not to the embedding directly. We are previewing the math here so that when those projections appear a few paragraphs from now, the rotation has somewhere concrete to land.</p></div>
+        <p>Critically, RoPE is applied to the attention projections (Projections #1 and #2), not to the embedding directly. We'll see this in a moment.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 4: Layer 1 — The first of 32 passes</h3>
+        <p>The working buffer now enters the execution core. This section repeats 32 times with different weights. Same operator sequence. Different learned matrices. Trace one layer carefully and the rest of the stack stops looking like mysticism; it becomes a loop.</p>
+        <p>We will keep one eye on the whole five-token buffer and one eye on a single lane: position 4, the token <span class="wf-register">" is"</span>. That is the final prompt position, so after 32 layers it will be the row that gets projected against the vocabulary to choose the next token.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4a. RMSNorm</h3>
+        <p>Before anything else, normalise. Compute the root-mean-square of the 4,096 values, divide each by it, multiply by a learned scale.</p>
+        <div class="wf-code"><pre>  x = [0.4, -0.8, 0.2]
+  
+  RMS = √(mean(0.4² + 0.8² + 0.2²)) = √(mean(0.16 + 0.64 + 0.04)) = √0.28 = 0.529
+  
+  normalised = [0.4/0.529, -0.8/0.529, 0.2/0.529] = [0.756, -1.512, 0.378]
+  
+  × learned scale γ = [1.1, 0.9, 1.0]
+  
+  output = [0.831, -1.361, 0.378]</pre></div>
+        <p>This keeps the numbers in a stable range. Without it, values would drift as they pass through 32 layers.</p>
+        <p>RMSNorm is cheap relative to the matrix multiplies that follow, but cheap is not the same as optional. It keeps the dynamic range of activations near the regime the model was trained on. In CPU terms, treat it like a calibration stage between large arithmetic blocks. In database terms, treat it like statistics maintenance that keeps later operators well-conditioned.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4b. Three projections</h3>
+        <p data-plain="The layer makes three separate 4096→4096 matrix multiplies from the same input row." data-psi="Attention begins by factorizing one hidden state into three learned subspaces: one for search, one for matchability, one for payload." data-duck="The same duck card gets fed through three different stamp machines, each producing a different kind of label.">Focus on one token — position 4, " is" — and one projection.</p>
+        <p><strong>Projection #1</strong>: "What information am I looking for?"</p>
+        <div class="wf-code"><pre>  Input:  x = [4096 numbers]
+  Weight: W₁ = [4096 × 4096 matrix]
+  
+  Output: p₁ = x × W₁ = [4096 numbers]</pre></div>
+        <p>What just happened? Each of the 4,096 output numbers is a weighted sum of all 4,096 input numbers. The weights were learned during training. We just performed 4,096 × 4,096 = 16,777,216 multiply-adds.</p>
+        <p>Nothing mystical happened. A vector went in. A matrix multiplied it. A new vector came out.</p>
+        <p>If you want a hardware mental model, each output coordinate is an accumulator register. It starts at zero. Then 4,096 products stream through it. Do that for 4,096 output coordinates and you have the full projected row. The model is not hunting through a symbolic graph here. It is executing dense linear algebra on a fixed-width lane.</p>
+        <p><strong>Projection #2</strong>: "What information do I contain?"</p>
+        <p>Same operation. Different weights. Another 16.7 million multiply-adds.</p>
+        <p><strong>Projection #3</strong>: "What information should I return if selected?"</p>
+        <p>Same operation. Different weights. Another 16.7 million multiply-adds.</p>
+        <p>Three projections. 50 million multiply-adds. For ONE token in ONE layer. And we have 5 tokens × 32 layers.</p>
+        <div class="wf-callout gold"><p><strong>The reveal:</strong> these three projections are called Q, K, and V in the literature — Query, Key, Value. Now you know what they actually do.</p></div>
+        <p>The letters matter less than the roles. One vector asks what the token wants. One vector advertises what the token offers. One vector carries the payload that will be blended if the token gets selected. Once you internalize that, attention stops feeling like jargon and starts feeling like a dataflow graph.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4c. RoPE on projections #1 and #2</h3>
+        <p>Now RoPE is applied — but only to Projections #1 and #2. Not #3. Why? Because the rotation makes dot products between #1 and #2 depend on relative position. #3 is just the payload — it doesn't participate in the relevance computation.</p>
+        <p>This is where the earlier 2D rotation becomes operational. We are not rotating for aesthetics. We are modifying the searchable and matchable representations so that when a token compares itself to earlier tokens, the score depends not just on content but on where those tokens sit relative to one another.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4d. Attention — actually compute one</h3>
+        <p>Now every token's Projection #1 is compared against every previous token's Projection #2.</p>
+        <div class="wf-code"><pre>Token 0 ("The"):      P#1 = [0.6, 0.2]    P#2 = [0.8, 0.1]    P#3 = [1.0, 0.5]
+Token 1 (" capital"):  P#1 = [0.3, 0.9]    P#2 = [0.5, 0.4]    P#3 = [0.2, 0.8]
+Token 2 (" of"):       P#1 = [0.7, 0.1]    P#2 = [0.3, 0.7]    P#3 = [0.6, 0.3]</pre></div>
+        <p>Token 2 wants to know: who is relevant to me?</p>
+        <p>Compare Token 2's P#1 against every token's P#2:</p>
+        <div class="wf-code"><pre>  Token 2 P#1 = [0.7, 0.1]
+
+  vs Token 0 P#2 = [0.8, 0.1]:  dot = 0.7×0.8 + 0.1×0.1 = 0.57
+  vs Token 1 P#2 = [0.5, 0.4]:  dot = 0.7×0.5 + 0.1×0.4 = 0.39
+  vs Token 2 P#2 = [0.3, 0.7]:  dot = 0.7×0.3 + 0.1×0.7 = 0.28
+
+  Raw scores: [0.57, 0.39, 0.28]</pre></div>
+        <p>Scale by √d (to prevent large values from saturating softmax):</p>
+        <div class="wf-code"><pre>  √2 ≈ 1.414
+  Scaled: [0.403, 0.276, 0.198]</pre></div>
+        <p>Softmax — convert to weights that sum to 1:</p>
+        <div class="wf-code"><pre>  exp(0.403) = 1.497
+  exp(0.276) = 1.318
+  exp(0.198) = 1.219
+  
+  Sum = 4.034
+  
+  Weights: [1.497/4.034, 1.318/4.034, 1.219/4.034]
+         = [0.371, 0.327, 0.302]</pre></div>
+        <p>Now blend the P#3 vectors using those weights:</p>
+        <div class="wf-code"><pre>  0.371 × [1.0, 0.5]  =  [0.371, 0.186]
+  0.327 × [0.2, 0.8]  =  [0.065, 0.262]
+  0.302 × [0.6, 0.3]  =  [0.181, 0.091]
+                          ─────────────────
+  Sum                  =  [0.617, 0.539]</pre></div>
+        <p>That's Token 2's new representation after attention. It's a weighted blend of what every other token offered to contribute, with weights determined by relevance.</p>
+        <p>This is one attention head. Real models run 32 heads in parallel, each with different learned weights, each learning different notions of "relevance."</p>
+        <p>At full model scale, these score calculations happen across much larger vectors and across all valid prior positions. For the last token in our five-token prompt, that means comparing against the representations for <strong>The</strong>, <strong> capital</strong>, <strong> of</strong>, <strong> France</strong>, and itself. Causal masking prevents any future position from participating because there is no future position yet. The model can look left, not right.</p>
+        <div class="wf-trace">Registers after one head: <span class="wf-register">query row</span> × <span class="wf-register">all key rows</span> → relevance scores → softmax weights → weighted sum of <span class="wf-register">value rows</span>.</div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4e. Output projection</h3>
+        <p>The 32 heads' outputs are concatenated and projected back to 4096 dimensions with yet another matrix multiply.</p>
+        <p>Concatenation here is bookkeeping, not synthesis. Each head produced a slice. The output projection mixes those slices back into one 4,096-wide row the residual stream can carry forward. If one head learned local syntax and another learned entity continuation pressure, this projection is where those separate channels get recombined into one active state.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4f. Residual connection</h3>
+        <p>We don't throw away what we already knew. We ADD the attention output back to the input:</p>
+        <div class="wf-code"><pre>  output = original_input + attention_result</pre></div>
+        <p>This is critical. Without residuals, deep networks forget their earlier state. The residual is a highway lane — information can skip over layers it doesn't need.</p>
+        <p>Residuals are why the whole stack behaves like iterative refinement instead of total replacement. Every layer gets a chance to adjust the current row, not rewrite history from scratch. That makes depth workable. You can think of each block as proposing a delta against the running state.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4g. Feed-forward network</h3>
+        <p>After attention, each token passes through a feed-forward network. Individually. No token-to-token interaction here.</p>
+        <div class="wf-code"><pre>  gate  = x × W_gate     [4096 → 11008]  — controls information flow
+  up    = x × W_up       [4096 → 11008]  — expands the representation
+  
+  combined = SiLU(gate) × up              — elementwise gating
+  
+  down  = combined × W_down  [11008 → 4096]  — compress back</pre></div>
+        <p>Three more matrix multiplies. The middle dimension is 11,008 — nearly 3× wider than the model width. This is where the network has room to compute.</p>
+        <p>Add another residual.</p>
+        <p>Why widen first? Because a narrow 4,096-wide row only gives the layer so much room to express combinations of features. Expanding to 11,008 creates temporary scratch space. The gate decides which lanes should open. The up projection supplies candidate features. The down projection compresses the useful result back into the residual stream so the next layer sees the same fixed width again.</p>
+        <div class="wf-trace wf-trace-gold">Attention is where tokens talk to each other. The feed-forward network is where each token quietly rewrites itself based on what it heard.</div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4h. Assembly checklist after Layer 1</h3>
+        <div class="wf-code"><pre>Layer 1 complete.
+
+Operations performed (per token):
+  ✓ RMSNorm                                  ~8,192 multiply-adds
+  ✓ Projection #1 (Q)      4096 × 4096   =  16,777,216 multiply-adds
+  ✓ Projection #2 (K)      4096 × 4096   =  16,777,216 multiply-adds
+  ✓ Projection #3 (V)      4096 × 4096   =  16,777,216 multiply-adds
+  ✓ Attention scores + softmax + blend        ~262,144 multiply-adds
+  ✓ Output projection      4096 × 4096   =  16,777,216 multiply-adds
+  ✓ RMSNorm                                  ~8,192 multiply-adds
+  ✓ Gate projection         4096 × 11008  =  45,088,768 multiply-adds
+  ✓ Up projection           4096 × 11008  =  45,088,768 multiply-adds
+  ✓ Down projection        11008 × 4096   =  45,088,768 multiply-adds
+  
+  Total for one token, one layer:           ≈ 202 million multiply-adds</pre></div>
+        <p>This happens for all 5 tokens. And then the whole thing repeats for layers 2 through 32.</p>
+        <p>5 tokens × 32 layers × 202M = roughly 32 billion multiply-adds.</p>
+        <p>That's where "7 billion parameters" meets reality.</p>
+        <p>Parameter count is a storage fact. This operation count is a runtime fact. The two are related but not identical. Seven billion parameters tell you how many learned numbers the model owns. Billions of multiply-adds tell you what it costs to use those numbers for one forward pass. This chapter is about the second quantity.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 5: Layers 2–32</h3>
+        <p>Same operations. Different weights. Each layer refines the representations.</p>
+        <p>By layer 16, the hidden state for position 4 no longer represents just "is". It represents 'is, following "The capital of France", in a context where a geographical answer is expected.'</p>
+        <p data-plain="The last token's row keeps accumulating context until it encodes the whole prompt state needed for the next-token decision." data-psi="Depth repeatedly reparameterizes the residual stream so the final position becomes a compressed sufficient statistic for continuation." data-duck="The last duck card keeps getting annotations from every station until it carries the whole story of the queue.">By layer 32, the model has compressed the entire prompt's meaning into the last token's hidden state.</p>
+        <p>The key word there is <strong>compressed</strong>. The model does not produce a side database saying subject=capital and country=France. It keeps revising one dense row of 4,096 floats until that row is positioned in activation space so that the correct next-token rows score highly. That is why interpretability is hard. The information is present, but it is distributed and entangled across coordinates, heads, and layers.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 6: Final RMSNorm</h3>
+        <p>One more normalisation pass before the final projection.</p>
+        <p>This is the last cleanup stage before we compare the final hidden state against the entire vocabulary. After 32 layers of additions, projections, gates, and residual merges, we stabilise the magnitude one final time so the output scores are computed in the numeric regime the output head expects.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 7: lm_head — the full table scan</h3>
+        <p>Now comes the most expensive single operation.</p>
+        <p>The hidden state is 4,096 numbers. The vocabulary has 131,072 entries. Each vocabulary entry is also 4,096 numbers.</p>
+        <p data-plain="The output head compares the final row against every token row in the vocabulary." data-psi="This is a dense projection from residual space back to the discrete token simplex, implemented as a giant bank of dot products." data-duck="One duck takes the finished card and checks it against every label in the warehouse, one by one.">We compute one dot product per vocabulary row.</p>
+        <div class="wf-code"><pre>  Hidden state h = [0.34, -0.12, 0.88, ...]   (4096 numbers)
+
+  Row 0 (""):      dot(h, row_0)  =  -3.14
+  Row 1 ("the"):    dot(h, row_1)  =   2.81
+  Row 2 ("a"):      dot(h, row_2)  =   1.73
+  ...
+  Row 3681 ("Paris"):  dot(h, row_3681) = 18.42   ← highest
+  ...
+  Row 8892 ("France"): dot(h, row_8892) = 15.77
+  ...
+  Row 12041 ("London"): dot(h, row_12041) = 11.09
+  ...
+  Row 131071 ("▅"):  dot(h, row_131071) = -8.22</pre></div>
+        <p>131,072 dot products. Each one multiplies 4,096 pairs and sums the results. Total: 131,072 × 4,096 = 537 million multiply-adds.</p>
+        <p>The result: 131,072 raw scores (logits). One per possible next token.</p>
+        <div class="wf-code"><pre>  ORDER BY score DESC:
+  
+  Rank    Token       Score
+  ─────   ─────────   ──────
+  1       " Paris"     18.42
+  2       " France"    15.77
+  3       " French"    13.91
+  4       " Lyon"      11.72
+  5       " London"    11.09
+  ...
+  131072  "▅"         -8.22</pre></div>
+        <p>This is the cleanest place to apply database language. The output head is a full table scan followed by an <strong>ORDER BY score DESC</strong>. The highest-scoring row is not guaranteed to be emitted, because sampling policy still has a say, but the model has now finished its actual inference work. From here onward we are shaping and selecting from a scored result set.</p>
+        <div class="wf-callout gold"><p><strong>Read this table literally:</strong> the model is not “thinking of Paris.” It has produced a hidden state that aligns most strongly with the vocabulary row for <strong>" Paris"</strong> when all 131,072 rows are scanned.</p></div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 8: Sampling</h3>
+        <p>Temperature scales the scores before softmax:</p>
+        <div class="wf-code"><pre>  τ = 0.7
+  
+  Scaled: 18.42/0.7 = 26.31,  15.77/0.7 = 22.53,  13.91/0.7 = 19.87, ...</pre></div>
+        <p>Softmax converts to probabilities:</p>
+        <div class="wf-code"><pre>  P(" Paris")  = 0.891
+  P(" France") = 0.067
+  P(" French") = 0.019
+  P(" Lyon")   = 0.008
+  ...</pre></div>
+        <p>Top-P (nucleus) with p=0.95: keep tokens until cumulative probability reaches 0.95:</p>
+        <div class="wf-code"><pre>  " Paris"  0.891  ← cumulative: 0.891
+  " France" 0.067  ← cumulative: 0.958  ← stop here</pre></div>
+        <p>Sample from {Paris: 0.930, France: 0.070} (renormalised).</p>
+        <p data-plain="Sampling turns logits into a final choice by scaling, trimming, and drawing one token." data-psi="Decoding policy is a post-inference distribution transform over logits: temperature rescales energy, top-p truncates support, sampling selects an outcome." data-duck="The ducks take the ranked labels, keep the tiny pile at the top, then draw one ticket from that small bowl.">Random number says: <strong>Paris</strong>.</p>
+        <p>Token emitted: 3681</p>
+        <p>Decode it back to text: <strong>' Paris'</strong></p>
+        <p>The leading space matters because the tokenizer stored the token that way. The model did not emit the abstract word Paris. It emitted one vocabulary entry whose decoded surface form is a space followed by Paris. That is the piece that gets appended to the running text buffer.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Step 9: The next token — and why it's different</h3>
+        <p>Now the prompt is: The capital of France is Paris</p>
+        <p>We need the next token. But we don't rerun the entire 32-layer computation for all 6 tokens.</p>
+        <p data-plain="The first pass stores keys and values so later tokens only compute the new row." data-psi="Autoregressive decode amortizes prior context by caching per-layer K/V tensors, converting full-sequence recomputation into incremental state extension." data-duck="After the first run, the ducks keep the useful paperwork in filing cabinets instead of recalculating the whole queue each time.">During the first pass (called <strong>prefill</strong>), we already computed Projection #2 and Projection #3 for every token at every layer. We stored those results. That's the <strong>KV cache</strong>.</p>
+        <p>For the new token ' Paris', we only need to:</p>
+        <div class="wf-code"><pre>1. Look up its embedding
+2. Apply RoPE for position 5
+3. Compute Projections #1, #2, #3 for THIS token only
+4. Compare its #1 against ALL cached #2s (from the prefill)
+5. Blend using cached #3s
+6. Run the feed-forward network for this token only
+7. Repeat for all 32 layers
+8. Project against vocabulary
+9. Sample</pre></div>
+        <p>That's the <strong>decode</strong> phase. One new token per step. Each step reuses the cached state.</p>
+        <div class="wf-tabs">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="prefill">PREFILL</button>
+                <button class="wf-tab" data-tab="decode">DECODE</button>
+                <button class="wf-tab" data-tab="cache">KV CACHE</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="prefill">
+                <p><strong>Prefill</strong> is the all-at-once pass over the original prompt. Every prompt token gets embedded, projected, attended, normalized, and pushed through all 32 layers. This phase is compute-heavy and parallel-friendly because the whole prompt exists up front.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="decode">
+                <p><strong>Decode</strong> adds one token at a time. The new token still traverses all 32 layers, but only its fresh row needs to be computed. That shifts the bottleneck away from raw arithmetic throughput and toward latency, cache reuse, and memory movement.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="cache">
+                <p><strong>KV cache</strong> is exactly what it sounds like: stored key and value projections from earlier tokens at every layer. Queries are new each step. Keys and values from history are reused.</p>
+            </div>
+        </div>
+        <p>Prefill: all tokens in parallel, compute-heavy, GPU-friendly.</p>
+        <p>Decode: one token at a time, bandwidth-heavy, latency-sensitive.</p>
+        <p>This is why long responses feel slow even on powerful hardware. Every single token requires a separate pass through 32 layers.</p>
+        <p>The qualitative experience of chatting with a model comes directly from this split. The first token often takes longer because prefill had to process the whole prompt. Later tokens arrive in a steadier cadence because the model is now just extending the cached context one step at a time. When the cadence slows on long outputs, you are feeling the cost of repeated decode passes.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Closing: The whole machine</h3>
+        <p>Let's count what just happened to produce one token:</p>
+        <div class="wf-code"><pre>Operations to produce " Paris":
+  
+  Tokeniser:        5 table lookups
+  Embeddings:       5 × 4,096 = 20,480 floats copied
+  RoPE:             5 × 2,048 = 10,240 rotations
+  32 layers:        ~32 billion multiply-adds
+  Final RMSNorm:    ~8,192 multiply-adds
+  lm_head:          ~537 million multiply-adds
+  Sampling:         131,072 exponentials + sort
+  
+  Total: ≈ 32.5 billion multiply-adds for one token.</pre></div>
+        <p data-plain="The whole answer path is lookup, projection, dot product, normalize, score, choose." data-psi="A transformer inference step is a fixed numeric program whose learned parameters bias a universal operator stack toward likely continuations." data-duck="The duck factory never stops being a factory: pull cards, spin them, compare them, sort them, pick one, repeat.">Nothing in this list is mysterious. Every step is a lookup, a projection, a dot product, a reduction, a normalisation, or a sampling decision.</p>
+        <p>The model doesn't understand France. It doesn't understand capitals. It executes a fixed program — the same program for every prompt — and the learned weights steer that program toward outputs that, statistically, complete the sequence well.</p>
+        <p>The rest of this book zooms into each stage. But keep this execution trace in your head. It's the whole machine.</p>
+        <p>Once you can narrate this path from memory, the later chapters become local deep-dives instead of separate mysteries. Tokenization is just the front-end compiler pass. Embeddings are just the table lookup. Attention is just the relevance-weighted join. The feed-forward network is just the per-row rewrite. The output head is just the final table scan. The model is large, but the control flow is short enough to hold in one head.</p>
+
+        <div class="wf-progress">
+            <div class="wf-progress-title">assembly checklist</div>
+            <div class="wf-progress-done">✓ Tokeniser — text → integer IDs (table lookup)</div>
+            <div class="wf-progress-done">✓ Embedding — IDs → vectors (indexed row copy)</div>
+            <div class="wf-progress-done">✓ RoPE — position encoded as rotation</div>
+            <div class="wf-progress-done">✓ RMSNorm — scale normalisation</div>
+            <div class="wf-progress-done">✓ Three projections per token (Q, K, V)</div>
+            <div class="wf-progress-done">✓ Attention — relevance-weighted context mixing</div>
+            <div class="wf-progress-done">✓ Feed-forward — per-token nonlinear transformation</div>
+            <div class="wf-progress-done">✓ Residual connections — preserving earlier state</div>
+            <div class="wf-progress-done">✓ lm_head — full vocabulary table scan</div>
+            <div class="wf-progress-done">✓ Sampling — temperature, top-k, top-p, selection</div>
+            <div class="wf-progress-done">✓ KV cache — why decode differs from prefill</div>
+            <div class="wf-progress-title" style="margin-top:1rem;">Detailed deep-dives</div>
+            <div class="wf-progress-todo">□ Tokenization internals (Ch 2)</div>
+            <div class="wf-progress-todo">□ Embedding geometry (Ch 3)</div>
+            <div class="wf-progress-todo">□ RoPE mathematics (Ch 4)</div>
+            <div class="wf-progress-todo">□ Layer architecture (Ch 5)</div>
+            <div class="wf-progress-todo">□ Attention variants — GQA, Flash, Paged (Ch 6)</div>
+            <div class="wf-progress-todo">□ Normalisation (Ch 7)</div>
+            <div class="wf-progress-todo">□ FFN and MoE (Ch 8)</div>
+            <div class="wf-progress-todo">□ lm_head and weight tying (Ch 9)</div>
+            <div class="wf-progress-todo">□ Sampling strategies (Ch 10)</div>
+            <div class="wf-progress-todo">□ Building the engine (Ch 11)</div>
+            <div class="wf-progress-todo">□ The database lens (Ch 12-15)</div>
+        </div>
+
+        <div class="wf-inline-nav">
+            <a href="index.html">← chapter index</a>
+            <a href="ch2.html">Chapter 2: Tokenization →</a>
+        </div>
+    </div>
+</div>
 
 <button id="wtf-btn"><span>⁇</span>&nbsp;wtf?</button>
 <button id="psi-btn"><span>ψ</span>&nbsp;deeper</button>
@@ -143,8 +430,7 @@ function initButtons() {
             const locked = Math.floor(p * len);
             let out = '';
             for (let i = 0; i < len; i++) {
-                out += (i < locked || target[i] === ' ' || target[i] === '
-')
+                out += (i < locked || target[i] === ' ' || target[i] === '\n')
                     ? target[i]
                     : CHARS[Math.random() * CHARS.length | 0];
             }
@@ -180,7 +466,8 @@ function initButtons() {
 
     function restoreTech() {
         activeEls.forEach(el => {
-            if (el.dataset.techHtml) el.innerHTML = el.dataset.techHtml;
+            if (!el.dataset.techHtml) el.dataset.techHtml = el.innerHTML;
+            el.innerHTML = el.dataset.techHtml;
         });
         activeEls = [];
     }
