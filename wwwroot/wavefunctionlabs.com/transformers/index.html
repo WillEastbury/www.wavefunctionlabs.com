@@ -4,6 +4,14 @@
 .tf-state strong{color:var(--wf-cyan);font-weight:600}
 .tf-state-gold{border-left-color:var(--wf-gold)}.tf-state-gold strong{color:var(--wf-gold)}
 .tf-state-accent{border-left-color:var(--wf-accent)}.tf-state-accent strong{color:var(--wf-accent)}
+.tf-tech{font-weight:400;font-size:.72rem;letter-spacing:.02em;text-transform:none;color:var(--wf-muted);opacity:.7}
+.tf-math{margin-top:.5rem;border:1px solid var(--wf-border);border-radius:8px;overflow:hidden}
+.tf-math summary{cursor:pointer;padding:.4rem .8rem;font-size:.7rem;color:var(--wf-gold);letter-spacing:.04em;background:rgba(240,192,64,.05);list-style:none;display:flex;align-items:center;gap:.4rem}
+.tf-math summary::-webkit-details-marker{display:none}
+.tf-math summary::before{content:'▸';font-size:.65rem;transition:transform .2s}
+.tf-math[open] summary::before{transform:rotate(90deg)}
+.tf-math .tf-math-body{padding:.5rem .8rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.7;color:var(--wf-muted);background:rgba(14,14,22,.5);border-top:1px solid var(--wf-border)}
+.tf-math .tf-math-body strong{color:var(--wf-gold)}
 @media (max-width:640px){.tf-compare{grid-template-columns:1fr}.tf-wrap{padding:0}}
 </style>
 
@@ -25,11 +33,15 @@
     <div class="tf-state"><strong>state:</strong> raw text, 26 characters</div>
 
     <div class="tf-arrow">↓</div>
-    <div class="tf-step"><span class="tf-name tf-cyan">Tokenizer</span><p>Split the sentence into small reusable pieces, then swap each piece for a dictionary number.</p><div class="tf-link"><a href="ch2.html">→ ch2</a></div></div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Tokenizer <span class="tf-tech">(BPE / SentencePiece)</span></span><p>Split the sentence into small reusable pieces, then swap each piece for a dictionary number.</p>
+    <details class="tf-math"><summary>🔢 how it splits</summary><div class="tf-math-body">Scans left-to-right, finds the longest match in a fixed merge table. <strong>"capital"</strong> is one entry. <strong>"un"+"believ"+"able"</strong> would be three. The table was built during training — frozen at inference.</div></details>
+    <div class="tf-link"><a href="ch2.html">→ ch2</a></div></div>
     <div class="tf-state"><strong>state:</strong> ["The", " capital", " of", " France", " is"] → <strong>[450, 3007, 310, 3444, 338]</strong><br>5 integer IDs. The text is gone.</div>
 
     <div class="tf-arrow">↓</div>
-    <div class="tf-step"><span class="tf-name tf-gold">Embedding Lookup</span><p>Use each ID as a row number into a giant table. Copy out that row — 4,096 numbers per token.</p><div class="tf-link"><a href="ch3.html">→ ch3</a></div></div>
+    <div class="tf-step"><span class="tf-name tf-gold">Embedding Lookup <span class="tf-tech">(Embedding Matrix E)</span></span><p>Use each ID as a row number into a giant table. Copy out that row — 4,096 numbers per token.</p>
+    <details class="tf-math"><summary>🔢 the lookup</summary><div class="tf-math-body"><strong>X = E[token_id]</strong> — that's it. E is a table with 128,000 rows × 4,096 columns. Each token ID is an integer index. We copy one row. No multiplication, just a read.</div></details>
+    <div class="tf-link"><a href="ch3.html">→ ch3</a></div></div>
     <div class="tf-state tf-state-gold"><strong>state:</strong> 5 rows × 4,096 numbers each = <strong>20,480 floats</strong><br>
 row 0: [-0.22, 0.74, 0.04, -0.16, …]  ← "The"<br>
 row 1: [ 0.52, -0.10, 0.27, 0.04, …]  ← " capital"<br>
@@ -38,7 +50,9 @@ row 3: [ 0.67, -0.04, 0.18, -0.30, …]  ← " France"<br>
 row 4: [ 0.11, 0.56, -0.09, 0.38, …]  ← " is"</div>
 
     <div class="tf-arrow">↓</div>
-    <div class="tf-step"><span class="tf-name tf-cyan">Position Stamp</span><p>Rotate pairs of numbers based on position so the model knows word order. Without this, shuffling the rows would look the same.</p><div class="tf-link"><a href="ch4.html">→ ch4</a></div></div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Position Stamp <span class="tf-tech">(RoPE — Rotary Position Embedding)</span></span><p>Rotate pairs of numbers based on position so the model knows word order.</p>
+    <details class="tf-math"><summary>🔢 the rotation</summary><div class="tf-math-body">Take two adjacent numbers, rotate them by an angle that depends on position:<br><strong>new_a = a·cos(θ) − b·sin(θ)</strong><br><strong>new_b = a·sin(θ) + b·cos(θ)</strong><br>θ increases with position. Different dimension pairs rotate at different speeds. This gives each position a unique fingerprint.</div></details>
+    <div class="tf-link"><a href="ch4.html">→ ch4</a></div></div>
     <div class="tf-state"><strong>state:</strong> same 5 × 4,096 grid, but each row now has a unique rotational fingerprint for positions 0–4</div>
   </div>
 
@@ -48,28 +62,35 @@ row 4: [ 0.11, 0.56, -0.09, 0.38, …]  ← " is"</div>
     <div class="tf-loop">
       <div class="tf-loop-label">× 32 Layers</div>
       <div class="tf-arrow">↓</div>
-      <div class="tf-step"><span class="tf-name tf-gold">Normalise</span><p>Rescale numbers so nothing drifts too large or too small between layers.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
+      <div class="tf-step"><span class="tf-name tf-gold">Normalise <span class="tf-tech">(RMSNorm)</span></span><p>Rescale numbers so nothing drifts too large or too small between layers.</p>
+      <details class="tf-math"><summary>🔢 the formula</summary><div class="tf-math-body"><strong>x̂ = x / √(mean(x²) + ε) × γ</strong><br>Compute the average squared value, take the square root, divide each number by it. ε (a tiny constant ~10⁻⁵) stops division by zero. γ is a learned scale per dimension.</div></details>
+      <div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
       <div class="tf-state tf-state-gold"><strong>state:</strong> each row rescaled to stable magnitude (RMS = 1.0)</div>
 
       <div class="tf-arrow">↓</div>
-      <div class="tf-step"><span class="tf-name tf-cyan">Attention</span><p>Each word looks back at all earlier words and blends in whatever seems relevant. Three projections decide: "what do I need?", "what do I offer?", "what do I contribute?"</p><div class="tf-link"><a href="ch6.html">→ ch6</a></div></div>
+      <div class="tf-step"><span class="tf-name tf-cyan">Attention <span class="tf-tech">(Multi-Head Self-Attention)</span></span><p>Each token looks back at all earlier tokens and blends in whatever seems relevant.</p>
+      <details class="tf-math"><summary>🔢 the three projections</summary><div class="tf-math-body">Three matrix multiplies per token:<br><strong>Q = x × W_Q</strong> — "what am I looking for?"<br><strong>K = x × W_K</strong> — "what do I contain?"<br><strong>V = x × W_V</strong> — "what should I contribute?"<br>Then: <strong>score = Q · Kᵀ / √d</strong> (dot product, scaled).<br><strong>weights = softmax(scores)</strong> (normalise to sum to 1).<br><strong>output = weights × V</strong> (blend the contributions).</div></details>
+      <div class="tf-link"><a href="ch6.html">→ ch6</a></div></div>
       <div class="tf-state"><strong>state (token 4, " is"):</strong><br>
 looked back → "France" scored 0.42, "capital" scored 0.31, "The" scored 0.08 …<br>
 blended result: a new row that mixes in context from the whole sentence</div>
 
       <div class="tf-arrow">↓</div>
-      <div class="tf-step"><span class="tf-name tf-gold">+ Add Back</span><p>Don't throw away what you already knew. Add the new update on top of the old state.</p><div class="tf-link"><a href="ch5.html">→ ch5</a></div></div>
-      <div class="tf-state tf-state-gold"><strong>state:</strong> original row + attention update = richer row</div>
+      <div class="tf-step"><span class="tf-name tf-gold">+ Add Back <span class="tf-tech">(Residual Connection)</span></span><p>Don't throw away what you already knew. Add the new update on top of the old state.</p>
+      <details class="tf-math"><summary>🔢 the operation</summary><div class="tf-math-body"><strong>output = input + update</strong><br>Element-wise addition. The original signal survives — the layer can only add new information, not erase what came before.</div></details>
+      <div class="tf-link"><a href="ch5.html">→ ch5</a></div></div>
 
       <div class="tf-arrow">↓</div>
-      <div class="tf-step"><span class="tf-name tf-gold">Normalise</span><p>Rescale again before the next transformation.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
+      <div class="tf-step"><span class="tf-name tf-gold">Normalise <span class="tf-tech">(RMSNorm)</span></span><p>Rescale again before the next transformation.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
 
       <div class="tf-arrow">↓</div>
-      <div class="tf-step"><span class="tf-name tf-cyan">Feed-Forward</span><p>Each row processed individually: expand to 11,008 numbers, apply a filter, compress back to 4,096. Patterns become decisions.</p><div class="tf-link"><a href="ch8.html">→ ch8</a></div></div>
+      <div class="tf-step"><span class="tf-name tf-cyan">Feed-Forward <span class="tf-tech">(SwiGLU FFN)</span></span><p>Each row processed individually: expand, filter, compress back. Patterns become decisions.</p>
+      <details class="tf-math"><summary>🔢 the expansion</summary><div class="tf-math-body"><strong>gate = x × W_gate</strong> (4,096 → 11,008)<br><strong>up = x × W_up</strong> (4,096 → 11,008)<br><strong>combined = SiLU(gate) × up</strong> (element-wise gating)<br><strong>output = combined × W_down</strong> (11,008 → 4,096)<br>Three matrix multiplies. The wider middle layer gives the network room to compute complex transformations before compressing back down.</div></details>
+      <div class="tf-link"><a href="ch8.html">→ ch8</a></div></div>
       <div class="tf-state"><strong>state:</strong> 4,096 → expand to 11,008 → filter → back to 4,096 (sharper, more refined)</div>
 
       <div class="tf-arrow">↓</div>
-      <div class="tf-step"><span class="tf-name tf-gold">+ Add Back</span><p>Merge update into running state. Hand the richer rows to the next layer.</p><div class="tf-link"><a href="ch5.html">→ ch5</a></div></div>
+      <div class="tf-step"><span class="tf-name tf-gold">+ Add Back <span class="tf-tech">(Residual Connection)</span></span><p>Merge update into running state. Hand the richer rows to the next layer.</p><div class="tf-link"><a href="ch5.html">→ ch5</a></div></div>
       <div class="tf-state tf-state-accent"><strong>after all 32 layers:</strong> token 4 (" is") has been refined 32 times.<br>It no longer means "is" — it means "the-word-after-'The-capital-of-France-is' in a context expecting a city name."</div>
     </div>
   </div>
@@ -78,10 +99,12 @@ blended result: a new row that mixes in context from the whole sentence</div>
   <div class="tf-sec">
     <div class="tf-title">Choosing the next token</div>
     <div class="tf-arrow">↓</div>
-    <div class="tf-step"><span class="tf-name tf-gold">Final Normalise</span><p>One last rescale before scoring.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
+    <div class="tf-step"><span class="tf-name tf-gold">Final Normalise <span class="tf-tech">(RMSNorm)</span></span><p>One last rescale before scoring.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
 
     <div class="tf-arrow">↓</div>
-    <div class="tf-step"><span class="tf-name tf-cyan">Score Every Token in the Dictionary</span><p>Compare the finished row against all ~128,000 known words. Each word gets one score — higher means "better fit here."</p><div class="tf-link"><a href="ch9.html">→ ch9</a></div></div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Score Every Token in the Dictionary <span class="tf-tech">(lm_head — Vocabulary Projection)</span></span><p>Compare the finished row against all ~128,000 known tokens. Each gets one score.</p>
+    <details class="tf-math"><summary>🔢 the scoring</summary><div class="tf-math-body"><strong>logits = h · W_vocabᵀ</strong><br>One dot product per vocabulary row. h is 4,096 numbers. W_vocab has 128,000 rows of 4,096 numbers each. That's 128,000 × 4,096 = <strong>524 million multiply-adds</strong>. It's a full table scan — scoring every candidate.</div></details>
+    <div class="tf-link"><a href="ch9.html">→ ch9</a></div></div>
     <div class="tf-state"><strong>scores (top 5 of 128,000):</strong><br>
 " Paris"&nbsp;&nbsp;&nbsp;→ 18.4<br>
 " France"&nbsp;&nbsp;→ 15.8<br>
@@ -91,7 +114,9 @@ blended result: a new row that mixes in context from the whole sentence</div>
 … 127,995 more rows scored lower</div>
 
     <div class="tf-arrow">↓</div>
-    <div class="tf-step"><span class="tf-name tf-gold">Pick One</span><p>Turn scores into probabilities. Apply temperature, top-k, top-p. Sample one winner.</p><div class="tf-link"><a href="ch10.html">→ ch10</a></div></div>
+    <div class="tf-step"><span class="tf-name tf-gold">Pick One <span class="tf-tech">(Sampling — Softmax + Top-K/Top-P)</span></span><p>Turn scores into probabilities. Apply temperature, top-k, top-p. Sample one winner.</p>
+    <details class="tf-math"><summary>🔢 softmax + sampling</summary><div class="tf-math-body"><strong>pᵢ = exp(scoreᵢ / τ) / Σ exp(scoreⱼ / τ)</strong><br>τ (temperature) controls sharpness: lower = more certain, higher = more random.<br><strong>Top-K</strong>: keep only the K highest-scoring tokens.<br><strong>Top-P</strong>: keep tokens until cumulative probability reaches P.<br>Then sample one token from whatever remains.</div></details>
+    <div class="tf-link"><a href="ch10.html">→ ch10</a></div></div>
     <div class="tf-state tf-state-gold"><strong>probabilities after softmax:</strong><br>
 " Paris" → 89.1%&nbsp;&nbsp;|&nbsp;&nbsp;" France" → 6.7%&nbsp;&nbsp;|&nbsp;&nbsp;" French" → 1.9%&nbsp;&nbsp;|&nbsp;&nbsp;…<br>
 <strong>sampled:</strong> " Paris" ✓</div>
