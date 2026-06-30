@@ -2981,6 +2981,12 @@ if(phiSeen)document.documentElement.classList.add("wf-seen");
         <h1 class="wf-section-hdr">The Transformer</h1>
         <p class="wf-section-desc">GPT, Claude, Gemini, LLaMA — all built on this.</p>
 
+        <div style="margin:1.2rem 0 1.8rem;padding:1rem 1.4rem;border:1px solid rgba(6,182,212,.25);border-radius:8px;background:rgba(6,182,212,.04);">
+            <p style="margin:0;font-size:.88rem;color:#cbd5e1;line-height:1.7;">📖 <strong style="color:var(--wf-cyan);">Want plain English without the heavy maths and PhD-level researcher language?</strong><br>
+            There's a full book-length version of this — 15 chapters explaining every stage of transformer inference from first principles, with no unexplained equations.<br>
+            <a href="transformers.html" style="color:var(--wf-cyan);text-decoration:underline;text-underline-offset:3px;font-weight:500;">Read the Plain English edition →</a></p>
+        </div>
+
         <div class="wf-article-body">
             <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Plain English</h3>
             <p>A Transformer reads a sequence of tokens (words, subwords, symbols) and predicts what comes next. It does this by letting every token look at every other token and decide how much attention to pay to each one. The result is a probability distribution over the entire vocabulary — and the model samples from it to produce the next token.</p>
