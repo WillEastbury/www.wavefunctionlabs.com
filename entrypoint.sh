@@ -11,4 +11,4 @@ exec ./picoweb --tls \
   --picowal-device=/tmp/picowal.wal \
   --picowal-prefix=/wal/ \
   --picowal-bytes=10485760 \
-  443 wwwroot 1 100 0 128
+  443 wwwroot 1 100 0 32
