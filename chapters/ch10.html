@@ -1,0 +1,534 @@
+<div id="ch10" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Part 10 — Sampling</div>
+        <h1 class="wf-section-hdr">Sampling</h1>
+        <p class="wf-section-desc">How an inference engine turns one vocabulary-wide score vector into one concrete next token, one stop condition, and one more step of generation.</p>
+    </div>
+    <div class="wf-article-body">
+        <p data-plain="Sampling is the last step. The model scores every token, and the sampler decides which one actually gets emitted." data-psi="Sampling is where a broad probability field is forced into one observed outcome. The network proposes a landscape; decoding chooses the single path that becomes history." data-duck="The whole pond has opinions about the next quack. Sampling is the moment one duck actually opens its beak.">A transformer does not output text directly. It outputs <a href="#/glossary" class="wf-gloss">logits</a>: one raw score for every token in the vocabulary. Sampling is the machinery that takes that score vector, applies policy, and turns it into one token ID. That token might be chosen deterministically, or it might be drawn from a filtered distribution. Either way, this is the stage where a huge set of possibilities collapses into one emitted token.</p>
+
+        <div class="wf-callout gold">
+            <p><strong>Why this chapter exists:</strong> if you only look at the model core, you miss the control surface that users actually feel. Temperature, top-k, top-p, repetition penalties, stop sequences, grammar constraints, seeds, and beam search all live at the boundary between the network and the user-visible answer. The model proposes. The sampler commits.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Plain English: what sampling does</h3>
+        <p data-plain="The model says how likely each next token is. Sampling is the rulebook for picking one." data-psi="Inference ends each step with a distribution over futures. Decoding is the policy that decides which future becomes real and which ones vanish." data-duck="Imagine a line of ducks each holding a card with a possible next quack. The sampler decides whether the loudest duck always wins or whether the pond sometimes allows a close runner-up.">For our running example, the prompt is <strong>“What is the capital of France?”</strong>. After the forward pass, the language model head produces a logit vector <strong>z ∈ ℝ<sup>V</sup></strong>, where <strong>V</strong> is the vocabulary size. One entry might correspond to <strong>“ Paris”</strong>, another to <strong>“ Lyon”</strong>, another to <strong>“ London”</strong>, and so on through tens of thousands of candidates. Sampling is not about inventing meaning. It is about translating that score vector into an action.</p>
+
+        <p>In a production engine, the sampling pipeline is usually short but deliberate: adjust logits for penalties, divide by temperature, apply any hard masks or grammar rules, optionally filter to a candidate subset, run a numerically stable <a href="#/glossary" class="wf-gloss">softmax</a>, then either take the maximum or draw one sample. If the chosen token completes a stop sequence, emit nothing further. If it does not, append it to the context and continue.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">A concrete score vector for “What is the capital of France?”</h3>
+        <p>The full vocabulary may be 32K, 50K, or 128K tokens, but the sampler usually reasons about the same vector-shaped object regardless of size. To keep the arithmetic readable, we will show a small visible slice of the distribution. Suppose the model has already projected the final hidden state and produced the following candidate logits for the first generated token:</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Raw logit zᵢ</th>
+                        <th>Shifted value zᵢ − max(z)</th>
+                        <th>exp(shifted)</th>
+                        <th>Softmax pᵢ at τ = 1</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>“ Paris”</strong></td>
+                        <td>6.0</td>
+                        <td>0.0</td>
+                        <td>1.0000</td>
+                        <td>0.749</td>
+                    </tr>
+                    <tr>
+                        <td><strong>“ Lyon”</strong></td>
+                        <td>4.2</td>
+                        <td>-1.8</td>
+                        <td>0.1653</td>
+                        <td>0.124</td>
+                    </tr>
+                    <tr>
+                        <td><strong>“ London”</strong></td>
+                        <td>3.6</td>
+                        <td>-2.4</td>
+                        <td>0.0907</td>
+                        <td>0.068</td>
+                    </tr>
+                    <tr>
+                        <td><strong>“ Berlin”</strong></td>
+                        <td>2.8</td>
+                        <td>-3.2</td>
+                        <td>0.0408</td>
+                        <td>0.031</td>
+                    </tr>
+                    <tr>
+                        <td><strong>“ Marseille”</strong></td>
+                        <td>2.4</td>
+                        <td>-3.6</td>
+                        <td>0.0273</td>
+                        <td>0.020</td>
+                    </tr>
+                    <tr>
+                        <td><strong>“ French”</strong></td>
+                        <td>1.1</td>
+                        <td>-4.9</td>
+                        <td>0.0074</td>
+                        <td>0.006</td>
+                    </tr>
+                    <tr>
+                        <td><strong>“ The”</strong></td>
+                        <td>0.4</td>
+                        <td>-5.6</td>
+                        <td>0.0037</td>
+                        <td>0.003</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>The numbers are illustrative, not magical. A difference of only a few logit units is enough to make <strong>“ Paris”</strong> dominate after exponentiation. That is why softmax matters: it converts relative score gaps into a probability distribution that can be interpreted and manipulated consistently.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The full sampling pipeline</h3>
+        <div class="wf-code">
+<pre>logits[V]
+  ↓
+apply_presence_frequency_or_repetition_penalties()
+  ↓
+divide_by_temperature()
+  ↓
+apply_hard_masks(grammar, banned tokens, EOS rules)
+  ↓
+filter_candidates(top-k / top-p / min-p / typical / beam policy)
+  ↓
+stable_softmax()
+  ↓
+argmax_or_random_draw(seed, RNG state)
+  ↓
+chosen token ID
+  ↓
+check stop sequences / structured-output completion
+  ↓
+append to context and continue</pre>
+        </div>
+
+        <p data-plain="Sampling is a series of small edits to the score vector before the final choice is made." data-psi="The distribution is sculpted in stages. Temperature changes the landscape, penalties warp paths already taken, filters carve away implausible branches, and the final draw selects one surviving outcome." data-duck="First you tell the ducks not to repeat themselves too much, then you quiet the weird distant ducks, then you either pick the loudest duck or spin a weighted wheel among the sensible ones.">This pipeline is operationally cheap compared with the transformer layers that produced the logits, but it is strategically important. Small policy changes here can completely change the style, determinism, safety, and usefulness of the output. A model with identical weights can look terse, repetitive, playful, brittle, or reliable depending on sampler settings.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Maths: logits, temperature, softmax, and numerical stability</h3>
+        <p>Let <strong>zᵢ</strong> be the logit for token <strong>i</strong>. With temperature <strong>τ</strong>, the probability assigned to token <strong>i</strong> is:</p>
+        <div class="wf-math"><pre>pᵢ = exp(zᵢ / τ) / Σⱼ exp(zⱼ / τ)</pre></div>
+        <p>Temperature acts <em>before</em> softmax by dividing logits. Lower <strong>τ</strong> exaggerates differences and makes the distribution sharper. Higher <strong>τ</strong> compresses differences and makes the distribution flatter. The order of token scores does not change when you divide by a positive scalar, but the gaps between them do.</p>
+
+        <p data-plain="You subtract the biggest logit before exponentiating so the numbers do not blow up." data-psi="Numerical stability is the discipline of preserving meaning while avoiding representational collapse. Subtracting the maximum changes nothing semantically, but it keeps the computation inside the range the hardware can represent." data-duck="If one duck is already shouting from the top of a hill, subtracting that hill height lets you compare all the ducks without anyone falling off the number cliff.">In real implementations you never compute softmax from raw logits directly. You first subtract the maximum scaled logit. That leaves the probabilities unchanged because the same constant is removed from every numerator and denominator term:</p>
+        <div class="wf-math"><pre>m = maxⱼ (zⱼ / τ)
+pᵢ = exp((zᵢ / τ) - m) / Σⱼ exp((zⱼ / τ) - m)</pre></div>
+
+        <p>Why does this help? Because <strong>exp(80)</strong> is enormous and can overflow, while <strong>exp(0)</strong> is safely 1. By shifting the largest term to zero, every other exponent becomes ≤ 1. The distribution is identical; the implementation becomes safe.</p>
+
+        <div class="wf-code">
+<pre>// stable softmax over a visible candidate list
+max_val = max(logits)
+sum_exp = 0
+for i in 0..V-1:
+    tmp[i] = exp(logits[i] - max_val)
+    sum_exp += tmp[i]
+for i in 0..V-1:
+    probs[i] = tmp[i] / sum_exp</pre>
+        </div>
+
+        <p>This is still conceptually the same algorithm on GPU, CPU, or TPU. The differences are in vectorization, memory layout, and whether you fuse surrounding steps to avoid extra reads and writes.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Tensor shapes and sampler state</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Object</th>
+                        <th>Meaning</th>
+                        <th>Typical shape</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>logits</strong></td>
+                        <td>Raw vocabulary scores from the LM head</td>
+                        <td>[V]</td>
+                        <td>Usually float16, bfloat16, or float32 before final selection</td>
+                    </tr>
+                    <tr>
+                        <td><strong>penalized_logits</strong></td>
+                        <td>Scores after repetition/presence/frequency edits</td>
+                        <td>[V]</td>
+                        <td>Often done in-place</td>
+                    </tr>
+                    <tr>
+                        <td><strong>mask</strong></td>
+                        <td>Allowed/disallowed token bitmap or additive mask</td>
+                        <td>[V]</td>
+                        <td>Grammar constraints and banned tokens live here</td>
+                    </tr>
+                    <tr>
+                        <td><strong>probs</strong></td>
+                        <td>Normalised probabilities</td>
+                        <td>[V] or [K]</td>
+                        <td>After filtering, the active set may be smaller than V</td>
+                    </tr>
+                    <tr>
+                        <td><strong>history_counts</strong></td>
+                        <td>Per-token repetition counts</td>
+                        <td>sparse map or [V]</td>
+                        <td>Sparse is common because only a tiny fraction of V appears</td>
+                    </tr>
+                    <tr>
+                        <td><strong>rng_state</strong></td>
+                        <td>Random generator state</td>
+                        <td>implementation-specific</td>
+                        <td>Required for stochastic decoding</td>
+                    </tr>
+                    <tr>
+                        <td><strong>selected_id</strong></td>
+                        <td>Chosen token ID</td>
+                        <td>scalar</td>
+                        <td>Appended to the sequence if not stopped</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Notice how small these tensors are compared with the model weights and the KV cache. Sampling is not where most memory is spent. But sampling is still part of the serving hot path, so unnecessary allocations, full sorts, or host-device synchronizations can hurt latency.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Temperature tabs: one scalar, large behavioral effect</h3>
+        <div class="wf-tabs" data-group="ch10-temperature">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="cold">τ &lt; 1</button>
+                <button class="wf-tab" data-tab="neutral">τ = 1</button>
+                <button class="wf-tab" data-tab="hot">τ &gt; 1</button>
+                <button class="wf-tab" data-tab="frozen">τ → 0</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <p data-plain="Temperature does not add randomness by itself. It changes how peaked the probabilities are before you sample." data-psi="Temperature changes the curvature of the probability landscape. Cold temperatures deepen the dominant basin; hot temperatures flatten the field so alternative futures remain reachable." data-duck="Temperature is the pond thermostat. Cold weather makes the loudest duck much louder. Hot weather makes the whole flock sound more equal.">Conceptually, temperature rescales confidence. It does not change which token is ranked first, second, or third, but it changes how much probability mass separates them. That matters only when your policy uses probabilities rather than pure argmax.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="cold">
+                <p>With <strong>τ = 0.7</strong>, the same visible logits become a much sharper distribution. Using our running example, the probabilities are approximately <strong>Paris 0.888</strong>, <strong>Lyon 0.068</strong>, <strong>London 0.029</strong>, <strong>Berlin 0.009</strong>, and the remainder are nearly gone. Lower temperature is useful when you want correctness, formatting discipline, or deterministic-feeling behavior, but if you push it too low the model becomes brittle and repetitive.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="neutral">
+                <p>At <strong>τ = 1</strong>, nothing is rescaled. We recover the baseline probabilities from the table above: <strong>Paris 0.749</strong>, <strong>Lyon 0.124</strong>, <strong>London 0.068</strong>, <strong>Berlin 0.031</strong>, and so on. This is the clean reference setting for understanding the raw distribution the model produced.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="hot">
+                <p>With <strong>τ = 1.3</strong>, the distribution flattens: approximately <strong>Paris 0.628</strong>, <strong>Lyon 0.157</strong>, <strong>London 0.099</strong>, <strong>Berlin 0.054</strong>, <strong>Marseille 0.039</strong>. The top candidate still leads, but alternatives become materially more likely. This can improve variety in storytelling or brainstorming, but it also increases the chance of wrong or malformed tokens.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="frozen">
+                <p>As <strong>τ → 0</strong>, the distribution collapses onto the largest logit. In the limit, this is equivalent to greedy decoding: always choose the argmax token. Many APIs expose “temperature 0” as a special case rather than literally dividing by zero. The engineering rule is simple: treat it as deterministic argmax, not as a numeric softmax call.</p>
+            </div>
+        </div>
+
+        <p>One subtle point that matters in practice: temperature should be applied to logits, not probabilities. Scaling probabilities after softmax is not equivalent and usually produces the wrong behavior.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Penalty tabs: discouraging reuse without rewriting the model</h3>
+        <div class="wf-tabs" data-group="ch10-penalties">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="frequency">Frequency Penalty</button>
+                <button class="wf-tab" data-tab="presence">Presence Penalty</button>
+                <button class="wf-tab" data-tab="repetition">Repetition Penalty</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <p data-plain="Penalties exist because a model often wants to reuse the same high-probability tokens too often." data-psi="Autoregressive generation tends to fall into local attractors: a phrase works once, so it keeps working again. Penalties perturb those attractors without changing the underlying weights." data-duck="A duck that got bread once may keep running back to the same spot. Penalties tell the flock, ‘yes, that worked, but stop crowding the same corner of the pond.’">Penalties edit the score vector using sequence history. They are runtime heuristics, not learned parameters. Their job is not to make the model smarter; their job is to make the output less repetitive and more useful under finite context and finite patience.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="frequency">
+                <p><strong>Frequency penalty</strong> subtracts an amount proportional to how many times a token has already appeared. A common form is <strong>zᵢ′ = zᵢ − λ<sub>f</sub> · count(i)</strong>. If the model has already emitted <strong>“ Paris”</strong> twice and <strong>λ<sub>f</sub> = 0.4</strong>, the adjusted logit drops by <strong>0.8</strong>. Typical values are small, often around <strong>0.1</strong> to <strong>0.8</strong>. This targets loops like “Paris Paris Paris” by pushing repeated tokens down more each time they recur.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="presence">
+                <p><strong>Presence penalty</strong> cares only whether a token has appeared at least once, not how many times. A common form is <strong>zᵢ′ = zᵢ − λ<sub>p</sub> · 1[count(i) &gt; 0]</strong>. If a token has been seen, it pays a one-time tax. This is useful when you want the model to move to new topics or new vocabulary rather than reusing the same concepts even once.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="repetition">
+                <p><strong>Repetition penalty</strong> is often implemented multiplicatively rather than additively. One common rule is: if token <strong>i</strong> has appeared before, then <strong>zᵢ′ = zᵢ / r</strong> when <strong>zᵢ &gt; 0</strong>, else <strong>zᵢ′ = zᵢ · r</strong>, with <strong>r &gt; 1</strong>. Typical values are around <strong>1.05</strong> to <strong>1.2</strong>. This preserves sign behavior better than a flat subtraction and is popular in local LLM runtimes.</p>
+            </div>
+        </div>
+
+        <p>Penalty order matters. In most engines, you apply penalties before top-k or top-p filtering, because the whole point is to let those penalties influence which tokens survive the filter. If you filter first and penalize later, some candidates never get a fair chance to replace the repeated token you were trying to suppress.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Decoding strategy tabs: the policy layer</h3>
+        <div class="wf-tabs" data-group="ch10-decoding">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="greedy">Greedy</button>
+                <button class="wf-tab" data-tab="topk">Top-K</button>
+                <button class="wf-tab" data-tab="topp">Top-P / Nucleus</button>
+                <button class="wf-tab" data-tab="minp">Min-P</button>
+                <button class="wf-tab" data-tab="typical">Typical Sampling</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <p data-plain="Decoding strategy is the policy that says how to turn a probability distribution into a token choice." data-psi="The distribution is not the decision. Decoding policy is the bridge between uncertainty and action." data-duck="The pond has a weighted vote; decoding decides whether you obey the loudest duck, the top few ducks, or the ducks whose noise level feels most typical for the flock.">Once you have a valid probability distribution, you still need a rule for selecting a token. Greedy decoding ignores randomness. Stochastic strategies keep controlled variability. Filtering strategies do not change the model weights; they decide which parts of the model’s uncertainty you are willing to honor.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="greedy">
+                <p><strong>Greedy decoding</strong> selects <strong>argmaxᵢ pᵢ</strong>, or equivalently <strong>argmaxᵢ zᵢ</strong>. For our running example, greedy chooses <strong>“ Paris”</strong> every time. It is deterministic, cheap, and easy to reason about. It is also prone to blandness and repetition because it never explores near-tie alternatives. When people say “temperature zero,” this is usually what they mean operationally.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="topk">
+                <p><strong>Top-k</strong> keeps only the <strong>K</strong> highest-probability tokens, renormalizes them, and samples from that truncated set. If <strong>K = 3</strong> on our τ = 1 example, the surviving tokens are <strong>Paris</strong>, <strong>Lyon</strong>, and <strong>London</strong>. Their renormalized probabilities become roughly <strong>0.796</strong>, <strong>0.132</strong>, and <strong>0.072</strong>. Top-k is easy to implement, but the same K may be too loose on confident steps and too tight on uncertain steps.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="topp">
+                <p><strong>Top-p</strong>, also called <strong>nucleus sampling</strong>, sorts tokens by descending probability and keeps the smallest prefix whose cumulative mass is at least <strong>P</strong>. With <strong>P = 0.90</strong>, our example keeps <strong>Paris</strong>, <strong>Lyon</strong>, and <strong>London</strong> because their cumulative mass reaches <strong>0.941</strong>. If the model were more certain, top-p might keep only one or two tokens; if it were uncertain, it might keep dozens. That adaptivity is why top-p became popular for chat systems.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="minp">
+                <p><strong>Min-p</strong> keeps any token whose probability satisfies <strong>p(token) ≥ min_p × p(max)</strong>. Suppose <strong>min_p = 0.1</strong>. The threshold is then <strong>0.1 × 0.749 = 0.0749</strong>. Only <strong>Paris</strong> and <strong>Lyon</strong> survive, because <strong>London</strong> at <strong>0.068</strong> falls just below the relative cutoff. Min-p acts like a dynamic confidence floor tied to the best token, which makes it behave differently from fixed-K truncation.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="typical">
+                <p><strong>Typical sampling</strong> prefers tokens whose information content is close to the expected information content of the distribution. Define surprise <strong>sᵢ = -log pᵢ</strong> and entropy <strong>H = Σᵢ pᵢ(-log pᵢ)</strong>. Keep tokens with small <strong>|sᵢ − H|</strong>, then sample among them. In plain English, it avoids tokens that are <em>too obvious</em> and tokens that are <em>too weird</em>. On this example, a typical sampler may downweight an overwhelmingly dominant token if it is much less surprising than the distribution’s entropy would suggest.</p>
+            </div>
+        </div>
+
+        <p>Typical sampling is harder to explain at first glance, but the intuition is practical: a token can be high probability and still be “too certain” relative to the overall shape of the distribution, just as a token can be low probability and “too surprising.” Typical decoding tries to stay near the expected surprise level.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Entropy, surprise, and why these policies feel different</h3>
+        <p>Two distributions can have the same top token and still feel very different to decode from. In one case the top token may hold <strong>0.95</strong> probability and everything else is dust. In another case the top token may hold <strong>0.30</strong> and ten alternatives are plausible. Top-k does not know that difference unless K changes. Top-p partially adapts because cumulative mass rises faster in low-entropy distributions and slower in high-entropy ones. Typical sampling goes one step further by explicitly using the information content of each token.</p>
+
+        <div class="wf-math"><pre>surprise(token i) = -log pᵢ
+entropy H(p)      = Σᵢ pᵢ (-log pᵢ)</pre></div>
+
+        <p data-plain="Surprise measures how unusual a token is. Entropy measures how uncertain the whole distribution is." data-psi="Surprise is the local tension of one candidate; entropy is the global uncertainty of the field." data-duck="A single duck can be surprisingly loud or boringly predictable. Entropy is the noise level of the whole pond.">That distinction matters when you want text that is neither robotic nor chaotic. If the distribution is already sharp, typical decoding may reject extremely unsurprising tokens that would make generation collapse into dull loops. If the distribution is already broad, it may reject bizarre tail tokens that are technically allowed by top-p but feel too off-pattern for the current uncertainty level.</p>
+
+        <p>There is no universally best policy. Greedy excels when correctness is tightly coupled to the single highest-probability token. Top-k is simple and predictable. Top-p adapts well to variable confidence. Min-p is a relative confidence gate. Typical sampling is often aesthetically appealing because it respects the shape of uncertainty rather than just its rank ordering. The practical lesson is to think in distribution shape, not in brand names.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">A worked numerical walkthrough</h3>
+        <p>Let us walk one step all the way through. Assume there are no structural bans yet, no stop condition yet, and we choose <strong>τ = 1</strong>, <strong>top-k = 3</strong>, and stochastic selection with a fixed seed. Start from the visible slice above:</p>
+
+        <div class="wf-code">
+<pre>Raw logits:
+Paris      6.0
+Lyon       4.2
+London     3.6
+Berlin     2.8
+Marseille  2.4
+French     1.1
+The        0.4
+
+Softmax at τ = 1:
+Paris      0.749
+Lyon       0.124
+London     0.068
+Berlin     0.031
+Marseille  0.020
+French     0.006
+The        0.003
+
+Top-k = 3 keeps:
+Paris      0.796
+Lyon       0.132
+London     0.072</pre>
+        </div>
+
+        <p>If the random draw is <strong>u = 0.81</strong>, cumulative sampling over the renormalized top-3 distribution yields: <strong>Paris</strong> occupies <strong>[0.000, 0.796)</strong>, <strong>Lyon</strong> occupies <strong>[0.796, 0.928)</strong>, and <strong>London</strong> occupies <strong>[0.928, 1.000]</strong>. A draw of <strong>0.81</strong> therefore picks <strong>“ Lyon”</strong>, even though <strong>“ Paris”</strong> was the single most likely token. This is the entire point of stochastic decoding: allow high-probability alternatives to occasionally win.</p>
+
+        <div class="wf-callout accent">
+            <p><strong>Important subtlety:</strong> sampling does not mean “choose randomly from anywhere.” Good samplers make randomness conditional on model confidence. Randomness lives inside a carefully shaped and filtered distribution.</p>
+        </div>
+
+        <p>Now imagine the next step of generation already contains the token <strong>“ Paris”</strong> twice because the model wrote a clumsy sentence. With a frequency penalty <strong>λ<sub>f</sub> = 0.4</strong>, the logit for <strong>“ Paris”</strong> loses <strong>0.8</strong>. It falls from <strong>6.0</strong> to <strong>5.2</strong>. That does not guarantee it loses, but it narrows the gap enough that alternatives can compete. Penalties do not force diversity; they create breathing room for it.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Seeds and determinism</h3>
+        <p data-plain="If the model, prompt, sampler settings, and random seed all match, you should usually get the same output." data-psi="A seed fixes one path through the sampler’s probability tree, but only if the rest of the execution environment preserves that path." data-duck="Give the same flock the same pond, same weather, and same random-number dice, and the ducks should quack in the same order. Change the pond physics and the flock drifts.">For stochastic decoding, the seed initializes the random number generator. Same prompt + same model weights + same sampler policy + same seed should produce the same random draws and therefore the same sampled tokens. But real systems add caveats: floating-point nondeterminism, fused kernels, vendor library versions, and batch interactions can all perturb results. Greedy decoding bypasses RNG entirely, but it can still differ across implementations if logits are numerically close and hardware behavior changes the tie.</p>
+
+        <p>A good implementation treats determinism as a contract with levels. <strong>Level 1</strong>: same process, same seed, same batch, same code path. <strong>Level 2</strong>: same hardware and libraries. <strong>Level 3</strong>: bitwise reproducibility across environments, which is much harder and often not worth the cost for user-facing chat. The practical promise most systems make is “reproducible enough,” not “identical on every machine forever.”</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stop sequences and generation termination</h3>
+        <p>Sampling is not just about choosing a token; it is also where generation stops. There are several common stop conditions:</p>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Stop condition</th>
+                        <th>How it works</th>
+                        <th>Operational consequence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>EOS token</strong></td>
+                        <td>Model emits a learned end-of-sequence token</td>
+                        <td>Natural termination if training aligned well</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Max tokens</strong></td>
+                        <td>Server stops after a configured number of decode steps</td>
+                        <td>Hard cap for latency and cost</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stop string</strong></td>
+                        <td>Emitted text matches a configured byte/token pattern</td>
+                        <td>Useful for chat separators and templates</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Grammar completion</strong></td>
+                        <td>Parser state reaches an accepting final state</td>
+                        <td>Common in JSON or tool-call generation</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Implementers often keep a rolling token window or a byte buffer to detect stop sequences without rescanning the full generated output each step. This is a tiny but real form of caching inside the sampler.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">What sampler state persists across steps?</h3>
+        <p>Sampling is stateless only in toy examples. A real engine carries small but important state from token to token. The most obvious piece is the random number generator state used for reproducible stochastic draws. Then come repetition counters for presence, frequency, or repetition penalties. Add stop-sequence matching state, grammar-parser state for structured output, and possibly speculative-decoding acceptance bookkeeping when a draft model is involved.</p>
+
+        <p>None of that state is large compared with the KV cache, but it still deserves design care. If you stream tokens to a client, pause, resume, or migrate a request between worker threads, you must move the sampler state with the request. If you batch many requests together, each request needs its own independent sampler state even while weights and kernels are shared. This is one of the reasons inference engines usually separate <strong>model state</strong> from <strong>request state</strong>: the weights are global, the sampler and cache metadata are per sequence.</p>
+
+        <p data-plain="The sampler remembers just enough history to make the next choice consistent." data-psi="Generation is a sequence of local collapses, but each collapse changes the legal and desirable shape of the next one." data-duck="Each new quack changes which ducks have already spoken, which pond lanes are blocked, and whether the flock has already reached the edge of the pond.">Put differently, sampling is not a pure function of current logits once you enable real policies. The same logit vector can produce different legal actions depending on the request’s history. That is exactly what repetition penalties, grammar masks, and stop rules are supposed to do.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Structured output and grammar-constrained decoding</h3>
+        <p data-plain="If you need JSON, XML, or another format, you can mask out tokens that would break the grammar." data-psi="Grammar-constrained decoding narrows the future space to only valid syntactic continuations. The sampler is no longer choosing from all language, only from the legal frontier of a formal language." data-duck="If the ducks are supposed to march in a square, you block off the pond edges that lead to triangles. The flock can still choose a direction, but only among moves that keep the shape valid.">Structured output is best understood as dynamic masking. At each decode step, an external grammar engine or parser state machine tells the sampler which tokens are legal next moves. Illegal tokens receive <strong>-∞</strong> or an equivalent hard ban before softmax. The sampler then runs normally over the remaining legal subset.</p>
+
+        <p>This means grammar constraints sit naturally in the sampling pipeline. They do not require retraining the model. They do require careful tokenization-aware engineering: a JSON quote might be one token in one tokenizer and several token fragments in another, so the grammar engine must operate on the actual token vocabulary, not on wishful character abstractions.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Beam search: useful, but less common for chat LLMs</h3>
+        <p>Beam search keeps multiple partial continuations alive at once instead of committing to one token path immediately. At each step, it expands the best <strong>B</strong> sequences according to cumulative log-probability, then prunes back to the best <strong>B</strong>. This often improves sequence-level likelihood in tasks like translation or speech recognition, where the best overall sentence may require a locally non-greedy choice early on.</p>
+
+        <p>Why is it less common for chat LLMs? Because beam search is more expensive, less diverse than sampling, and often produces overly safe text. User-facing assistants usually benefit more from controlled stochastic decoding than from maximizing sequence likelihood. Still, beam search belongs in the design space because it is the classic reminder that “best next token” is not always “best full sentence.”</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Speculative decoding: faster sampling by drafting ahead</h3>
+        <p>Speculative decoding uses a smaller draft model to propose several next tokens, then asks the larger target model to verify them in batches. If the large model agrees, you accept multiple tokens at once and reduce latency. If it disagrees, you fall back to the target model’s choice at the first disagreement point.</p>
+
+        <p>This belongs in the sampling chapter because the acceptance test is effectively a decoding policy wrapped around two models. The large model still determines correctness. The small model exists to offer plausible candidates so the expensive model can amortize work over multiple positions.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Cost, hardware, and operation-classification</h3>
+        <p>Compared with attention and FFN matmuls, sampling is small. But small does not mean irrelevant. Decode latency is serial, so even “cheap” steps executed every token deserve engineering attention.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Sampler stage</th>
+                        <th>Operation type</th>
+                        <th>Typical bound</th>
+                        <th>Why</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Penalty application</strong></td>
+                        <td>Elementwise vector edit</td>
+                        <td>Memory-bound</td>
+                        <td>Reads/writes logits with little arithmetic per element</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Temperature scaling</strong></td>
+                        <td>Scalar divide over vector</td>
+                        <td>Memory-bound</td>
+                        <td>One arithmetic op per logit</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Top-k / top-p filtering</strong></td>
+                        <td>Selection + partial sort + prefix sum</td>
+                        <td>Branchy / memory-bound</td>
+                        <td>Low arithmetic intensity, irregular control flow</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Softmax</strong></td>
+                        <td>Reduction + exp + normalization</td>
+                        <td>Mostly memory-bound</td>
+                        <td>Two passes plus transcendental ops across V</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Categorical draw</strong></td>
+                        <td>Prefix scan or sampled lookup</td>
+                        <td>Tiny</td>
+                        <td>Negligible compared with the model forward pass</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stop / grammar check</strong></td>
+                        <td>Finite-state update</td>
+                        <td>Tiny</td>
+                        <td>Usually a few bytes or parser-state transitions</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>On GPU, the temptation is to leave logits on device and fuse as much as possible so you do not bounce the vocabulary vector back to the CPU just to sample. On CPU, branch-friendly top-k and efficient sparse history structures matter more. On either target, a full <strong>O(V log V)</strong> sort every token is usually wasteful when a partial selection or threshold-based scan will do.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Optimisations and caching</h3>
+        <p>Although the sampler has no KV cache, it still benefits from small cached state: token occurrence counts for penalties, rolling buffers for stop sequences, parser states for grammar constraints, and RNG state for reproducibility. Engines that implement speculative decoding may also cache draft tokens and acceptance statistics. All of this state is small, but it avoids repeated recomputation on the critical decode path.</p>
+
+        <p>Common optimisations include: keep logits resident on the same device as the LM head; fuse temperature, mask, and softmax when possible; use partial selection instead of full sort; maintain sparse repetition maps instead of dense <strong>[V]</strong> arrays when the vocabulary is huge; and short-circuit directly to argmax when the user requested greedy decoding or temperature zero.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Analogies that help without lying too much</h3>
+        <p>Three analogies are worth keeping. First, <strong>roulette wheel</strong>: after softmax and filtering, the distribution is a weighted wheel; greedy just always takes the largest slice. Second, <strong>thermostat</strong>: temperature does not invent new options, it changes how dominant the current favorite feels. Third, <strong>bouncer at the door</strong>: top-k, top-p, min-p, and grammar constraints decide which candidates even get into the club before the final choice happens.</p>
+
+        <p>The analogy to avoid is “the model writes a full answer and then sampling chooses one version.” That is not what happens. The model produces one distribution per position, one token at a time. The future does not exist yet beyond those probabilities.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common implementation mistakes</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Mistake</th>
+                        <th>Why it is wrong</th>
+                        <th>Correct move</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Applying softmax before penalties</strong></td>
+                        <td>Penalties belong in logit space</td>
+                        <td>Edit logits first, then normalize</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Scaling probabilities instead of logits for temperature</strong></td>
+                        <td>Not equivalent to temperature scaling</td>
+                        <td>Divide logits by τ before softmax</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Using full sort for every top-k</strong></td>
+                        <td>Wastes work for large vocabularies</td>
+                        <td>Use partial selection or heap-based top-k</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ignoring tokenizer boundaries in stop strings</strong></td>
+                        <td>Text-level rules may not match token-level generation cleanly</td>
+                        <td>Track bytes/tokens carefully and test edge cases</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Assuming seed guarantees cross-hardware identity</strong></td>
+                        <td>Floating-point and kernel differences still matter</td>
+                        <td>Document the scope of determinism you actually support</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself...</h3>
+        <p data-plain="Start simple: stable softmax, greedy, top-k, and stop checks. Then add penalties and grammar rules once the basics are correct." data-psi="The right way to build a sampler is not maximal cleverness first, but a sequence of correctness-preserving layers." data-duck="Teach the pond one rule at a time. First count the quacks correctly. Then teach the ducks temperature. Then teach them not to repeat themselves.">The most reliable path is incremental. Implement stable softmax and greedy selection first. Then add seeded categorical sampling. Then add top-k. Then top-p. Then penalties. Then stop sequences. Then grammar masks if you need structured output. Every stage should have tiny deterministic tests using small visible logit vectors like the one in this chapter.</p>
+
+        <div class="wf-code">
+<pre>token sample_next(
+    float logits[V],
+    History history,
+    SamplerConfig cfg,
+    RNG* rng)
+{
+    apply_penalties(logits, history, cfg);
+    apply_temperature(logits, cfg.temperature);
+    apply_masks(logits, cfg.grammar_state, cfg.banned_tokens);
+
+    CandidateSet c = filter_candidates(logits, cfg);   // greedy, top-k, top-p, min-p, typical
+    softmax_in_place(c.logits_or_probs);
+
+    token t = cfg.greedy
+        ? argmax(c)
+        : categorical_sample(c, rng);
+
+    update_stop_state(history, t, cfg.stop_rules);
+    update_penalty_state(history, t);
+    return t;
+}</pre>
+        </div>
+
+        <p>The engineering mindset is straightforward: the model forward pass produces scores; the sampler is a compact policy engine over those scores. Keep the math honest, keep the data movement small, and keep the semantics explicit. Once you do that, every “creative” or “deterministic” behavior becomes inspectable rather than mystical.</p>
+
+        <div class="wf-inline-nav">
+            <a href="#/ch9" onclick="event.preventDefault(); route('ch9')">← Part 9</a>
+            <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11 →</a>
+        </div>
+    </div>
+</div>

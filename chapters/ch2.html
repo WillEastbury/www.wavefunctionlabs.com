@@ -1,0 +1,406 @@
+<div id="ch2" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Part 2 — Tokenization</div>
+        <h1 class="wf-section-hdr">Text Into Token IDs</h1>
+        <p class="wf-section-desc">How raw Unicode text becomes the integer sequence a transformer can actually consume</p>
+    </div>
+    <div class="wf-article-body">
+        <p data-plain="Tokenization turns text into a list of numbers. The model never reads letters directly; it only reads token IDs." data-psi="Tokenization is the quantization boundary where human language is collapsed into the discrete symbols a finite machine can move through arithmetic space." data-duck="Imagine a duck librarian who cannot read sentences, only shelf numbers. Tokenization is the clerk that turns a note into the exact stack of shelf tags the duck understands.">Tokenization is the first irreversible interface boundary in transformer inference. You hand the system a Unicode string such as <strong>What is the capital of France?</strong>; the tokenizer emits a finite sequence of integer IDs; and from that point onward the neural network sees only integers, vector rows, and tensor shapes. That sounds mundane, but it is not a bookkeeping footnote. Token boundaries determine which learned embeddings are fetched, where the model can reuse statistical structure, how long the prompt becomes, and how much later attention work the model must perform.</p>
+
+        <p>The reason this stage exists is simple: dense numerical models cannot economically consume raw text. A string is variable-length, encoding-dependent, full of ambiguous boundaries, and too large if represented naively as a one-hot vector over all possible character sequences. Tokenization solves that by mapping text into a closed vocabulary of manageable size. The model pays a fixed price for a vocabulary of <strong>V</strong> entries, and every prompt becomes a sequence over <strong>[0, V-1]</strong>. Without that compression step, every later matrix would be larger, sparser, and operationally uglier.</p>
+
+        <div class="wf-callout">
+            <p><strong>Plain engineering truth:</strong> tokenization is not understanding. It is a deterministic front-end compiler pass that converts text into a model-specific instruction stream. If two tokenizers split the same sentence differently, the same model architecture can behave differently because the downstream numerical path changes at the very first step.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Following the running example exactly</h3>
+        <p>The prompt enters as bytes, not as abstract words. In UTF-8, <strong>What is the capital of France?</strong> is a short byte sequence containing ASCII code points, spaces, and the final question mark. A GPT-2-style byte-level BPE tokenizer first preserves the raw bytes, then applies its learned merge rules over byte-derived symbols. Internally, leading spaces are often represented as part of the next token, which is why token strings frequently look like <strong> is</strong> or <strong> France</strong> rather than splitting the space into its own standalone piece.</p>
+
+        <div class="wf-code"><pre>Raw text
+    What is the capital of France?
+
+UTF-8 bytes
+    57 68 61 74 20 69 73 20 74 68 65 20 63 61 70 69 74 61 6C 20 6F 66 20 46 72 61 6E 63 65 3F
+
+GPT-2 style token pieces
+    ["What", " is", " the", " capital", " of", " France", "?"]
+
+Representative GPT-2 token IDs
+    [2061, 318, 262, 3139, 286, 4881, 30]</pre></div>
+
+        <p data-plain="For this tokenizer, the sentence becomes seven tokens and seven numbers." data-psi="A single question has already become a path through a finite symbolic lattice: seven discrete choices out of a vocabulary the model learned during training." data-duck="A duck post office reads the sentence and stamps seven delivery numbers on it. The ducks downstream only care about those seven numbers, not the ink that was originally on the envelope.">That example matters because it already shows three non-obvious facts. First, token IDs are tokenizer-specific; a different model family can assign different numbers to the same visible pieces. Second, spaces are often fused into tokens because they are statistically meaningful and very common. Third, the sentence length that matters for inference is not character count or word count; it is token count. For the rest of this chapter, the operational object for our running example is therefore the integer vector <strong>[2061, 318, 262, 3139, 286, 4881, 30]</strong> with shape <strong>[T]</strong> where <strong>T = 7</strong>.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Tokens are not words</h3>
+        <p>Engineers new to LLM internals often assume a token is just a word with a smaller integer attached. That is wrong often enough to be dangerous. A token can be a whole word, a prefix, a suffix, punctuation, a space-prefixed fragment, a byte fallback, or a model-specific special symbol. The classic demonstration is <strong>unbelievable</strong>. A subword tokenizer may emit <strong>["un", "believ", "able"]</strong>. The model does not know that those pieces are morally part of one English word; it only knows that three learned IDs arrived in that order.</p>
+
+        <p data-plain="Subword tokenization is a compromise. Whole words waste vocabulary, characters make sequences too long, so models use pieces in between." data-psi="Subwords are the negotiated peace between semantic cohesion and combinatorial explosion: enough granularity to generalize, enough chunking to keep sequence entropy tractable." data-duck="If a duck warehouse stocked every possible product as one box, the building would explode. If it stocked every screw separately, packing would be too slow. So it keeps common kits like handle, hinge, and panel.">Why is that compromise useful? Because natural language has productive structure. Prefixes, stems, and suffixes recur across many words. If the vocabulary stored every surface word separately, rare words would either explode the vocabulary or fall back to an unknown token too often. If the vocabulary stored only characters or bytes, prompts would become much longer, and every later attention layer would do more work. Subwords let the system reuse frequent pieces while retaining manageable sequence length.</p>
+
+        <div class="wf-callout gold">
+            <p><strong>Problem solved by subwords:</strong> they reduce out-of-vocabulary failure without forcing the model to reason over character-by-character streams for ordinary text. That is why modern tokenizers live between word-level and character-level extremes.</p>
+        </div>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">How BPE learns the merge table</h3>
+        <p>Byte Pair Encoding, or BPE, is usually explained as an inference-time tokenizer, but its critical machinery is learned offline during tokenizer training. Start with a base alphabet. In a character BPE that might be Unicode code points or pretokenized characters; in a byte-level BPE it is the 256 possible bytes. Represent each training word as a sequence of those primitive symbols. Then repeatedly count adjacent symbol pairs across the corpus, choose the most frequent pair, merge it into a new symbol, rewrite the corpus using that new symbol, and repeat until the target vocabulary size is reached.</p>
+
+        <div class="wf-math"><pre>(a, b)* = argmax_(a,b) count_adjacent(a, b)</pre></div>
+        <p>In English: at each BPE training step, find the adjacent pair that appears most often, then promote that pair into its own new symbol. You are effectively saying, this pair is common enough that future encodings should treat it as one reusable chunk instead of two separate pieces.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Training step</th>
+                        <th>Current corpus fragments</th>
+                        <th>Most frequent pair</th>
+                        <th>New merged symbol</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>0</strong></td>
+                        <td>u n b e l i e v a b l e</td>
+                        <td>e + l, a + b, b + l, depends on corpus counts</td>
+                        <td>example only: <strong>el</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td>u n b el i e v a b l e</td>
+                        <td>b + el</td>
+                        <td><strong>bel</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td>u n bel i e v a b l e</td>
+                        <td>bel + i</td>
+                        <td><strong>beli</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>…</strong></td>
+                        <td>repeated over the full corpus</td>
+                        <td>highest-frequency remaining pair</td>
+                        <td>eventually pieces like <strong>believ</strong> or <strong>able</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p data-plain="The merge table is just a ranked list of which adjacent pieces should be glued together first." data-psi="BPE training distills a corpus into an ordering over compositional preference: a fossil record of which local adjacencies most deserve symbolic identity." data-duck="A duck factory watches which two parts are clipped together all day. If beak plus hinge keeps appearing, it starts shipping them as one part to save time on the line.">The key artifact is not the rewritten training corpus; it is the ranked merge table produced by this loop. At inference time the tokenizer does not relearn anything. It simply consults the frozen merge ranks and applies them deterministically. Operationally, that makes tokenizer inference a static lookup problem backed by tables created once during tokenizer training. The expensive counting and pair selection happened long before the model ever answered a user prompt.</p>
+
+        <p>There is an important distinction here between the tokenizer training objective and the model training objective. BPE training is about choosing reusable text pieces. It does not optimize next-token prediction loss directly. Later, the language model learns embeddings and weight matrices over whatever token inventory the tokenizer handed it. If the tokenizer chooses poor boundaries, the model must compensate downstream. That is why tokenization affects behavior more than many introductions admit.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The actual encoding algorithm at inference time</h3>
+        <p data-plain="Runtime tokenization is a deterministic table-driven scan. Given the same text and tokenizer files, you always get the same IDs." data-psi="Inference-time tokenization is not learning but replay: a fixed symbolic automaton traversing text under a previously crystallized merge order." data-duck="A duck cashier is not inventing prices at checkout. It scans barcodes against a frozen price book and always lands on the same totals.">Once the vocabulary and merge ranks are fixed, encoding is conceptually simple. Normalize or pretokenize if the tokenizer family requires it. Convert text into primitive symbols, often bytes. Look at adjacent symbols and merge the best-ranked pairs until no permitted merge remains, or equivalently perform longest-prefix matching against a compiled lexicon. Finally translate each resulting token piece to its integer ID. Real implementations use tries, radix tables, or precompiled state machines to avoid literally rescanning pair lists from scratch, but the visible behavior is the same.</p>
+
+        <div class="wf-code"><pre>typedef struct {
+    MergeRank merge_rank;
+    TokenIdMap vocab;
+    SpecialTokenMap special;
+} Tokenizer;
+
+vector&lt;int&gt; encode(Tokenizer* tok, string text) {
+    vector&lt;int&gt; out;
+    vector&lt;Piece&gt; spans = pretokenize(text, tok-&gt;special);
+
+    for (Piece span : spans) {
+        if (span.is_special) {
+            out.push_back(tok-&gt;special.id_of(span.text));
+            continue;
+        }
+
+        vector&lt;Symbol&gt; symbols = to_base_symbols(span.text);   // bytes or chars
+        while (true) {
+            Pair best = find_lowest_rank_merge(symbols, tok-&gt;merge_rank);
+            if (!best.exists) break;
+            apply_merge(symbols, best);
+        }
+
+        for (Symbol s : symbols) {
+            out.push_back(tok-&gt;vocab.id_of(s));
+        }
+    }
+    return out;
+}</pre></div>
+
+        <div class="wf-math"><pre>runtime_work ≈ O(N_bytes)</pre></div>
+        <p>In English: a compiled production tokenizer is usually close to linear in the number of input bytes, not quadratic in the number of possible substrings. The constant factors matter a lot, because Unicode handling, prefix matching, and allocation strategy decide whether tokenization feels instant or becomes a measurable front-end bottleneck.</p>
+
+        <p>For our running example, the process is small enough to reason about by inspection. The tokenizer sees the text, recognizes no special token override, converts the ASCII characters to bytes, applies merge ranks that favor common space-prefixed English fragments, and emits seven IDs. If you invoke the tokenizer again with the same string, you get the same seven IDs. The tokenizer is deterministic and stateless. There is no hidden adaptive cache, no gradient update, and no per-session memory of previous prompts.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">BPE versus WordPiece versus SentencePiece</h3>
+        <p>Modern models do not all use the same tokenization family. BPE is popular in decoder-only LLMs. WordPiece was used heavily in BERT-style encoders. SentencePiece generalized the idea and removed the assumption that spaces must be handled by an external pretokenizer. The families share a goal, but they differ in how pieces are represented, how unknown text is handled, and whether training is framed as pure pair merging or as a unigram-style probability model over subword pieces.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Family</th>
+                        <th>Core idea</th>
+                        <th>Space handling</th>
+                        <th>Unknown-token behavior</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>BPE</strong></td>
+                        <td>Repeated pair merges define reusable subwords</td>
+                        <td>Often external pretokenization or byte-level leading-space convention</td>
+                        <td>Depends on base alphabet; byte-level BPE usually avoids UNK</td>
+                    </tr>
+                    <tr>
+                        <td><strong>WordPiece</strong></td>
+                        <td>Greedy longest-match segmentation over learned pieces</td>
+                        <td>Usually works over pretokenized text; continuation markers like <strong>##</strong></td>
+                        <td>Falls back to <strong>UNK</strong> if no valid piece sequence exists</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SentencePiece</strong></td>
+                        <td>Model raw text directly, often unigram LM or BPE variant</td>
+                        <td>Uses visible space marker such as <strong>▁</strong></td>
+                        <td>Can include byte fallback or unknown pieces depending on config</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p data-plain="Byte-level tokenizers start from bytes so every input can be represented. WordPiece usually uses UNK when it cannot segment text. SentencePiece often handles spaces inside the model instead of before it." data-psi="These tokenizer families differ in where they choose to pay uncertainty: in base alphabet design, in segmentation policy, or in the explicit treatment of whitespace as a first-class symbol." data-duck="Three duck clerks sort the same mail differently. One starts from raw envelopes, one starts from words already cut apart, and one marks every space with a little breadcrumb so nothing gets lost between slips.">The practical consequence is visible in robustness. A byte-level GPT-2 or GPT-4-style tokenizer can always represent arbitrary binary-ish text because every byte already exists in the base alphabet. That largely eliminates the need for an unknown token. WordPiece, by contrast, often uses <strong>UNK</strong> when a sequence cannot be decomposed under its learned vocabulary. SentencePiece lives in between: it can operate on raw strings, optionally normalize them, and can be configured with byte fallback for difficult cases such as rare scripts, malformed text, or emoji-heavy content.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Unicode, normalization, and ugly edge cases</h3>
+        <p data-plain="Unicode is where naive tokenizers go wrong. The same visible text can be encoded in different byte sequences, and emojis or combining marks can span several code points." data-psi="Human text is not a flat sequence of obvious letters but a layered encoding surface where visual identity, code point identity, and byte identity diverge in ways deterministic machines must choose between." data-duck="Two ducks can draw the same accented sign with one sticker or with a plain letter plus a tiny accent sticker. If your sorter treats those as different products, inventory gets weird fast.">Unicode handling is not optional polish. The string a user sees on screen can have multiple canonically equivalent encodings. A precomposed character like <strong>é</strong> may appear as one code point or as <strong>e</strong> plus a combining accent. Emoji sequences can include zero-width joiners. Regional flags are pairs of indicator symbols. If the tokenizer normalizes to NFC or NFKC during training but not during inference, or vice versa, the same visible prompt may map to different IDs. That breaks reproducibility and can degrade model behavior in subtle ways.</p>
+
+        <p>Byte-level tokenizers dodge some of that by operating on raw UTF-8 bytes after minimal text preparation. They do not need to understand code point boundaries to remain lossless; they only need a reversible byte-to-symbol mapping. The price is that visually similar strings with different underlying byte sequences remain different to the model. SentencePiece often normalizes more aggressively, which can improve consistency but also means the tokenizer is making stronger editorial choices about what counts as the same text. Neither approach is universally correct; each is a product decision with model-quality implications.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Special token</th>
+                        <th>Typical meaning</th>
+                        <th>Why it exists</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>BOS</strong></td>
+                        <td>Beginning of sequence</td>
+                        <td>Marks a synthetic start boundary for models trained to expect one</td>
+                    </tr>
+                    <tr>
+                        <td><strong>EOS</strong></td>
+                        <td>End of sequence</td>
+                        <td>Lets training and generation represent explicit stopping points</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PAD</strong></td>
+                        <td>Padding token</td>
+                        <td>Fills batch positions to a common length without semantic content</td>
+                    </tr>
+                    <tr>
+                        <td><strong>UNK</strong></td>
+                        <td>Unknown token</td>
+                        <td>Fallback when the tokenizer family cannot represent a piece directly</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p data-plain="Special tokens are control symbols, not ordinary language pieces." data-psi="Special tokens are protocol markers: out-of-band symbols that let the model reason about sequence structure rather than just lexical content." data-duck="They are the duck warehouse stickers that mean start pallet, stop pallet, empty slot, and unknown item, not actual products to sell.">Special tokens deserve separate treatment because they are part of the tokenizer-model contract. Some decoder-only models automatically prepend BOS; others do not. Some chat templates inject begin-of-turn and end-of-turn markers that are just as important as the visible user text. Padding may be ignored by attention masks later, but it still occupies positions in the token array. And in byte-level tokenizers, <strong>UNK</strong> can be effectively obsolete because every byte sequence is representable, even if the resulting segmentation is ugly.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Decoding token IDs back to text</h3>
+        <p>Decoding is the reverse path: take token IDs, map each ID back to its token piece, concatenate the underlying bytes or text fragments in the correct order, then convert bytes back to a display string. The operation sounds trivial, but you still need to define policies. Should BOS and EOS be rendered or skipped? Are invalid byte sequences permitted? Does the tokenizer preserve leading-space markers as raw bytes or as synthetic symbols that must be postprocessed? A good decoder is judged by round-trip fidelity: <strong>decode(encode(text))</strong> should reproduce the original normalized form exactly.</p>
+
+        <div class="wf-code"><pre>string decode(Tokenizer* tok, vector&lt;int&gt; ids, bool skip_special) {
+    ByteBuffer bytes;
+    for (int id : ids) {
+        if (skip_special &amp;&amp; tok-&gt;special.contains(id)) continue;
+        Piece p = tok-&gt;vocab.piece_of(id);
+        append_piece_bytes(bytes, p);
+    }
+    return utf8_or_raw_bytes(bytes);
+}</pre></div>
+
+        <div class="wf-math"><pre>decoded_text = Decode(token_ids; vocab, special_policy)</pre></div>
+        <p>In English: decoding is another deterministic table lookup plus byte assembly problem. It is the inverse mapping of the tokenizer, modulo any normalization or special-token policy baked into the tokenizer family.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Shapes, cost, and classifications</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Shape</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>N_bytes</strong></td>
+                        <td>scalar</td>
+                        <td>Length of the UTF-8 byte stream for the input text</td>
+                    </tr>
+                    <tr>
+                        <td><strong>raw_bytes</strong></td>
+                        <td>[N_bytes]</td>
+                        <td>Input bytes before segmentation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T</strong></td>
+                        <td>scalar</td>
+                        <td>Final token count after segmentation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>token_ids</strong></td>
+                        <td>[T]</td>
+                        <td>Integer output consumed by the embedding lookup in the next chapter</td>
+                    </tr>
+                    <tr>
+                        <td><strong>batch_ids</strong></td>
+                        <td>[B, T_max]</td>
+                        <td>Padded batch form used by serving code</td>
+                    </tr>
+                    <tr>
+                        <td><strong>vocab</strong></td>
+                        <td>[V]</td>
+                        <td>Map from token piece to token ID and inverse piece table</td>
+                    </tr>
+                    <tr>
+                        <td><strong>merge_rank</strong></td>
+                        <td>[M]</td>
+                        <td>Ranked merge rules or equivalent compiled automaton</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Even though tokenization is not a tensor-heavy stage, shape discipline still matters. Serving code needs to know how many token IDs were produced, whether padding was inserted, how maximum context length is enforced, and what the exact BOS or EOS policy is. Bugs at this stage are cheap in FLOPs but expensive in consequences, because every later stage trusts the IDs it receives.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Classification</th>
+                        <th>Practical consequence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Primary operation type</strong></td>
+                        <td>Lookup</td>
+                        <td>Most inference work is table-driven matching, not dense projection math</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Training-time auxiliary type</strong></td>
+                        <td>Reduction</td>
+                        <td>BPE training repeatedly counts adjacent pairs over large corpora</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Typical bound type</strong></td>
+                        <td>Latency / memory / branch-bound</td>
+                        <td>Performance depends on scans, prefix tables, cache locality, and allocation control</td>
+                    </tr>
+                    <tr>
+                        <td><strong>What can be cached?</strong></td>
+                        <td>Static vocab and merge tables only</td>
+                        <td>The tokenizer itself is stateless; per-request memoization rarely helps unless whole prompts repeat</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Vocabulary size trade-offs</h3>
+        <p data-plain="A bigger vocabulary makes prompts shorter but makes the model's embedding and output tables larger. A smaller vocabulary saves parameters but creates more tokens per prompt." data-psi="Vocabulary size is a systems trade: symbolic granularity is bought with parameter mass, while compression of the sequence axis is paid for with expansion of the vocabulary axis." data-duck="A duck warehouse can stock either many prebuilt kits or fewer basic parts. More kits speed packing, but the warehouse gets much bigger.">A tokenizer with a 32K vocabulary usually emits more tokens than one with 64K or 128K, because it has fewer whole fragments available and must fall back to smaller pieces more often. That increases sequence length, which later raises attention cost. But a larger vocabulary also enlarges the embedding matrix and, if embeddings are untied, the output projection matrix. So the tokenizer is participating in a global model trade-off, not a standalone text-processing preference.</p>
+
+        <div class="wf-math"><pre>T ≈ N_text / avg_text_per_token</pre></div>
+        <p>In English: if each token covers more text on average, the sequence gets shorter. That helps downstream inference latency, but only because you already paid for a bigger vocabulary and therefore bigger model tables.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Vocabulary size</th>
+                        <th>Typical effect on sequence length</th>
+                        <th>Typical effect on model tables</th>
+                        <th>Operational trade-off</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>32K</strong></td>
+                        <td>Longer prompts</td>
+                        <td>Smaller embedding and lm_head tensors</td>
+                        <td>Good efficiency on weights, more downstream token work</td>
+                    </tr>
+                    <tr>
+                        <td><strong>64K</strong></td>
+                        <td>Middle ground</td>
+                        <td>Moderate table growth</td>
+                        <td>Common compromise for multilingual or broad-domain models</td>
+                    </tr>
+                    <tr>
+                        <td><strong>128K</strong></td>
+                        <td>Shorter prompts</td>
+                        <td>Much larger model tables</td>
+                        <td>Fewer tokens, but noticeably more memory pressure downstream</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Hardware behavior and common optimisations</h3>
+        <p>Tokenization usually belongs on the CPU. It is branchy, table-driven, light on arithmetic intensity, and often tightly coupled to request parsing, chat templating, and network I/O. GPUs excel at large regular arrays with high arithmetic density; tokenization is mostly the opposite. You can batch tokenization on GPUs or vector accelerators, but unless your serving stack is dominated by extremely large ingress batches, the engineering gain is modest. FPGAs can implement deterministic prefix automata efficiently, yet the opportunity cost is high because tokenization is rarely the dominant end-to-end bottleneck.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Hardware</th>
+                        <th>Behavior</th>
+                        <th>Practical note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CPU</strong></td>
+                        <td>Usually best fit</td>
+                        <td>Good branch handling, close to request parsing, easy Unicode support</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GPU</strong></td>
+                        <td>Often underutilized</td>
+                        <td>Can help at huge batch sizes, but irregular control flow reduces benefit</td>
+                    </tr>
+                    <tr>
+                        <td><strong>FPGA</strong></td>
+                        <td>Possible but niche</td>
+                        <td>Deterministic automata map well, but tokenization seldom justifies dedicated fabric</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p data-plain="Fast tokenizers avoid allocations, use tries or compiled state machines, and keep vocabulary tables hot in memory." data-psi="Tokenizer optimization is the art of turning symbolic irregularity into predictable memory access and stable control flow without changing the segmentation semantics." data-duck="A fast duck sorter puts labels in a nearby drawer, keeps common routes pre-marked, and stops walking back across the warehouse for every envelope.">Common optimisations are straightforward systems work: compile merge rules into tries or DFAs, memory-map large vocab files, SIMD-scan for ASCII-heavy fast paths, separate Unicode normalization from hot loops when policy allows, reuse output buffers, avoid per-token heap allocation, and parallelize across independent requests rather than within one tiny prompt. None of these change the token IDs; they only reduce front-end latency and CPU noise.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Database lens and systems lens</h3>
+        <p>The database analogy is a parser plus dictionary-encoding pipeline. Raw text arrives as an external data format. The tokenizer normalizes it, segments it, and dictionary-encodes recurring fragments into integer surrogate keys. Larger recurring fragments reduce later row count, just as better compression or better dictionary encoding can shrink later query work. Special tokens behave like control rows injected by the query protocol rather than by the user payload itself.</p>
+
+        <p data-plain="From a systems point of view, tokenization looks like a lexer backed by lookup tables and a reversible string table." data-psi="Seen through systems eyes, the tokenizer is a compact front-end compiler: lexical segmentation plus symbol-table assignment, with the merge table acting as a frozen grammar of preferred local compositions." data-duck="It is a duck assembly line that first cuts labels into sensible chunks, then replaces each chunk with the bin number where matching parts are stored.">The systems-programming analogy is a lexer with a very opinionated symbol table. The merge table is like a precomputed grammar of useful local compounds. The token vocabulary is a bidirectional string table. Encoding is lexing plus interning; decoding is de-interning plus byte reassembly. Once you view it that way, most implementation concerns become familiar: input validation, normalization policy, memory layout, deterministic replay, and round-trip correctness.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common implementation mistakes</h3>
+        <p>Most tokenizer bugs are not mathematically impressive. They are contract bugs. Teams accidentally normalize text differently at training and inference time. They strip or insert leading spaces incorrectly. They forget that chat templates contribute hidden tokens. They use character counts instead of token counts when enforcing context limits. They assume the tokenizer is interchangeable across model families when the IDs and special-token conventions are different. Or they fail round-trip tests, so <strong>decode(encode(text))</strong> mutates punctuation, whitespace, or non-ASCII text.</p>
+
+        <div class="wf-callout accent">
+            <p><strong>Checklist of easy mistakes:</strong> treating tokens as words, mishandling BOS or EOS insertion, using code points instead of bytes for a byte-level tokenizer, allowing unstable merge-rank ties, forgetting padding policy in batches, and emitting <strong>UNK</strong> in a tokenizer family that should have lossless byte fallback.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself…</h3>
+        <p data-plain="Start by making encode and decode exactly reversible on a small test corpus. Only optimize after the IDs match a known reference." data-psi="Correct tokenization is a contract before it is an optimization problem; first preserve semantics exactly, then compress latency around that invariant." data-duck="First make sure every duck package comes back to the same shelf label when you send it out and bring it back. Only then worry about how fast the ducks can skate.">Start with a reference tokenizer and a tiny golden corpus. Verify exact token IDs for plain ASCII, accented text, emoji, combining marks, and strings containing special tokens. Then implement encode and decode so they round-trip cleanly. Only after correctness is locked down should you optimize tries, buffer reuse, batch throughput, or memory mapping. Tokenizers are easy to make fast and wrong.</p>
+
+        <p>For the running example, the correct end state of this chapter is boring in the best possible way. The string <strong>What is the capital of France?</strong> enters. The tokenizer deterministically emits <strong>[2061, 318, 262, 3139, 286, 4881, 30]</strong>. That vector is the handoff to the next subsystem. Nothing magical happened, but every later number the model computes depends on this exact boundary choice. In other words, tokenization is only a front-end stage right up until it is wrong. Then it affects everything.</p>
+
+        <div class="wf-inline-nav">
+            <a href="#/ch1" onclick="event.preventDefault(); route('ch1')">← Part 1: The Big Picture</a>
+            <a href="#/ch3" onclick="event.preventDefault(); route('ch3')">Part 3: Embeddings →</a>
+        </div>
+    </div>
+</div>

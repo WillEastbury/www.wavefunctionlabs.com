@@ -1,0 +1,326 @@
+<div id="glossary" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Reference</div>
+        <h1 class="wf-section-hdr">Glossary</h1>
+        <p class="wf-section-desc">Every term, symbol, and operation used in this book — defined in one place.</p>
+    </div>
+    <div class="wf-article-body">
+        <div id="gloss-attention" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:0 0 .3rem;font-size:.88rem;">Attention (self-attention mechanism)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Lets each token build a weighted summary of other tokens so its representation becomes context-aware.</p>
+            <div class="wf-math"><pre>Attention(Q, K, V) = softmax((QKᵀ / √d_head) + M) V</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-autoregressive" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Autoregressive</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Generating one token at a time, feeding each chosen token back into the next step.</p>
+            <div class="wf-math"><pre>p(x₁, …, xₙ) = Π_t p(x_t | x₁, …, x_{t-1})</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch1" onclick="event.preventDefault(); route('ch1')">Part 1</a></p>
+        </div>
+
+        <div id="gloss-bpe" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">BPE (Byte Pair Encoding)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A tokenizer family that builds larger tokens by repeatedly merging frequent byte or character pairs.</p>
+            <div class="wf-math"><pre>merge* (bytes(text)) → token_ids</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch2" onclick="event.preventDefault(); route('ch2')">Part 2</a></p>
+        </div>
+
+        <div id="gloss-causal-mask" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Causal Mask</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The rule that stops a token from attending to future tokens during generation.</p>
+            <div class="wf-math"><pre>M_{ij} = 0 if j ≤ i, else -∞</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-continuous-batching" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Continuous Batching</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A serving strategy that lets requests join and leave an active decode batch instead of waiting for full batch boundaries.</p>
+            <div class="wf-math"><pre>active_batch(t + 1) = active_batch(t) - finished + admitted</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a>, <a href="#/ch12" onclick="event.preventDefault(); route('ch12')">Part 12</a></p>
+        </div>
+
+        <div id="gloss-d-model" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">d_model (model hidden dimension)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The width of the model’s main hidden vectors.</p>
+            <div class="wf-math"><pre>X ∈ ℝ^{T × d_model}</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch5" onclick="event.preventDefault(); route('ch5')">Part 5</a></p>
+        </div>
+
+        <div id="gloss-d-head" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">d_head (per-head dimension)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The width of one attention head’s query, key, and value vectors.</p>
+            <div class="wf-math"><pre>d_head = d_model / H</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-d-ff" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">d_ff (feed-forward intermediate dimension)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The expanded width used inside the feed-forward network before projecting back down.</p>
+            <div class="wf-math"><pre>FFN: ℝ^{d_model} → ℝ^{d_ff} → ℝ^{d_model}</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch8" onclick="event.preventDefault(); route('ch8')">Part 8</a></p>
+        </div>
+
+        <div id="gloss-decode" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Decode</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The autoregressive phase after prefill where the model generates new tokens one step at a time.</p>
+            <div class="wf-math"><pre>state_t → logits_t → token_{t+1} → state_{t+1}</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a></p>
+        </div>
+
+        <div id="gloss-dot-product" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Dot Product</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A multiply-and-sum operation that measures alignment between two vectors.</p>
+            <div class="wf-math"><pre>a · b = Σ_i a_i b_i</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-embedding" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Embedding</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A learned vector looked up from the token ID that gives the model its starting representation for that token.</p>
+            <div class="wf-math"><pre>x_t = E[token_id_t]</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch3" onclick="event.preventDefault(); route('ch3')">Part 3</a></p>
+        </div>
+
+        <div id="gloss-epsilon" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Epsilon (ε)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A tiny constant added for numerical stability so divisions do not blow up near zero.</p>
+            <div class="wf-math"><pre>y = x / √(mean(x²) + ε)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch7" onclick="event.preventDefault(); route('ch7')">Part 7</a></p>
+        </div>
+
+        <div id="gloss-ffn" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Feed-Forward Network (FFN)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The per-token MLP inside each transformer block that expands, transforms, and projects features back down.</p>
+            <div class="wf-math"><pre>FFN(x) = W_down(σ(W_gate x) ⊙ W_up x)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch8" onclick="event.preventDefault(); route('ch8')">Part 8</a></p>
+        </div>
+
+        <div id="gloss-flop" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">FLOP / FLOPS</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A floating-point operation, and the rate of floating-point operations per second.</p>
+            <div class="wf-math"><pre>FLOPS = total_FLOPs / seconds</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a></p>
+        </div>
+
+        <div id="gloss-gelu" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">GeLU</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A smooth activation function often used in older transformer feed-forward networks.</p>
+            <div class="wf-math"><pre>GeLU(x) ≈ 0.5x(1 + tanh(√(2/π)(x + 0.044715x³)))</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch8" onclick="event.preventDefault(); route('ch8')">Part 8</a></p>
+        </div>
+
+        <div id="gloss-gguf" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">GGUF (file format)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A model file format popular in local inference tooling that stores weights, metadata, tokenizer data, and often quantized blocks.</p>
+            <div class="wf-math"><pre>GGUF = weights + metadata + tokenizer + quantisation descriptors</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a></p>
+        </div>
+
+        <div id="gloss-greedy-decoding" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Greedy Decoding</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Always choosing the single highest-scoring next token.</p>
+            <div class="wf-math"><pre>token_{t+1} = argmax_i logits_i</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch10" onclick="event.preventDefault(); route('ch10')">Part 10</a></p>
+        </div>
+
+        <div id="gloss-hidden-state" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Hidden State</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The model’s current internal vector representation for a token position at a given layer.</p>
+            <div class="wf-math"><pre>h_t^{(ℓ)} ∈ ℝ^{d_model}</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch5" onclick="event.preventDefault(); route('ch5')">Part 5</a></p>
+        </div>
+
+        <div id="gloss-kv-cache" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">KV Cache</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Stored past keys and values that let decode reuse old attention state instead of recomputing it.</p>
+            <div class="wf-math"><pre>K_cache^{(ℓ)}, V_cache^{(ℓ)} = append over time positions</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a>, <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a></p>
+        </div>
+
+        <div id="gloss-key" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Key (K)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The vector a token exposes so other tokens can measure how relevant it is.</p>
+            <div class="wf-math"><pre>K = XW_K</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-layer" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Layer / Transformer Block</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">One repeated unit of attention, feed-forward computation, normalization, and residual addition.</p>
+            <div class="wf-math"><pre>x' = x + Attention(Norm(x))
+y  = x' + FFN(Norm(x'))</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch5" onclick="event.preventDefault(); route('ch5')">Part 5</a></p>
+        </div>
+
+        <div id="gloss-lm-head" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">lm_head (vocabulary projection)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The final projection that turns the last hidden state into one score per vocabulary token.</p>
+            <div class="wf-math"><pre>logits = hW_vocabᵀ</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch9" onclick="event.preventDefault(); route('ch9')">Part 9</a></p>
+        </div>
+
+        <div id="gloss-logits" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Logits</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Unnormalized scores produced before softmax or decoding policy chooses the next token.</p>
+            <div class="wf-math"><pre>z_i = h · w_i</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch9" onclick="event.preventDefault(); route('ch9')">Part 9</a></p>
+        </div>
+
+        <div id="gloss-moe" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">MoE (Mixture of Experts)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A model design where a router activates only a subset of expert FFNs for each token.</p>
+            <div class="wf-math"><pre>y = Σ_{e ∈ TopM(g(x))} g_e(x) · Expert_e(x)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch8" onclick="event.preventDefault(); route('ch8')">Part 8</a></p>
+        </div>
+
+        <div id="gloss-multi-head-attention" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Multi-Head Attention</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Running several attention heads in parallel so the model can attend through multiple learned subspaces at once.</p>
+            <div class="wf-math"><pre>head_h = Attention(Q_h, K_h, V_h)
+MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-rmsnorm" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Normalisation (RMSNorm)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A scaling layer that normalizes by root-mean-square magnitude and then applies a learned gain.</p>
+            <div class="wf-math"><pre>RMSNorm(x) = γ ⊙ x / √(mean(x²) + ε)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch7" onclick="event.preventDefault(); route('ch7')">Part 7</a></p>
+        </div>
+
+        <div id="gloss-paged-attention" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Paged Attention</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A cache-management approach that stores KV state in page-like chunks so long sequences and many sessions are easier to manage.</p>
+            <div class="wf-math"><pre>KV_cache = {page₀, page₁, …, page_n}</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a>, <a href="#/ch12" onclick="event.preventDefault(); route('ch12')">Part 12</a></p>
+        </div>
+
+        <div id="gloss-prefill" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Prefill</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The initial forward pass over the prompt that builds the first hidden states and KV cache before autoregressive decode begins.</p>
+            <div class="wf-math"><pre>prompt_tokens → hidden states + initial KV cache</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a></p>
+        </div>
+
+        <div id="gloss-query" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Query (Q)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The vector a token uses to ask which other tokens matter right now.</p>
+            <div class="wf-math"><pre>Q = XW_Q</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-quantisation" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Quantisation</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Storing weights or activations in fewer bits to save memory and bandwidth, usually with some controlled error.</p>
+            <div class="wf-math"><pre>q = round(w / s),   w ≈ s · q</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a></p>
+        </div>
+
+        <div id="gloss-residual-connection" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Residual Connection</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A skip path that adds the input of a sublayer back to its output so information and gradients have a short route through depth.</p>
+            <div class="wf-math"><pre>y = x + F(x)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch5" onclick="event.preventDefault(); route('ch5')">Part 5</a></p>
+        </div>
+
+        <div id="gloss-rope" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">RoPE (Rotary Position Embedding)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A way of encoding position by rotating paired vector components as a function of token position.</p>
+            <div class="wf-math"><pre>RoPE(x, θ) = [x₁ cosθ - x₂ sinθ, x₁ sinθ + x₂ cosθ, …]</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch4" onclick="event.preventDefault(); route('ch4')">Part 4</a></p>
+        </div>
+
+        <div id="gloss-safetensors" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">SafeTensors (file format)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A simple tensor-serialization format designed to load model weights safely without arbitrary code execution.</p>
+            <div class="wf-math"><pre>SafeTensors = named_tensors + metadata (no executable pickle payload)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch11" onclick="event.preventDefault(); route('ch11')">Part 11</a></p>
+        </div>
+
+        <div id="gloss-sampling" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Sampling</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The policy that turns logits into an actual next-token choice.</p>
+            <div class="wf-math"><pre>x_{t+1} ~ P(. | x_{≤t})</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch10" onclick="event.preventDefault(); route('ch10')">Part 10</a></p>
+        </div>
+
+        <div id="gloss-silu" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">SiLU / Swish</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A smooth activation used in many modern LLM FFNs.</p>
+            <div class="wf-math"><pre>SiLU(x) = xσ(x)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch8" onclick="event.preventDefault(); route('ch8')">Part 8</a></p>
+        </div>
+
+        <div id="gloss-softmax" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Softmax</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">Turns a vector of raw scores into a normalized probability-like distribution.</p>
+            <div class="wf-math"><pre>softmax(z)_i = exp(z_i) / Σ_j exp(z_j)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a>, <a href="#/ch10" onclick="event.preventDefault(); route('ch10')">Part 10</a></p>
+        </div>
+
+        <div id="gloss-speculative-decoding" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Speculative Decoding</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A serving technique where a cheaper draft path proposes future tokens and the full model verifies them.</p>
+            <div class="wf-math"><pre>draft_tokens → verify_with_target_model → accept/reject prefix</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch12" onclick="event.preventDefault(); route('ch12')">Part 12</a></p>
+        </div>
+
+        <div id="gloss-swiglu" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">SwiGLU</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A gated FFN pattern that multiplies an SiLU-activated branch with an ungated branch before projecting down.</p>
+            <div class="wf-math"><pre>SwiGLU(x) = W_down(SiLU(W_gate x) ⊙ W_up x)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch8" onclick="event.preventDefault(); route('ch8')">Part 8</a></p>
+        </div>
+
+        <div id="gloss-temperature" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Temperature (τ)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A scaling factor that sharpens or flattens the sampling distribution before choosing the next token.</p>
+            <div class="wf-math"><pre>p_i ∝ exp(logit_i / τ)</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch10" onclick="event.preventDefault(); route('ch10')">Part 10</a></p>
+        </div>
+
+        <div id="gloss-token" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Token / Tokenizer</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A token is one vocabulary unit; the tokenizer is the front-end that turns raw text into token IDs and back.</p>
+            <div class="wf-math"><pre>tokenizer(text) → [id₁, id₂, …, id_T]</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch2" onclick="event.preventDefault(); route('ch2')">Part 2</a></p>
+        </div>
+
+        <div id="gloss-top-k" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Top-K</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A decoding filter that keeps only the K highest-scoring candidate tokens before sampling.</p>
+            <div class="wf-math"><pre>S = arg top-K_i logits_i</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch10" onclick="event.preventDefault(); route('ch10')">Part 10</a></p>
+        </div>
+
+        <div id="gloss-top-p" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Top-P (Nucleus)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">A decoding filter that keeps the smallest set of tokens whose cumulative probability reaches a threshold <strong>p</strong>.</p>
+            <div class="wf-math"><pre>find smallest S such that Σ_{i ∈ S} p_i ≥ p</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch10" onclick="event.preventDefault(); route('ch10')">Part 10</a></p>
+        </div>
+
+        <div id="gloss-value" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Value (V)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The vector content attention mixes together after the query-key scores decide which positions matter.</p>
+            <div class="wf-math"><pre>V = XW_V</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+
+        <div id="gloss-vocabulary" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Vocabulary (V)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The full set of token IDs the model can read and emit.</p>
+            <div class="wf-math"><pre>|Vocabulary| = V</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch2" onclick="event.preventDefault(); route('ch2')">Part 2</a>, <a href="#/ch9" onclick="event.preventDefault(); route('ch9')">Part 9</a></p>
+        </div>
+
+        <div id="gloss-wo" class="wf-gloss-entry">
+            <h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Wo (attention output projection)</h4>
+            <p style="margin:0 0 .4rem;font-size:.85rem;">The matrix that mixes concatenated head outputs back into the model hidden width.</p>
+            <div class="wf-math"><pre>y = Concat(head₁, …, head_H)W_O</pre></div>
+            <p class="wf-note">Covered in: <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6</a></p>
+        </div>
+    </div>
+</div>

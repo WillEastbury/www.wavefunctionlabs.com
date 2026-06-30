@@ -1,0 +1,677 @@
+<div id="ch14" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Part 14 — Building a CPU Transformer Library</div>
+        <h1 class="wf-section-hdr">Building a CPU Transformer Library</h1>
+        <p class="wf-section-desc">A practical guide to writing a minimal inference engine that loads GGUF checkpoints from Hugging Face and generates text on a plain CPU.</p>
+    </div>
+    <div class="wf-article-body">
+        <p>By the time you reach this chapter, the abstraction should be wearing thin in a good way. A transformer is no longer “AI magic.” It is a sequence of concrete operators applied to concrete tensors, with a tokenizer at the front and a sampler at the back. That means you can build a small inference engine yourself. It will not outrun <strong>llama.cpp</strong> or optimized vendor libraries on day one, but it can absolutely load a GGUF checkpoint, tokenize a prompt, run the forward pass, and emit the next token on a normal CPU.</p>
+
+        <p>The purpose of doing this is not just to reinvent software that already exists. It is to compress the full inference stack into something you can mentally hold. Once you have written the file parser, the matmul, the RMSNorm, the <a href="#/glossary" class="wf-gloss">softmax</a>, the <a href="#/glossary" class="wf-gloss">KV cache</a>, and the sampler yourself, a production engine becomes less mysterious. It is the same machine with more engineering around it: better kernels, better packing, better threading, better paging, and many more model families.</p>
+
+        <p data-plain="A tiny engine is enough to prove the whole idea end to end." data-psi="You do not need a cathedral to understand structure; one load-bearing room is enough if it carries the roof correctly." data-duck="You do not need a city-sized duck factory to understand duck sorting. Build one belt, one scale, one gate, and one output chute, and the whole factory suddenly makes sense.">Our target is deliberately modest and concrete: load a GGUF model obtained from the Hugging Face ecosystem, run inference on CPU, and stream output for the running prompt <strong>"What is the capital of France?"</strong>. We will start from a “correct first” design and then point to the places where performance engineering enters. The book’s theme remains the same: understand the operator pipeline before you obsess over framework ergonomics.</p>
+
+        <div class="wf-callout accent">
+            <p><strong>Scope:</strong> this chapter is about a minimal but functional decoder-only transformer runtime. We are not covering training, distributed serving frameworks, GPU graph capture, or every model family. The goal is a small inference core that makes GGUF, tokenization, decoding, and CPU kernels feel tractable.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The minimal engine in one loop</h3>
+        <div class="wf-code"><pre>model = load_gguf("model.gguf")
+tokens = tokenize("What is the capital of France?")
+while not done:
+    logits = forward(model, tokens)
+    next_token = sample(logits, temperature=0.7, top_k=40)
+    tokens.append(next_token)
+    if next_token == eos: break
+print(detokenize(tokens))</pre></div>
+
+        <p>That tiny loop hides the entire runtime. <strong>load_gguf</strong> parses the file header, metadata, tokenizer payload, and tensor descriptors, then makes the weight blocks available to your kernels. <strong>tokenize</strong> turns the string into integer IDs. <strong>forward</strong> embeds the new token, applies every transformer layer, updates the KV cache, and produces vocabulary logits. <strong>sample</strong> turns those logits into the next token using temperature and top-k filtering. If those four verbs work, you have a real transformer library.</p>
+
+        <p>In practice, “load from Hugging Face” usually means one of two things. Either the repository directly publishes GGUF artifacts, or you download a community-produced quantized GGUF variant of an original SafeTensors checkpoint. In both cases the runtime logic is the same: by the time your library opens the file, it sees a local <strong>.gguf</strong> path with everything it needs packed inside.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Implementation language variants</h3>
+        <div class="wf-tabs" data-group="ch14-implementation-language">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="c">C</button>
+                <button class="wf-tab" data-tab="csharp">C#</button>
+                <button class="wf-tab" data-tab="powershell">PowerShell</button>
+                <button class="wf-tab" data-tab="bash">Bash</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:0;margin-bottom:.85rem;">What a minimal inference engine really needs</h3>
+                <p>A usable CPU transformer library can be much smaller than people expect. You do not need a computation graph framework, a training loop, an autograd engine, or a large dependency tree. You need six things done faithfully: a GGUF parser, a tokenizer, a handful of tensor operations, the forward pass wiring, a KV cache, and a sampling routine. Everything else is optimization, tooling, or model-family variation.</p>
+
+                <div class="wf-table-wrap">
+                    <table class="wf-table">
+                        <thead>
+                            <tr>
+                                <th>Subsystem</th>
+                                <th>What it does</th>
+                                <th>Why it is indispensable</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>GGUF parser</strong></td>
+                                <td>Reads metadata, tokenizer entries, tensor descriptors, and weight blocks</td>
+                                <td>Without it the model is just an opaque binary blob</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tokenizer</strong></td>
+                                <td>Maps text to token IDs and token IDs back to text</td>
+                                <td>The embedding table only understands integers, not strings</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tensor ops</strong></td>
+                                <td>Matmul, elementwise arithmetic, RMSNorm, RoPE, softmax</td>
+                                <td>These are the physical operators of the forward pass</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Forward pass</strong></td>
+                                <td>Embeddings → layers → final norm → lm_head</td>
+                                <td>Turns current tokens into next-token logits</td>
+                            </tr>
+                            <tr>
+                                <td><strong>KV cache</strong></td>
+                                <td>Stores keys and values from previous decode steps</td>
+                                <td>Makes autoregressive decoding efficient instead of quadratic per token</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Sampling</strong></td>
+                                <td>Temperature, top-k, EOS handling</td>
+                                <td>Converts logits into the next discrete token</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>The GGUF parser is the bridge from bytes to tensors. It reads magic bytes and version fields, then a metadata table, then a tensor-info table, and finally the tensor data itself. From that it builds a runtime map: tensor name, quantization type or dtype, shape, and byte location. If the model is fully self-contained, the same file also provides tokenizer vocabulary and special token IDs. At the end of parsing you should have enough information to instantiate a <strong>Model</strong> object without touching any high-level framework.</p>
+
+                <p>The tokenizer is the part beginners underbuild. A transformer does not “read English.” It reads token IDs that were learned under a specific tokenizer configuration. If your tokenizer merges differ from the checkpoint’s, then even a mathematically perfect forward pass will diverge from the reference implementation. For the running example, the question <strong>"What is the capital of France?"</strong> may look trivial, but whether there is a leading-space token before <strong>France</strong>, whether the question mark is separate, and whether the BOS token is required all depend on the exact tokenizer rules bundled with the model.</p>
+
+                <p data-plain="The tokenizer is not a side utility. It is part of the model contract." data-psi="Before semantics can flow through the network, language must be discretized into the vocabulary geometry the checkpoint was trained to inhabit." data-duck="If the duck tags entering your machine do not match the tags used during duck school, the ducks are not confused because of philosophy. They are confused because you labeled them wrong.">For a minimal engine, you can implement just the encoding and decoding paths you need. That often means BPE or SentencePiece tokenization plus special-token handling. A clean design isolates tokenization from the core matmul code, but correctness depends on treating it with the same seriousness as any kernel.</p>
+
+                <p>Tensor operations are the numerical heart. At minimum you need matrix-vector or matrix-matrix multiplication, elementwise add and multiply, RMSNorm, a causal attention path, a softmax, and a few helper transforms such as RoPE. For CPU implementations, these operations are usually written against flat contiguous arrays. Row-major layout keeps indexing simple. You can think of a matrix as a long linear buffer with a stride calculation rather than as a sophisticated object hierarchy.</p>
+
+                <div class="wf-code"><pre>forward_step(token_id, pos):
+    x = embedding[token_id]
+    for layer in layers:
+        a = rmsnorm(layer.attn_norm, x)
+        q = rope(matmul(layer.wq, a), pos)
+        k = rope(matmul(layer.wk, a), pos)
+        v = matmul(layer.wv, a)
+        kv_cache.append(layer, pos, k, v)
+        attn = attention(q, kv_cache[layer].keys, kv_cache[layer].values)
+        x = x + matmul(layer.wo, attn)
+
+        f = rmsnorm(layer.ffn_norm, x)
+        gate = silu(matmul(layer.w_gate, f))
+        up   = matmul(layer.w_up, f)
+        ff   = elementwise_mul(gate, up)
+        x = x + matmul(layer.w_down, ff)
+
+    x = rmsnorm(final_norm, x)
+    return matmul(lm_head, x)</pre></div>
+
+                <p>That pseudocode is conceptually the whole model. The only missing layer is batching and kernel specialization. During prefill, you run many prompt tokens through the stack while growing the KV cache. During decode, you process one new token at a time and reuse all previously stored keys and values. The one-token decode path is the one that dominates interactive generation latency, which is why cache design matters so much.</p>
+
+                <p>The KV cache is an append-only per-layer memory. After you compute the key and value vectors for the current token in layer <strong>L</strong>, you store them in that layer’s cache at position <strong>pos</strong>. On the next decoding step, the new query attends over all cached keys from positions <strong>0..pos</strong> and uses the matching cached values to form the weighted sum. Without this cache, every generated token would require recomputing old keys and values for the entire prefix. The math would still be correct; the latency would be awful.</p>
+
+                <p>Sampling turns the final <a href="#/glossary" class="wf-gloss">logits</a> vector into a token ID. A minimal sampler should support at least temperature and top-k. Temperature rescales the logits before softmax; lower values make the distribution peakier, higher values make it flatter. Top-k filters the candidate set to the k highest-scoring tokens before normalizing. For deterministic experiments you can simply pick the argmax, but implementing a real sampler teaches you where model quality ends and decoding policy begins.</p>
+
+                <div class="wf-math"><pre>scaled_logit_i = logit_i / temperature
+prob_i = exp(scaled_logit_i - max_logit) / Σ exp(scaled_logit_j - max_logit)
+sample from top-k(prob)</pre></div>
+
+                <p>Architecture choices should stay aggressively boring at first. Start single-threaded. Use row-major contiguous float arrays. Keep activations in FP32 even if the weights are quantized. Dequantize weight blocks on the fly inside matmul rather than expanding whole matrices into temporary FP32 copies. Avoid dependencies beyond the standard library and perhaps one math package if your language’s core API is thin. The less infrastructure you hide behind, the faster you will discover whether your tensor math is correct.</p>
+
+                <div class="wf-table-wrap">
+                    <table class="wf-table">
+                        <thead>
+                            <tr>
+                                <th>Early design decision</th>
+                                <th>Recommended minimal choice</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Threading</strong></td>
+                                <td>Single-threaded first</td>
+                                <td>Easier debugging; parallelism can be added after correctness</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Activation precision</strong></td>
+                                <td>FP32</td>
+                                <td>Simplifies math and protects reductions such as softmax and RMSNorm</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Weight layout</strong></td>
+                                <td>Use GGUF storage directly where possible</td>
+                                <td>Reduces conversion and extra RAM pressure</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Matrix storage</strong></td>
+                                <td>Row-major flat arrays</td>
+                                <td>Simple indexing and cache-friendly scans</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dependencies</strong></td>
+                                <td>Minimal or standard library only</td>
+                                <td>Keeps the implementation legible and portable</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>After that baseline works, the optimization roadmap becomes obvious. Add SIMD to the hot loops. Tile the matmul for cache. Parallelize across rows or heads. Fuse RMSNorm and projection where appropriate. Improve tokenizer throughput. Use memory mapping instead of eager file reads. But those are second-pass improvements. The first successful engine usually looks almost embarrassingly direct, and that is a virtue rather than a weakness.</p>
+
+                <p>One more practical note: when loading GGUF from the Hugging Face ecosystem, choose a small model first. TinyLlama-class models or smaller instruction-tuned checkpoints are much friendlier for development than multi-billion-parameter giants. A tiny model lets you verify correctness, dump intermediate tensors, and compare outputs against a Python reference without drowning in load time or RAM pressure.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="c">
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:0;margin-bottom:.85rem;">Why C is absolutely viable</h3>
+                <p>C is the most emotionally honest language for this project. It gives you explicit file I/O, explicit memory ownership, explicit flat buffers, and easy access to SIMD intrinsics once the scalar version works. More importantly, the existence proof is overwhelming: <strong>llama.cpp</strong> and similar projects demonstrate that serious CPU transformer inference in C or C++ is not just possible but highly competitive.</p>
+
+                <p>The recommended file structure is small and unsurprising:</p>
+                <div class="wf-code"><pre>gguf.h / gguf.c        // file parsing and metadata
+tokenizer.h / tokenizer.c
+tensor.h / tensor.c    // matmul, rmsnorm, softmax, rope
+model.h / model.c      // layer structs, KV cache, forward pass
+main.c                 // CLI and generation loop</pre></div>
+
+                <p>Start by defining plain structs with no hidden ownership rules. Resist the temptation to generalize early. A transformer checkpoint is regular enough that fixed-shape assumptions and a few dedicated structs will carry you surprisingly far.</p>
+
+                <div class="wf-code"><pre>typedef struct {
+    void   *data;
+    int     ndim;
+    int64_t shape[4];
+    int     gguf_type;
+} Tensor;
+
+typedef struct {
+    Tensor wq, wk, wv, wo;
+    Tensor w_gate, w_up, w_down;
+    Tensor attn_norm, ffn_norm;
+} Layer;
+
+typedef struct {
+    float *keys;
+    float *values;
+    int    seq_len;
+    int    head_dim;
+    int    n_kv_heads;
+} KVCache;
+
+typedef struct {
+    int32_t vocab_size;
+    int32_t n_layers;
+    int32_t d_model;
+    int32_t n_heads;
+    int32_t n_kv_heads;
+    int32_t head_dim;
+    int32_t max_seq_len;
+    float   rms_eps;
+    Tensor  tok_embeddings;
+    Tensor  final_norm;
+    Tensor  lm_head;
+    Layer  *layers;
+    KVCache *cache;
+} Model;</pre></div>
+
+                <p>The GGUF loader is mostly a disciplined binary reader. Read the magic, verify the version, pull the metadata count and tensor count, then walk the metadata entries and tensor descriptors into temporary structs. Once you know all tensor names, shapes, types, and offsets, you can populate your <strong>Model</strong> object by name. Many implementations keep a name-to-descriptor table during loading, then resolve required tensors such as <strong>blk.0.attn_q.weight</strong> or the model-family equivalent.</p>
+
+                <div class="wf-code"><pre>static uint32_t read_u32(FILE *f) {
+    uint32_t v;
+    if (fread(&amp;v, sizeof(v), 1, f) != 1) exit(1);
+    return v;
+}
+
+static uint64_t read_u64(FILE *f) {
+    uint64_t v;
+    if (fread(&amp;v, sizeof(v), 1, f) != 1) exit(1);
+    return v;
+}
+
+static void read_exact(FILE *f, void *dst, size_t n) {
+    if (fread(dst, 1, n, f) != n) exit(1);
+}
+
+int gguf_open(const char *path, GGUFFile *out) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return -1;
+
+    uint32_t magic = read_u32(f);
+    uint32_t version = read_u32(f);
+    if (magic != 0x46554747u) return -2; /* GGUF */
+    if (version &lt; 2 || version &gt; 3) return -3;
+
+    out-&gt;n_tensors = read_u64(f);
+    out-&gt;n_kv      = read_u64(f);
+    out-&gt;fp = f;
+    return 0;
+}</pre></div>
+
+                <p>After the header comes the real parsing work: strings, metadata variants, tensor names, dimensions, and aligned offsets. The clean design is to parse descriptors first and only then decide how to expose the weight bytes. For a first implementation you can <strong>malloc</strong> a buffer per tensor and <strong>fread</strong> the raw bytes into it. For large models that is not ideal, but it is easy to reason about. Once correct, you can switch to memory mapping or direct file-backed views.</p>
+
+                <p data-plain="In C, make the file parser dumb and predictable." data-psi="You want a loader that behaves like a measuring instrument, not a personality." data-duck="The duck warehouse scanner should count crates and read labels. It should not improvise.">The biggest loader bug class is metadata mismatch. Validate every tensor shape against the config-derived expectation before you launch any compute. If the config says <strong>d_model = 2048</strong> and your q-projection tensor claims a second dimension of 2304, stop immediately. C gives you no runtime safety net here beyond the checks you write yourself.</p>
+
+                <p>For tensor math, begin with a reference matmul so plain it hurts. A triple loop is enough for correctness validation. If your runtime only supports single-token decode at first, a matrix-vector multiply is often the actual hot path.</p>
+
+                <div class="wf-code"><pre>void matmul_f32(float *out, const float *w, const float *x,
+                int rows, int cols) {
+    for (int r = 0; r &lt; rows; ++r) {
+        float acc = 0.0f;
+        const float *wr = w + (size_t)r * cols;
+        for (int c = 0; c &lt; cols; ++c) {
+            acc += wr[c] * x[c];
+        }
+        out[r] = acc;
+    }
+}</pre></div>
+
+                <p>That version is enough to verify embeddings, norms, projections, and the final output head. Once it is correct, tile it for cache and vectorize it. A typical next step is AVX2 or NEON intrinsics that load 8 or 16 floats at a time, multiply, and accumulate into vector registers before a horizontal reduction. The conceptual math does not change; only the way you feed the CPU pipelines changes.</p>
+
+                <p>Quantized matmul is where GGUF-specific engineering enters. Instead of expanding a Q4 or Q6 block into a long temporary FP32 array, dequantize block-by-block inside the dot product. The kernel pattern is: read the block’s scale metadata, unpack the small integers, reconstruct approximate float values for a short span such as 32 weights, and accumulate against the matching activation fragment. This keeps memory traffic lower and matches the storage format’s design.</p>
+
+                <div class="wf-code"><pre>float dot_q4_0_block(const Q4_0_Block *blk, const float *x) {
+    float acc = 0.0f;
+    float d = blk-&gt;d;
+    for (int i = 0; i &lt; 16; ++i) {
+        uint8_t q = blk-&gt;qs[i];
+        int lo = (q &amp; 0x0F) - 8;
+        int hi = (q &gt;&gt; 4) - 8;
+        acc += (lo * d) * x[i * 2 + 0];
+        acc += (hi * d) * x[i * 2 + 1];
+    }
+    return acc;
+}</pre></div>
+
+                <p>The exact block structs differ by quantization type, but the idea repeats. A production kernel would vectorize the unpack and accumulation path, perhaps processing several blocks per iteration. The reference version, however, should be scalar and readable. Debuggability beats cleverness during the first pass.</p>
+
+                <p>RMSNorm and softmax are small but essential. Keep their reference forms around even after you optimize other parts, because they make excellent correctness anchors.</p>
+
+                <div class="wf-code"><pre>void rmsnorm(float *y, const float *x, const float *gamma,
+             int n, float eps) {
+    float sumsq = 0.0f;
+    for (int i = 0; i &lt; n; ++i) {
+        sumsq += x[i] * x[i];
+    }
+    float inv = 1.0f / sqrtf((sumsq / (float)n) + eps);
+    for (int i = 0; i &lt; n; ++i) {
+        y[i] = x[i] * inv * gamma[i];
+    }
+}
+
+void softmax(float *x, int n) {
+    float maxv = x[0];
+    for (int i = 1; i &lt; n; ++i) if (x[i] &gt; maxv) maxv = x[i];
+    float sum = 0.0f;
+    for (int i = 0; i &lt; n; ++i) {
+        x[i] = expf(x[i] - maxv);
+        sum += x[i];
+    }
+    for (int i = 0; i &lt; n; ++i) x[i] /= sum;
+}</pre></div>
+
+                <p>Memory management deserves explicit planning because a transformer has both long-lived and short-lived state. Weights live for the life of the process. The KV cache grows with sequence length. Activations, scratch buffers, and temporary projection outputs are ephemeral and benefit from an arena allocator or a reusable workspace. A simple approach is one arena per inference context that is reset between decoding steps but sized large enough for the largest intermediate tensors used during one forward pass.</p>
+
+                <p>The final application loop in <strong>main.c</strong> can be pleasantly small once the pieces exist: load the model, tokenize the prompt, prefill the cache over the prompt tokens, then repeatedly run one decode step, sample a token, print it, and stop at EOS. If you want streaming output, decode each sampled token immediately with the tokenizer and <strong>printf</strong> it as it arrives.</p>
+
+                <div class="wf-code"><pre>gcc -O3 -march=native -o inference main.c tensor.c gguf.c tokenizer.c -lm</pre></div>
+
+                <p>That build line is intentionally minimal. You can add platform-specific SIMD flags, profiling hooks, and threading later. The important thing is that C lets you start from zero dependencies and grow only what the profiler justifies. Once your engine answers <strong>"What is the capital of France?"</strong> with a plausible token stream, you can iteratively harden it into something much closer to production quality.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="csharp">
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:0;margin-bottom:.85rem;">Why C# is a serious systems option here</h3>
+                <p>C# on .NET 8+ is far more suitable for this project than old stereotypes suggest. You get strong binary I/O primitives, <strong>Span&lt;T&gt;</strong> and <strong>Memory&lt;T&gt;</strong> for zero-copy slicing, <strong>MemoryMappedFile</strong> for large checkpoints, <strong>System.Numerics.Vector&lt;float&gt;</strong> for portable SIMD, and hardware intrinsics when you want to get closer to the metal. You also get a pleasant type system for representing model metadata without fighting raw pointers everywhere.</p>
+
+                <p>A clean file layout looks like this:</p>
+                <div class="wf-code"><pre>GgufReader.cs
+Tokenizer.cs
+Tensor.cs
+Model.cs
+Sampling.cs
+Program.cs</pre></div>
+
+                <p>The central type can stay very small. A tensor is just a flat memory region plus a shape. Whether the backing store comes from a managed array, a memory-mapped view, or a custom quantized buffer is an implementation detail that higher layers should not need to care about immediately.</p>
+
+                <div class="wf-code"><pre>public enum TensorKind
+{
+    F32,
+    F16,
+    Q4_0,
+    Q4_K_M,
+    Q6_K,
+    Q8_0
+}
+
+public sealed record Tensor(Memory&lt;float&gt; Data, int[] Shape);
+
+public sealed record QuantizedTensor(
+    Memory&lt;byte&gt; Raw,
+    int[] Shape,
+    TensorKind Kind,
+    int BlockSize);</pre></div>
+
+                <p>The GGUF reader can use <strong>BinaryReader</strong> for the structured header and then switch to memory mapping for the heavy tensor region. That split keeps the parser simple while still letting the OS page in weight blocks on demand. A common pattern is: read metadata into ordinary managed objects, store tensor descriptors with offsets into the file, then create a view accessor or mapped stream that serves slices to the math layer.</p>
+
+                <div class="wf-code"><pre>public sealed record GgufTensorInfo(
+    string Name,
+    TensorKind Kind,
+    long[] Shape,
+    long Offset);
+
+public sealed class GgufReader
+{
+    public static GgufModel Open(string path)
+    {
+        using var fs = File.OpenRead(path);
+        using var br = new BinaryReader(fs, Encoding.UTF8, leaveOpen: true);
+
+        uint magic = br.ReadUInt32();
+        uint version = br.ReadUInt32();
+        if (magic != 0x46554747) throw new InvalidDataException("Not GGUF");
+        if (version &lt; 2 || version &gt; 3) throw new NotSupportedException();
+
+        ulong tensorCount = br.ReadUInt64();
+        ulong kvCount = br.ReadUInt64();
+
+        var metadata = ReadMetadata(br, kvCount);
+        var tensors  = ReadTensorInfos(br, tensorCount);
+        var mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
+        return new GgufModel(path, metadata, tensors, mmf);
+    }
+}</pre></div>
+
+                <p>Once the tensor map exists, model construction is mostly name resolution. Pull the expected metadata values such as vocabulary size, hidden size, layer count, head count, and RMSNorm epsilon. Then resolve tensor descriptors into per-layer objects. If the model stores some tensors in float form and others in quantized block form, keep that distinction explicit instead of prematurely normalizing everything to float arrays. Preserving the quantized representation is what lets you avoid blowing up RAM usage.</p>
+
+                <p data-plain="C# works well if you keep the data layout flat and explicit." data-psi="The runtime is friendlier than C, but the tensors still want to be treated as physical arrays, not as abstract poetry." data-duck="You can label all the duck crates with nice object names, but the ducks still move best when they stay in straight rows.">The hot path lives in math helpers that accept <strong>ReadOnlySpan&lt;float&gt;</strong> or raw <strong>Span&lt;float&gt;</strong> buffers. This keeps call overhead low and avoids unnecessary allocations. <strong>Vector&lt;float&gt;</strong> gives you an easy first layer of SIMD without committing to architecture-specific code immediately.</p>
+
+                <div class="wf-code"><pre>public static void MatMul(
+    Span&lt;float&gt; output,
+    ReadOnlySpan&lt;float&gt; matrix,
+    ReadOnlySpan&lt;float&gt; vector,
+    int rows,
+    int cols)
+{
+    int width = Vector&lt;float&gt;.Count;
+    for (int r = 0; r &lt; rows; r++)
+    {
+        var acc = Vector&lt;float&gt;.Zero;
+        int rowBase = r * cols;
+        int c = 0;
+        for (; c &lt;= cols - width; c += width)
+        {
+            var w = new Vector&lt;float&gt;(matrix.Slice(rowBase + c, width));
+            var x = new Vector&lt;float&gt;(vector.Slice(c, width));
+            acc += w * x;
+        }
+
+        float sum = 0f;
+        for (int i = 0; i &lt; width; i++) sum += acc[i];
+        for (; c &lt; cols; c++) sum += matrix[rowBase + c] * vector[c];
+        output[r] = sum;
+    }
+}</pre></div>
+
+                <p>When you want more control, <strong>System.Runtime.Intrinsics</strong> opens the door to <strong>Avx</strong>, <strong>Avx2</strong>, <strong>Fma</strong>, and <strong>AdvSimd</strong>. The usual strategy is to keep a scalar reference path, a portable <strong>Vector&lt;T&gt;</strong> path, and then one or two specialized intrinsic paths guarded by <strong>IsSupported</strong>. That gives you reach across x64 and ARM64 while still letting fast machines accelerate the inner loop.</p>
+
+                <p>Quantized tensors fit naturally into C# if you treat them as raw bytes plus typed decode routines. The dequantizer should not materialize a full floating-point matrix unless absolutely necessary. Instead, decode just enough of a block to feed the current dot product. Here is a simplified pattern:</p>
+
+                <div class="wf-code"><pre>public static float DotQ40(
+    ReadOnlySpan&lt;byte&gt; block,
+    ReadOnlySpan&lt;float&gt; x)
+{
+    float scale = BitConverter.Int16BitsToHalf(
+        BinaryPrimitives.ReadInt16LittleEndian(block)).ToSingle();
+
+    float acc = 0f;
+    for (int i = 0; i &lt; 16; i++)
+    {
+        byte q = block[2 + i];
+        int lo = (q &amp; 0x0F) - 8;
+        int hi = (q &gt;&gt; 4) - 8;
+        acc += (lo * scale) * x[i * 2 + 0];
+        acc += (hi * scale) * x[i * 2 + 1];
+    }
+    return acc;
+}</pre></div>
+
+                <p>RMSNorm, RoPE, and softmax all translate directly into idiomatic C#. <strong>MathF</strong> covers the scalar math, <strong>Span&lt;float&gt;</strong> handles slicing, and the code remains readable enough to cross-check against a Python reference. A surprisingly effective debugging strategy is to implement a “dump layer 0 token 3” mode that prints the first eight values after each operator so you can compare them line-by-line against a known-good implementation.</p>
+
+                <p>One pleasant extra in C# is asynchronous I/O. You generally do not need async in the inner inference loop, but it can be useful while staging auxiliary artifacts or pre-reading non-tensor metadata. A loader that reads the GGUF header and tokenizer data using <strong>Memory&lt;byte&gt;</strong> buffers can overlap some disk operations without making the math code itself asynchronous.</p>
+
+                <div class="wf-code"><pre>dotnet publish -c Release -r linux-x64 --self-contained</pre></div>
+
+                <p>The generation loop then becomes straightforward. Encode the prompt, prefill the cache token by token, run single-token decode for each new step, apply temperature and top-k, append the sampled token, and stream detokenized text to the console. The result feels high-level compared with C, but the core numerical work remains explicit enough that performance tuning is still meaningful. For many engineers, C# hits a useful balance: vastly more ergonomic than C, yet still close enough to the metal to build a legitimate CPU inference engine.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="powershell">
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:0;margin-bottom:.85rem;">Why PowerShell is slow, strange, and still educationally excellent</h3>
+                <p>A pure PowerShell transformer runtime is not a practical serving stack, but it is a powerful teaching tool because it removes all mystique. PowerShell can open binary files via .NET, store arrays, call <strong>[Math]</strong> for floating-point operations, and print tokens as they stream out. It will be slow. There is no hidden SIMD miracle. Most loops will run on scalar <strong>[double]</strong> or <strong>[float]</strong> values interpreted by the PowerShell engine. But the algorithm still works, which is the important lesson.</p>
+
+                <p>The basic approach is to read the GGUF file with <strong>[System.IO.BinaryReader]</strong>, parse enough metadata to locate tensors and tokenizer entries, and store model weights as flat arrays. For a tiny educational model you may even choose to convert quantized tensors to <strong>[float[]]</strong> once during load. That wastes memory but keeps the math code legible. Once the reference version works, you can selectively move hot loops into inline C# via <strong>Add-Type</strong> or into precompiled helper assemblies while keeping the orchestration in PowerShell.</p>
+
+                <p data-plain="PowerShell proves the algorithm is simple enough to express in a scripting language." data-psi="When the machine still works in a slow, transparent language, the abstraction fog clears." data-duck="If you can teach a duck sorter to work using handwritten clipboards instead of conveyor belts, you really do understand the sorter.">That educational value is why this variant matters. You are not trying to beat C. You are trying to demonstrate that transformer inference is ultimately file parsing, array math, caching, and sampling. PowerShell makes every step painfully visible.</p>
+
+                <div class="wf-code"><pre>function Read-UInt32([System.IO.BinaryReader]$br) {
+    return $br.ReadUInt32()
+}
+
+function Read-String([System.IO.BinaryReader]$br) {
+    $len = $br.ReadUInt64()
+    $bytes = $br.ReadBytes([int]$len)
+    return [System.Text.Encoding]::UTF8.GetString($bytes)
+}
+
+function Invoke-MatMul([float[]]$matrix, [float[]]$vector, [int]$rows, [int]$cols) {
+    $out = [float[]]::new($rows)
+    for ($r = 0; $r -lt $rows; $r++) {
+        [double]$sum = 0.0
+        $base = $r * $cols
+        for ($c = 0; $c -lt $cols; $c++) {
+            $sum += $matrix[$base + $c] * $vector[$c]
+        }
+        $out[$r] = [float]$sum
+    }
+    return $out
+}
+
+function Invoke-RmsNorm([float[]]$x, [float[]]$gain, [double]$eps) {
+    [double]$sumsq = 0.0
+    for ($i = 0; $i -lt $x.Length; $i++) { $sumsq += $x[$i] * $x[$i] }
+    $inv = 1.0 / [Math]::Sqrt(($sumsq / $x.Length) + $eps)
+    $y = [float[]]::new($x.Length)
+    for ($i = 0; $i -lt $x.Length; $i++) {
+        $y[$i] = [float]($x[$i] * $inv * $gain[$i])
+    }
+    return $y
+}</pre></div>
+
+                <p>That is already enough to build the core of a tiny decoder-only runtime. You still need GGUF metadata resolution, RoPE, attention over the cache, and sampling, but the math structure mirrors the C and C# variants almost line for line. The main difference is throughput. Nested loops that are merely “boring” in C become glacial in PowerShell once hidden widths and layer counts grow.</p>
+
+                <p>The generation loop can still be pleasantly direct. The following example assumes you already have a loaded model object with helper methods for tokenization, forward stepping, and detokenization. The point is not that PowerShell magically makes those helpers fast; the point is that the control flow is exactly the same control flow every serious engine uses.</p>
+
+                <div class="wf-code"><pre>$model = Load-GgufModel ".\model.gguf"
+$tokens = [System.Collections.Generic.List[int]]::new()
+$tokens.AddRange((Tokenize $model "What is the capital of France?"))
+$eos = $model.EosTokenId
+
+for ($i = 0; $i -lt $tokens.Count; $i++) {
+    [void](Forward-Step $model $tokens[$i] $i)
+}
+
+$position = $tokens.Count
+while ($true) {
+    $logits = Forward-Step $model $tokens[$position - 1] ($position - 1) -DecodeOnly
+    $next = Sample-TopK -Logits $logits -Temperature 0.7 -TopK 40
+    $tokens.Add($next)
+
+    $piece = Detokenize-Token $model $next
+    Write-Host -NoNewline $piece
+
+    if ($next -eq $eos) { break }
+    $position++
+}</pre></div>
+
+                <p>In a real educational script you would expand <strong>Forward-Step</strong> into explicit functions: lookup embedding row, apply attention norm, project to Q/K/V, rotate Q and K, append to the cache, compute attention scores, apply softmax, mix values, add the residual, run the FFN, then finally produce logits. That sounds large, but each function is small. The bulk of the source code is array indexing, not new mathematics.</p>
+
+                <p>Where PowerShell becomes surprisingly useful is in experimentation. You can quickly dump tensor metadata, inspect tokenizer maps, compare the first eight logits against a Python reference, or prototype sampling behavior without recompiling anything. If you are about to write a C version, a PowerShell script can serve as an executable notebook: ugly, slow, but extremely transparent.</p>
+
+                <p>The biggest optimization trick is to push the hot loops into .NET while keeping PowerShell as the shell. <strong>Add-Type</strong> lets you embed small C# helper classes for matmul or quantized dot products. Alternatively, you can compile a tiny assembly once and call into it. That hybrid preserves the inspectability of PowerShell but removes the catastrophic overhead from the deepest loops.</p>
+
+                <p>So yes: PowerShell can run transformer inference on CPU. The honest performance expectation is terrible, but the intellectual payoff is excellent. If you can make the prompt <strong>"What is the capital of France?"</strong> produce plausible output in PowerShell, you have internalized the algorithm at a much deeper level than most framework users ever need to.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="bash">
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:0;margin-bottom:.85rem;">Why Bash is absurd, and why that absurdity teaches something real</h3>
+                <p>A Bash implementation is not a recommendation. It is a stress test for your own understanding. If you can express the forward loop, token stepping, and a toy quantized matmul using shell tools, then you truly understand which parts of transformer inference are essential and which parts are ergonomics or performance engineering. Bash strips the stack down to raw orchestration, pipes, and small text-processing helpers.</p>
+
+                <p>The price is obvious. Bash has no native tensors, no native floating-point arithmetic, and no pleasant binary parsing API. You end up leaning on <strong>od</strong>, <strong>xxd</strong>, <strong>dd</strong>, <strong>awk</strong>, <strong>sed</strong>, and maybe <strong>bc</strong>. A “vector” is often a whitespace-separated line. A “matrix” is an array of lines or a text file on disk. The result is wildly slow, but slowness is not the point here.</p>
+
+                <p data-plain="Bash is useful because it forces you to expose every hidden assumption." data-psi="When the algorithm survives being flattened into pipes and fields, you discover how little mystery there was in the first place." data-duck="If your duck factory still works when the conveyor belts are replaced with clipboards, whistles, and a very patient intern, then you have identified the true logic of the factory.">For GGUF parsing, the shell can read headers using byte offsets. This is clumsy but real: <strong>od</strong> or <strong>xxd</strong> can extract integers, and small helper functions can advance an offset through the file as fields are decoded. Tokenizer handling is hardest in pure Bash; for a serious experiment you would usually preprocess the tokenizer into a simpler TSV form once and then let Bash orchestrate a greedy match loop.</p>
+
+                <div class="wf-code"><pre>read_u32() {
+  local file="$1" offset="$2"
+  od -An -t u4 -N 4 -j "$offset" "$file" | awk '{print $1}'
+}
+
+read_f32() {
+  local file="$1" offset="$2"
+  od -An -t f4 -N 4 -j "$offset" "$file" | awk '{print $1}'
+}
+
+matmul_awk() {
+  local matrix_file="$1" vector_file="$2" rows="$3" cols="$4"
+  awk -v rows="$rows" -v cols="$cols" '
+    NR==FNR { x[FNR-1]=$1; next }
+    {
+      r = int((NR-1)/cols)
+      c = (NR-1)%cols
+      acc[r] += $1 * x[c]
+    }
+    END {
+      for (i=0; i&lt;rows; i++) print acc[i]+0.0
+    }' "$vector_file" "$matrix_file"
+}</pre></div>
+
+                <p>That snippet is already enough to communicate the idea. A matrix stored as one scalar per line can be multiplied by a vector stored the same way, and the result can flow into the next stage. It is computationally ridiculous, but mathematically faithful. Add an RMSNorm function in <strong>awk</strong>, a softmax in <strong>awk</strong>, and a few helper scripts for cache management, and you have a real if comically slow inference pipeline.</p>
+
+                <p>The generation loop itself can stay short because Bash is good at orchestration. Again, imagine the tokenizer and weight-extraction helpers already exist. The shell’s job is to call them in the right order and append the sampled token each time.</p>
+
+                <div class="wf-code"><pre>MODEL="model.gguf"
+TOKENS=$(tokenize "$MODEL" "What is the capital of France?")
+EOS=$(get_eos_id "$MODEL")
+POS=0
+
+for t in $TOKENS; do
+  forward_prefill "$MODEL" "$t" "$POS" &gt;/dev/null
+  POS=$((POS + 1))
+  LAST="$t"
+done
+
+while true; do
+  LOGITS=$(forward_decode "$MODEL" "$LAST" $((POS - 1)))
+  NEXT=$(printf '%s\n' "$LOGITS" | sample_topk_awk 0.7 40)
+  detokenize_piece "$MODEL" "$NEXT"
+  [ "$NEXT" = "$EOS" ] &amp;&amp; break
+  LAST="$NEXT"
+  POS=$((POS + 1))
+done</pre></div>
+
+                <p>In a fully pure Bash version, <strong>forward_prefill</strong>, <strong>forward_decode</strong>, and <strong>sample_topk_awk</strong> would themselves be shell-plus-awk programs manipulating text files or pipes. That is possible, but this is also the place where practicality re-enters the conversation. A very sensible compromise is to keep Bash as the conductor and delegate the numerical hot loop to a tiny C helper executable. Then Bash still exposes the sequence logic, file paths, and control flow, while the part that actually multiplies numbers runs at a saner speed.</p>
+
+                <p>The reason this variant is worth discussing in a technical book is not that anyone should deploy it. It is that Bash annihilates excuses. Once you see the algorithm expressed in shell terms, it becomes obvious that transformer inference is a deterministic dataflow problem. All the intimidating machinery in mature runtimes is there for performance, safety, and model breadth, not because the core idea is fundamentally inaccessible.</p>
+
+                <p>There is also one practical niche: Bash can be a thin glue layer around a family of tiny purpose-built helpers. One helper might extract GGUF metadata, another might perform quantized dot products, another might tokenize. The shell script then becomes a reproducible experimental harness for validating the whole loop end-to-end. Even if you never ship the Bash version, building it teaches you where every dependency boundary truly sits.</p>
+            </div>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Prefill versus decode: the first performance wall you will hit</h3>
+        <p>One of the most useful mental shifts when building an inference engine is to stop thinking of “the forward pass” as one uniform workload. In practice there are two regimes. <strong>Prefill</strong> processes the initial prompt and fills the KV cache. <strong>Decode</strong> processes one newly generated token at a time and extends that cache. The math is closely related, but the performance profile is very different.</p>
+
+        <p>During prefill, you often have dozens or hundreds of prompt tokens available at once. That creates more regular matrix work and more obvious data parallelism. CPU vectorization and threading have something substantial to chew on. During decode, by contrast, the batch size usually collapses to one token. You are now in a latency game. The runtime still touches many layers and many weight blocks, but each step produces exactly one new token of user-visible progress.</p>
+
+        <p data-plain="Decode is harder because the machine does a lot of work for just one token of output." data-psi="Prefill is a flood; decode is a metronome. The same river becomes a sequence of single drops, and overhead suddenly matters." data-duck="At the start, the duck factory can sort a whole parade at once. After that, new ducks arrive one by one, so the time to fetch each crate and open each gate becomes painfully visible.">This is why seemingly small implementation details become important much earlier than beginners expect. A poorly laid-out KV cache, a wasteful dequantization path, a temporary allocation inside the per-token loop, or a tokenizer that copies strings excessively can all dominate the user experience once decode begins. Your engine may look fine on a long prompt benchmark yet feel sluggish in interactive generation because the one-token path is where humans perceive responsiveness.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>What happens</th>
+                        <th>Primary engineering concern</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Prefill</strong></td>
+                        <td>All prompt tokens pass through the full stack and populate the cache</td>
+                        <td>Throughput, batching, cache construction correctness</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Decode</strong></td>
+                        <td>One fresh token reuses old keys and values and emits one next-token distribution</td>
+                        <td>Latency, memory traffic, minimal per-step overhead</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>A good development order acknowledges that split. First get prompt prefill correct for a very short input. Then get one decode step correct against a reference. Then get repeated decode correct with EOS stopping. Only after that should you optimize. Many first implementations accidentally validate only prefill and assume decode will behave the same way. It will not. Decode is where the cache layout, RoPE indexing, and per-layer attention code are truly stress-tested.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">What all language variants share</h3>
+        <p>The language changes syntax and ergonomics; it does not change the invariants. Every implementation must parse the checkpoint consistently, encode text using the exact bundled tokenizer, maintain a correct KV cache, and produce logits that match a reference implementation closely enough that the same token wins under deterministic decoding. That is the real definition of “working.” Pretty code and clever abstractions come second.</p>
+
+        <p>The fastest route to correctness is to compare against a trusted reference, usually Python plus PyTorch or an existing GGUF runtime. Run the same model, same prompt, same BOS/EOS policy, same RoPE settings, and same temperature. Then compare intermediate outputs layer by layer: embeddings, RMSNorm output, Q vectors, attention scores, post-attention residual, FFN output, final norm, and first few logits. If you only compare final text, you will waste hours chasing bugs that could have been caught two operators earlier.</p>
+
+        <p data-plain="Validate numbers before you validate prose." data-psi="Tokens are the visible ripples; logits are the pressure field underneath." data-duck="If the ducks exit the sorter in the wrong order, first check the scale and gates, not the final sign above the exit door.">A particularly good discipline is to force greedy decoding during validation. Sampling randomness obscures small numeric errors. With argmax decoding and a tiny prompt like <strong>"What is the capital of France?"</strong>, even small mistakes often reveal themselves as a wrong top token or a suspiciously flat probability distribution.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Implementation</th>
+                        <th>Realistic expectation on a 7B-ish Q4 model</th>
+                        <th>Main limiting factor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>C</strong></td>
+                        <td>Roughly 1–10 tok/s depending on kernel quality and CPU</td>
+                        <td>Memory bandwidth, cache locality, SIMD quality, threading</td>
+                    </tr>
+                    <tr>
+                        <td><strong>C#</strong></td>
+                        <td>Often in the same broad band as C when written carefully</td>
+                        <td>JIT quality, SIMD path, memory layout, bounds-check pressure</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PowerShell</strong></td>
+                        <td>On the order of 0.01 tok/s or worse</td>
+                        <td>Interpreter overhead in nested numeric loops</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bash</strong></td>
+                        <td>On the order of 0.001 tok/s or worse</td>
+                        <td>Everything: process overhead, text representation, no SIMD</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Those numbers are intentionally rough because hardware, model choice, quantization, and engineering quality matter enormously. The more important lesson is relative. C and C# can absolutely be serious CPU inference languages. PowerShell and Bash are educational microscopes. They show the algorithm clearly by sacrificing speed almost completely.</p>
+
+        <p>Debugging advice is similarly universal. Print small slices of tensors, not whole tensors. Verify shapes at every layer boundary. Check RoPE indices carefully; off-by-one position bugs are common and devastating. Confirm that your tokenizer produces the same IDs as the reference. Check that your cache append and cache read paths agree on layout. Verify that your softmax subtracts the maximum logit before exponentiation. Verify that your RMSNorm accumulates in enough precision. Most transformer bugs are not mystical. They are shape bugs, indexing bugs, or precision bugs.</p>
+
+        <p>For testing, use a tiny model first. TinyLlama 1.1B or anything smaller is much friendlier for development than a large production checkpoint. Small models load faster, let you inspect more of the runtime interactively, and make it easier to run both your implementation and a Python reference side by side. Once the toy engine is correct there, scaling up is mostly an engineering problem, not a conceptual problem.</p>
+
+        <p>And that brings us back to the purpose of the exercise. When your library successfully loads a GGUF file from the Hugging Face ecosystem, tokenizes <strong>"What is the capital of France?"</strong>, builds logits, and emits a sensible answer, you have crossed an important threshold. Transformer inference is no longer a black box. It is a system you can explain, debug, and improve one operator at a time.</p>
+
+        <div class="wf-inline-nav">
+            <a href="#/ch13" onclick="event.preventDefault(); route('ch13')">← Part 13</a>
+            <a href="#/ch15" onclick="event.preventDefault(); route('ch15')">Part 15 →</a>
+        </div>
+    </div>
+</div>

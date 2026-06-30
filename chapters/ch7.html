@@ -1,0 +1,259 @@
+<div id="ch7" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Part 7 — RMSNorm</div>
+        <h1 class="wf-section-hdr">RMSNorm</h1>
+        <p class="wf-section-desc">Why modern transformers keep inserting a tiny normalisation step before attention, before the feed-forward network, and again just before the vocabulary projection.</p>
+    </div>
+    <div class="wf-article-body">
+        <p>RMSNorm is one of the smallest operators in a large language model, but it quietly makes the rest of the machine easier to run. In plain English, it looks at a vector, asks how large that vector is on average, rescales it to a steadier magnitude, and then applies a learned per-dimension gain. It does not add new facts about the prompt. It does not mix tokens. It does not choose words. Its entire job is to keep the scale of activations from wandering so far that the next matrix multiplication sees wild inputs.</p>
+
+        <p>That sounds humble, but scale control is a real systems problem. A transformer layer is a stack of projections, residual additions, attention outputs, and feed-forward outputs. If you keep adding transformed vectors to old vectors, the numeric range can drift. One layer might hand the next layer values that are too small to matter or too large to behave well under reduced precision. Normalisation is the layer-local contract that says: before you do your expensive work, first put the incoming signal back into a predictable range.</p>
+
+        <p data-plain="RMSNorm stops hidden states from becoming numerically too big or too tiny as they pass through many layers." data-psi="It is a metronome for vector magnitude, keeping the orchestra in tempo before the next movement begins." data-duck="It is like weighing every duck before it gets on the conveyor so one giant duck does not jam the machine.">The reason this matters in inference is not abstract elegance. It is numerical survivability. Modern LLMs often run with FP16 or BF16 activations, sometimes with quantized weights, sometimes across dozens or hundreds of repeated blocks. In that environment, even small scale inconsistencies compound. RMSNorm reduces the chance that a later dot product becomes dominated by a few oversized components, and it reduces the chance that tiny components disappear into rounding noise.</p>
+
+        <div class="wf-callout">
+            <p><strong>Plain English summary:</strong> RMSNorm is a cheap calibration pass. It makes sure the next stage receives a vector with a controlled overall magnitude, then it lets a learned gain vector restore useful per-channel scale.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Why this stage exists at all</h3>
+        <p>If you are used to databases or distributed systems, think of RMSNorm as the equivalent of forcing data back into a known schema before handing it to the next operator. Attention and the feed-forward network are powerful, but they are also expensive and sensitive to input scale. The model wants a stable operating envelope so that a weight matrix learned during training sees roughly the kind of activation magnitudes it expects at inference time. RMSNorm is part of that envelope management.</p>
+
+        <p>Most current decoder-only LLMs use a pre-norm layout. That means a block does not take raw residual input directly into attention or the FFN. Instead, it first applies RMSNorm, then runs the heavy operator, then adds the result back to the residual stream. You usually see one RMSNorm before attention, another before the feed-forward block, and then a final RMSNorm after the last transformer block before the <a href="#/glossary" class="wf-gloss">lm_head</a>. Each placement has the same spirit: normalize before a major transformation.</p>
+
+        <p data-plain="The norm comes before expensive work so each block starts from a steady signal instead of a drifting one." data-psi="Before each deep projection, the model briefly straightens its spine." data-duck="Every duck goes through the same sizing gate before the sorter decides where to send it.">This placement is why RMSNorm feels more important than its FLOP count suggests. It is not a feature extractor; it is a control surface. If the control surface is wrong, the expensive operators after it become harder to trust. If the control surface is right, attention and FFN layers can behave more consistently across prompts, lengths, precisions, and hardware backends.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The mathematics, immediately translated back into English</h3>
+        <div class="wf-math"><pre>RMSNorm(x) = x / √(mean(x²) + ε) × γ</pre></div>
+        <p>Read the equation left to right. Square every element of <strong>x</strong>. Take their mean. Add a tiny <a href="#/glossary" class="wf-gloss">epsilon</a> value <strong>ε</strong>. Take the square root. Divide the original vector by that quantity. Then multiply elementwise by a learned gain vector <strong>γ</strong>. The result has the same shape as the input.</p>
+
+        <p>In English: measure the vector's overall energy, use that energy to scale the vector toward a standard magnitude, and then let the model learn how much each channel should be emphasized afterward. RMS stands for root mean square, which is just a compact way of saying "the square root of the average squared magnitude."</p>
+
+        <p data-plain="Epsilon is a tiny safety number that stops division by zero or division by a dangerously tiny value." data-psi="Epsilon is the floor under the floorboards; you do not notice it until the room would otherwise collapse." data-duck="It is the little rubber mat under the scale so the duck does not slip when the floor gets wet.">The <strong>ε</strong> term looks trivial, but forgetting it is a classic implementation mistake. If the vector magnitude is extremely small, especially under FP16, the denominator can become unstable. Epsilon prevents the denominator from becoming zero or effectively zero. In practice, epsilon is usually something like 1e-5 or 1e-6 depending on training choices and implementation conventions.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Tensor shapes and where the parameters live</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Meaning</th>
+                        <th>Typical shape</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>x</strong></td>
+                        <td>Input hidden state for one token</td>
+                        <td>[d_model]</td>
+                        <td>For batched code this may be [B, T, d_model] or [tokens, d_model]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>x²</strong></td>
+                        <td>Elementwise square</td>
+                        <td>[d_model]</td>
+                        <td>Usually not materialised as a separate long-lived tensor in fused kernels</td>
+                    </tr>
+                    <tr>
+                        <td><strong>mean(x²)</strong></td>
+                        <td>Average squared magnitude</td>
+                        <td>scalar per token</td>
+                        <td>A reduction over the hidden dimension</td>
+                    </tr>
+                    <tr>
+                        <td><strong>γ</strong></td>
+                        <td>Learned gain vector</td>
+                        <td>[d_model]</td>
+                        <td>One parameter per hidden dimension</td>
+                    </tr>
+                    <tr>
+                        <td><strong>y</strong></td>
+                        <td>Output hidden state</td>
+                        <td>[d_model]</td>
+                        <td>Same shape as input</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>For the running example <strong>"What is the capital of France?"</strong>, imagine the model is processing the hidden state for the last token of the prompt. That hidden state might have width 4096. RMSNorm consumes those 4096 numbers, computes one scalar denominator from them, and emits another 4096-number vector. No vocabulary axis is involved. No tokens are mixed together. This is a per-token, per-vector normalization.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Normalisation family variants</h3>
+        <div class="wf-tabs" data-group="ch7-norm-variants">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="rmsnorm">RMSNorm</button>
+                <button class="wf-tab" data-tab="layernorm">LayerNorm</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <p>Normalisation layers exist to make later transformations see numerically better-behaved inputs. They usually measure some summary statistic of a vector, use that statistic to rescale the vector, and then apply learned parameters so the model can preserve useful channel-specific behavior.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="rmsnorm">
+                <p>RMSNorm uses only the root-mean-square magnitude. It does <strong>not</strong> subtract the mean first. That means less arithmetic, fewer data dependencies, and a slightly simpler reduction pattern. Empirically, modern LLMs often get essentially the benefits they need from this cheaper form.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="layernorm">
+                <p>LayerNorm first subtracts the mean, then divides by the standard deviation, then applies learned gain and often a learned bias. It normalises both centering and scale. That can be useful, but it costs more operations and slightly more implementation complexity than RMSNorm.</p>
+            </div>
+        </div>
+
+        <p>That comparison is the main reason RMSNorm shows up so often in current LLM architectures. LayerNorm is not wrong. It was foundational and still appears in many models. But when engineers discovered that large decoder-only transformers often worked just as well with RMS-only scaling, the cheaper operator became attractive. If two designs are empirically close but one is simpler, faster, and easier to fuse, production systems tend to drift toward the cheaper one.</p>
+
+        <p data-plain="RMSNorm skips mean subtraction, so it keeps the useful part of normalisation while doing less work." data-psi="It trims the ritual down to the indispensable gesture." data-duck="Instead of checking the duck's average position and weight, it just checks overall heft, which is enough for the gate.">The practical savings are not huge in isolation, because RMSNorm is already tiny compared with attention or FFN matmuls. But transformers repeat the same pattern many times, and tiny savings repeated across every layer and every token matter. More importantly, the simpler reduction is easier to fuse into fast kernels that read memory once, compute the denominator, apply the gain, and write the result back without staging extra temporaries.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Where RMSNorm appears in the inference pipeline</h3>
+        <p>In a modern decoder block, the first RMSNorm usually sits right before attention. The second sits right before the feed-forward network. At the end of the whole stack, a final RMSNorm prepares the last hidden state for the vocabulary projection. These are not interchangeable decorations. The pre-attention norm stabilizes QKV projections. The pre-FFN norm stabilizes the up and gate projections. The final norm stabilizes the vector that will be compared against every vocabulary row in the output head.</p>
+
+        <p>Notice what RMSNorm does <strong>not</strong> do: it does not create a cache worth keeping across decoding steps. Each new token produces a new hidden state, so each norm result is specific to that moment. The learnable gain vector <strong>γ</strong> is of course persistent model state, but the output of RMSNorm is ephemeral activation data. You compute it, immediately feed it into attention or FFN or lm_head, and then move on.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Batch layouts, reduction axes, and why bugs happen here</h3>
+        <p>If you only ever picture a single token vector, RMSNorm seems almost too simple to get wrong. Real inference engines, however, usually process tensors shaped like <strong>[B, T, d_model]</strong>, <strong>[tokens, d_model]</strong>, or some packed decode layout. The reduction must run over the hidden dimension and only the hidden dimension. Batch items are independent. Sequence positions are independent. The one scalar denominator you compute for a token should summarize that token's channels, not the neighboring tokens beside it.</p>
+
+        <p data-plain="Most real RMSNorm bugs come from reducing across the wrong axis once tensors are batched or packed." data-psi="The formula is small, but tensor layout is where straight lines become mazes." data-duck="You should weigh each duck separately; if you average the whole crate, every duck gets the wrong tag.">This matters especially in fused attention/FFN pipelines where tensors are transposed, packed, or sharded for hardware reasons. A kernel can be mathematically correct on paper and still normalize the wrong slices if the memory stride assumptions are wrong. When validating an implementation, always inspect how one logical token maps to physical memory. RMSNorm has no semantic complexity to hide behind, so layout mistakes show up as pure numerical drift.</p>
+
+        <p>Another subtle point is that RMSNorm usually has no learned bias term, only the gain vector <strong>γ</strong>. That matches its role. The operator is primarily about scale control, not about shifting the center of the distribution. LayerNorm variants often include both gain and bias, but RMSNorm-based LLM blocks typically keep the operator lean: measure magnitude, rescale, apply gain, stop there.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Implementation flow: from bytes in memory to a normalized vector</h3>
+        <p data-plain="The implementation is a reduction followed by a rescale." data-psi="First measure the wave, then retune the wave, then pass it on." data-duck="Count how heavy the ducks are on average, then resize every duck tag before the next sorter reads it.">A direct implementation is almost embarrassingly simple. Read the vector. Accumulate the sum of squares. Divide by the hidden width <strong>n</strong>. Add epsilon. Compute reciprocal square root. Multiply each original element by that scalar. Multiply again by the corresponding gain element <strong>γ[i]</strong>. Write the output vector. That is the whole operator.</p>
+
+        <div class="wf-code"><pre>void rmsnorm(float* y, const float* x, const float* gamma,
+             int n, float eps) {
+    float sumsq = 0.0f;
+    for (int i = 0; i &lt; n; ++i) {
+        sumsq += x[i] * x[i];
+    }
+
+    float mean_sq = sumsq / (float)n;
+    float inv_rms = 1.0f / sqrtf(mean_sq + eps);
+
+    for (int i = 0; i &lt; n; ++i) {
+        y[i] = x[i] * inv_rms * gamma[i];
+    }
+}</pre></div>
+
+        <p>The pseudocode is deliberately boring because the operator is deliberately boring. Most of the performance work is not in inventing new math. It is in avoiding extra memory traffic, vectorizing the reduction, choosing the right accumulation precision, and making the reciprocal square root cheap and stable on the target hardware.</p>
+
+        <p>Many high-performance kernels accumulate in FP32 even when inputs are FP16 or BF16. That choice is less about ceremony than about protecting the reduction. Summing thousands of squared half-precision values in half precision is a good way to magnify error. The expensive parts of inference can often tolerate approximate inputs; reduction statistics are where you usually want a bit more numeric headroom.</p>
+
+        <p data-plain="A fused kernel tries to read each element once and write each element once." data-psi="The best kernel treats memory like a narrow bridge: cross it once, carry everything you need, and do not come back empty-handed." data-duck="If the ducks are already on the belt, weigh them and retag them in one pass instead of sending them around the warehouse twice.">This is why RMSNorm is usually described as memory-bound. The arithmetic count per element is tiny. You do a square, a few adds, one rsqrt for the whole vector, and a couple of multiplies. Compared with that, reading the vector and the gain weights from memory dominates. Once the hidden width is large enough, the main challenge is feeding the compute units, not finding enough math for them to do.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Computational cost and memory cost</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>RMSNorm behavior</th>
+                        <th>Interpretation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Arithmetic</strong></td>
+                        <td>O(d_model) per token</td>
+                        <td>Linear in hidden width; tiny compared with matmuls</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reduction</strong></td>
+                        <td>One sum of squares across hidden dimension</td>
+                        <td>Needs synchronization or tree reduction on parallel hardware</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Parameter memory</strong></td>
+                        <td>One gain vector γ of length d_model</td>
+                        <td>Very small next to projection matrices</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Activation memory</strong></td>
+                        <td>Input and output vectors; temporaries can be minimal</td>
+                        <td>Fused kernels avoid materialising x²</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dominant limit</strong></td>
+                        <td>Memory bandwidth</td>
+                        <td>Too little arithmetic per byte to be compute-bound</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>If attention is the glamorous expensive operator and FFN is the big matrix factory, RMSNorm is the precision plumbing. It shows up in profiles, but not because it burns dramatic FLOPs. It shows up because inference is a long chain of stages, and even lightweight bandwidth-bound stages add latency when repeated at every layer.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">How CPUs, GPUs, and FPGAs experience RMSNorm</h3>
+        <p>On CPUs, RMSNorm is usually a friendly SIMD reduction problem. AVX2 or AVX-512 lanes can square and accumulate many elements at once, followed by a horizontal reduction and a scaled writeback pass. Performance depends heavily on cache behavior, alignment, and whether the gain vector stays hot in cache across tokens. Because the operator is small, call overhead and poor memory layout can matter more than the math itself.</p>
+
+        <p>On GPUs, the reduction across the hidden dimension maps naturally to a block or warp-level reduction. The challenge is balancing parallelism against occupancy for small batch sizes during decode. During prefill, you may have many tokens and can keep the device busy. During single-token decode, each norm instance is smaller and more latency-sensitive. Good kernels use shared memory or warp shuffles for the reduction and then fuse the scale-and-gain application into the same launch.</p>
+
+        <p data-plain="On FPGA-like hardware, the operator is simple but the memory path still matters most." data-psi="The algebra is a stream, but the stream only matters if the channels are wide enough." data-duck="An FPGA can build a neat duck-weighing lane, but the lane still stalls if ducks arrive through a tiny door.">On FPGAs or other custom accelerators, RMSNorm is attractive because the dataflow is simple and deterministic. You can stream elements through a sum-of-squares pipeline, compute the inverse RMS, and then stream the rescaled values. But the same truth holds: if external memory bandwidth is limited, the beautifully pipelined arithmetic units will spend time waiting for data.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common optimisations</h3>
+        <p>The first optimization is fusion. If you can combine RMSNorm with the immediately following linear projection, you may reduce launches and staging overhead, although the exact trade-off depends on hardware and framework. More commonly, implementations fuse the whole RMSNorm operator into a single kernel so there is no separate square tensor, no separate denominator tensor, and no extra pass beyond what is required.</p>
+
+        <p>Another optimization is choosing a fast reciprocal square root path. Many devices offer an approximate rsqrt instruction that is accurate enough for inference once paired with stable accumulation and a sensible epsilon. Since the operator is bandwidth-dominated, shaving a few cycles off rsqrt will not transform total runtime, but it can still help in a repeated inner loop.</p>
+
+        <p>Some systems also reorder or pack the gain vector for better memory access, especially when model weights are stored in layouts chosen to help neighboring projections. And if the model is quantized, the norm output is often one of the places where the system temporarily returns to a higher-precision activation representation before feeding another quantized matmul.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Database and systems analogies</h3>
+        <p data-plain="RMSNorm is like validating and rescaling records before they enter a sensitive operator." data-psi="It is the buffer manager that smooths pressure before the next join spills." data-duck="Before ducks enter the fancy sorter, a clerk checks that every duck tag is within the expected size range.">A useful database analogy is operator normalization in a query engine. Imagine one stage emits rows with wildly inconsistent record sizes and the next stage assumes a stable memory layout. Even if the rows are logically valid, the physical execution becomes harder to optimize. RMSNorm is similar: not changing the meaning of the signal, but making the physical representation numerically easier for the next operator to consume.</p>
+
+        <p>Another analogy is voltage regulation in electronics. The downstream component may still function if the supply fluctuates a little, but stable input improves predictability. RMSNorm is not “meaning extraction.” It is regulation. The important thing is that regulation done cheaply and repeatedly can unlock more aggressive downstream design choices.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">What can be cached and what cannot</h3>
+        <p>The learned gain vector <strong>γ</strong> is just model weight data, so it remains resident like any other parameter. It benefits from normal hardware caching, but it is not a semantic inference cache. The per-token denominator, inverse RMS, and normalized output are not worth keeping beyond immediate use. They are tied to the current hidden state. Once the next operator consumes them, they can be discarded.</p>
+
+        <p>That is why RMSNorm contributes almost nothing to long-lived decode state. Attention creates a KV cache because old keys and values remain useful for future tokens. RMSNorm does not. Its output helps exactly once and then disappears. If you are designing an inference engine, treat RMSNorm as a transient transformation, not as a stateful subsystem.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Operation and bound classification</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Answer for RMSNorm</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Primary operation class</strong></td>
+                        <td>Normalisation with a small reduction and elementwise scaling</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Does it look up vocabulary?</strong></td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Does it project into a new space?</strong></td>
+                        <td>Not in the linear-algebra sense used by matmuls; it rescales the same space</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dominant bound</strong></td>
+                        <td>Memory bandwidth, then launch or latency overhead at small decode batch sizes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Parallelism style</strong></td>
+                        <td>Independent across tokens, reduction across hidden dimension within each token</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common implementation mistakes</h3>
+        <p>The big one is forgetting epsilon or using an epsilon that is inconsistent with the checkpoint you loaded. That error may not explode immediately, but it can create subtle divergence from reference outputs, especially under half precision. Another common mistake is accumulating in the same low precision as the inputs, which can make the denominator noisier than intended.</p>
+
+        <p>Shape mistakes are also common. The gain vector should align with the hidden dimension, not the batch or sequence dimension. If you are porting weights across frameworks, make sure the broadcasting semantics match your tensor layout. Finally, remember that RMSNorm is per token. If you accidentally reduce across tokens as well as hidden dimensions, you are implementing something else entirely.</p>
+
+        <p data-plain="Most RMSNorm bugs are simple: wrong epsilon, wrong reduction axis, or too little precision in the sum of squares." data-psi="The operator is small enough that bugs hide in the edges, not the center." data-duck="Usually the duck sorter fails because someone used the wrong ruler, not because ducks became mysterious.">A subtler mistake is assuming a textbook implementation is fast enough. Functionally correct scalar code may validate the math, but production inference wants vectorization, fusion, and careful memory layout. RMSNorm is simple, yet it still deserves engineering discipline because it runs everywhere in the model.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself</h3>
+        <p>Start with the obvious reference version and verify it against a known framework output for a single token and a single layer. Print the sum of squares, mean square, inverse RMS, and first few output elements so you can compare step by step. Only once those numbers match should you optimize. This is an operator where the reference is short enough that there is no excuse for fuzzy validation.</p>
+
+        <p>Then decide your accumulation precision, epsilon policy, and tensor layout up front. If you are targeting GPUs, plan for a fused kernel. If you are targeting CPUs, plan for SIMD reduction and contiguous memory access. If you are targeting an FPGA or custom accelerator, plan the reduction tree and the memory stream together rather than separately. The arithmetic is easy; the data movement strategy is the real implementation work.</p>
+
+        <p>And keep the role of the operator psychologically correct. RMSNorm is not where the model "thinks." It is where the model steadies itself before the next expensive transformation. That framing helps you make the right trade-offs: correctness first, numerical stability second, and then bandwidth-aware implementation.</p>
+
+        <p>Once you internalize that, RMSNorm becomes a friendly subsystem. It is small enough to reason about completely, important enough to deserve careful handling, and repetitive enough that any tiny mistake gets amplified across the whole stack.</p>
+
+        <div class="wf-inline-nav">
+            <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">← Part 6</a>
+            <a href="#/ch8" onclick="event.preventDefault(); route('ch8')">Part 8 →</a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,235 @@
+<div id="ch5" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Part 5 — The Transformer Layer</div>
+        <h1 class="wf-section-hdr">The Transformer Layer</h1>
+        <p class="wf-section-desc">The repeating block that turns one sequence of vectors into a better one, one residual addition at a time.</p>
+    </div>
+    <div class="wf-article-body">
+        <p>A large language model is mostly repetition. Once tokenization, embedding lookup, and positional handling are done, the model applies the same kind of block again and again: normalize, project, attend, project back, add the residual, normalize again, run the feed-forward network, project back, add the residual again. Chapter diagrams often make this look grander than it is. Mechanically, one transformer layer is a carefully arranged set of matrix multiplies around a shared residual stream. The reason the stack becomes powerful is not that each layer is exotic, but that depth lets later layers refine and reuse what earlier layers produced.</p>
+
+        <p data-plain="A transformer is many copies of one block stacked on top of each other." data-psi="Depth in a transformer is iterative rewriting of a shared state vector field. Each block perturbs the same stream, not a fresh universe." data-duck="Think of ducks moving through many checkpoints on a canal. Each checkpoint inspects the same flock, adds a little information, and passes the flock to the next gate.">For the running example <strong>What is the capital of France?</strong>, the embedding sequence enters layer 0 as a batch of context vectors with positions already injected. Layer 0 does not answer the question outright. It slightly improves the representation: perhaps strengthening the relation between <strong>capital</strong> and <strong>France</strong>, or sharpening the fact that the final token is a question boundary. Layer 1 receives that improved sequence and refines it further. After dozens of such passes, the hidden state at the last position becomes informative enough that the output head can score a token like <strong>Paris</strong> very highly.</p>
+
+        <div class="wf-callout">
+            <p><strong>Plain English:</strong> a transformer layer is a reusable processing stage. It mixes information across tokens with attention, mixes information within each token with a feed-forward network, and preserves a running highway called the residual stream so depth does not destroy what came before.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The modern execution order</h3>
+        <p>For most current LLMs, especially Llama-style models, the block is pre-norm and roughly follows this order:</p>
+        <div class="wf-code"><pre>RMSNorm → QKV projections → Attention → Wo projection → Residual add
+→ RMSNorm → Gate projection → Up projection → Activation → Down projection → Residual add</pre></div>
+        <p>That compact line hides almost all of inference. The attention half lets tokens read from one another. The feed-forward half applies a wider per-token transformation that can expand, gate, and compress information without cross-token interaction. The two residual additions keep the whole process anchored to the incoming state. If you can implement this block correctly and efficiently, you can implement most of a decoder-only transformer.</p>
+
+        <p data-plain="Modern LLMs normalize before each big sublayer, not after it." data-psi="Pre-norm treats normalization as input conditioning for each operator rather than cleanup afterward, which stabilizes deep composition." data-duck="Before each canal gate, the ducks line up neatly. The gate works better when the flock enters in a predictable shape instead of trying to fix the mess after the gate closes.">The pre-norm versus post-norm distinction matters. Older transformer variants often used post-norm: do the sublayer, add the residual, then normalize. Modern LLMs usually use pre-norm: normalize the stream first, feed the normalized copy through attention or FFN, and then add the result back into the unnormalized residual stream. Pre-norm makes optimization easier at large depth and also gives inference kernels a stable numerical distribution entering each projection. That is why the block order in production models is not arbitrary formatting; it is a design choice with convergence and stability consequences.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">One block written as equations</h3>
+        <div class="wf-math"><pre>n₁ = RMSNorm(x)
+q = n₁ W_Q
+k = n₁ W_K
+v = n₁ W_V
+a = Attention(q, k, v)
+x₁ = x + a W_O</pre></div>
+        <p>In English: start with the incoming residual stream <strong>x</strong>. Normalize it into <strong>n₁</strong>, project that normalized stream into queries, keys, and values, run attention, project the concatenated head output through <strong>W_O</strong>, and add the result back to the original <strong>x</strong>. The first half of the layer is now done. The important thing to notice is that the residual path bypassed the expensive attention stack and remained available for the add.</p>
+
+        <div class="wf-math"><pre>n₂ = RMSNorm(x₁)
+g = n₂ W_gate
+u = n₂ W_up
+m = φ(g) ⊙ u
+x₂ = x₁ + m W_down</pre></div>
+        <p>In English: normalize the updated stream again, make two wide projections, apply an activation <strong>φ</strong> to the gate branch, multiply that gated branch elementwise with the up branch, then project back down to model width and add the result to the running residual stream. In Llama-style blocks, <strong>φ</strong> is usually SiLU and the pattern is often called SwiGLU. This second half does not mix tokens with one another. It operates independently on each position, but with a much wider hidden dimension that gives the layer expressive capacity.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Why residual connections exist</h3>
+        <p>Residual connections solve several problems at once. During training they improve gradient flow by giving the optimizer a short path through depth. During inference they preserve information. If a given layer learns nothing useful for one token at one moment, the residual path means the token's prior representation still survives. Depth therefore becomes additive rather than destructive. Each block proposes a correction to the stream instead of replacing the stream wholesale. That is exactly the right bias for a 32- or 80-layer system where no single layer should be allowed to erase the entire accumulated state.</p>
+
+        <p data-plain="The residual stream is a highway that carries the current token representation through every layer." data-psi="Residual structure turns each block into a perturbation operator on a persistent state manifold. The network learns edits, not complete rewrites." data-duck="The ducks keep swimming down the same canal. Each lock can nudge the water level, but the canal itself continues forward, carrying the whole flock with it.">The phrase <strong>residual stream</strong> is useful because it emphasizes continuity. The model is not creating a totally new representation at every layer and discarding the old one. It is accumulating edits in a shared buffer. For the final token in our France example, early layers may mark question structure, middle layers may relate <strong>capital</strong> to country entities, and later layers may sharpen factual recall. All of those contributions live in the same width-<strong>d_model</strong> vector that keeps getting updated in place by residual additions.</p>
+
+        <div class="wf-callout gold">
+            <p><strong>Why this stage exists:</strong> one transformer layer is the smallest practical unit that both reads across the sequence and applies a nonlinear per-token rewrite, while still preserving the incoming state through residual additions. Without the block structure, you either lose cross-token interaction or lose expressive token-local transformation.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Every projection is fundamentally the same operation</h3>
+        <p>Engineers often overcomplicate the number of named matrices in a transformer. <strong>W_Q</strong>, <strong>W_K</strong>, <strong>W_V</strong>, <strong>W_O</strong>, <strong>W_gate</strong>, <strong>W_up</strong>, <strong>W_down</strong>, and even the <strong>lm_head</strong> at the end of the whole model are all the same class of primitive: take an input vector or matrix and multiply by a weight matrix. The semantic labels differ because the outputs are used differently, but the kernel primitive is identical.</p>
+
+        <div class="wf-math"><pre>output = input × weight_matrix</pre></div>
+        <p>In English: a projection is just a linear map from one feature space to another. If the input is a whole sequence, you apply the same matrix to every token row. If the width changes, the matrix changes shape, but the operation class stays the same. This matters because implementation strategy follows the primitive, not the label. Quantization, tensor parallel sharding, GEMM tiling, cache reuse, and memory layout choices all care that these are matrix multiplies, not that one of them happens to be called <strong>W_Q</strong>.</p>
+
+        <p data-plain="Q, K, V, Wo, gate, up, down, and lm_head are all matrix multiplies wearing different hats." data-psi="The transformer block is a choreography of basis changes. Named subspaces differ in role, but the engine keeps reusing the same linear-algebra actuator." data-duck="It is the same kind of pump connected to different pipes. One pipe feeds the question line, one feeds the answer line, one widens the canal, one narrows it again, but the pump mechanism is still the same.">Once you see that, a lot of transformer implementation becomes a scheduling problem around GEMMs. The layer is not seven mysterious neural gadgets; it is a small family of large dense multiplies plus a handful of cheap elementwise operators and reductions. That observation is why optimized inference libraries spend so much time on weight packing, fused kernels, and device-specific matrix engines. The math is old. The difficulty is moving the bytes efficiently.</p>
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Concrete shapes: Llama-7B style dimensions</h3>
+        <p>Use a concrete model so the shapes stay honest. Suppose <strong>d_model = 4096</strong>, <strong>n_heads = 32</strong>, <strong>d_head = 128</strong>, and <strong>d_ff = 11008</strong>. For the prompt <strong>What is the capital of France?</strong>, imagine a sequence length <strong>T = 7</strong> before the first generated token. Then the residual stream entering a layer has shape <strong>[T, 4096]</strong>. If the attention uses 32 full heads with no separate KV compression, <strong>W_Q</strong>, <strong>W_K</strong>, <strong>W_V</strong>, and <strong>W_O</strong> are each effectively <strong>[4096, 4096]</strong>.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Tensor</th>
+                        <th>Meaning</th>
+                        <th>Example shape</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>x</strong></td><td>Residual stream into the block</td><td>[7, 4096]</td><td>One row per token</td></tr>
+                    <tr><td><strong>n₁</strong></td><td>First normalized stream</td><td>[7, 4096]</td><td>Same width as residual</td></tr>
+                    <tr><td><strong>q, k, v</strong></td><td>Attention projections before head split</td><td>[7, 4096]</td><td>Usually reshaped to [7, 32, 128]</td></tr>
+                    <tr><td><strong>a</strong></td><td>Attention output after head merge</td><td>[7, 4096]</td><td>One output row per token</td></tr>
+                    <tr><td><strong>n₂</strong></td><td>Second normalized stream</td><td>[7, 4096]</td><td>Input to FFN</td></tr>
+                    <tr><td><strong>g</strong></td><td>Gate projection</td><td>[7, 11008]</td><td>Wide branch</td></tr>
+                    <tr><td><strong>u</strong></td><td>Up projection</td><td>[7, 11008]</td><td>Second wide branch</td></tr>
+                    <tr><td><strong>m</strong></td><td>Activated and gated FFN hidden</td><td>[7, 11008]</td><td>Elementwise SiLU(g) ⊙ u</td></tr>
+                    <tr><td><strong>x₂</strong></td><td>Residual stream leaving the block</td><td>[7, 4096]</td><td>Input to next layer</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Grouped-query attention changes the <strong>K</strong> and <strong>V</strong> shapes, and attention details vary across model families, but the block skeleton stays the same. The point of the table is not to freeze one model forever. It is to make clear that every tensor has a known shape and every projection either preserves width or expands and contracts it in a predictable way.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Parameter count for one layer</h3>
+        <p>With the Llama-style dimensions above and no biases, the attention projections contribute four square matrices: <strong>4 × 4096 × 4096</strong>. The feed-forward section contributes three rectangular matrices: <strong>3 × 4096 × 11008</strong>. Add two RMSNorm gain vectors of length 4096. That is already almost the entire parameter count of the block.</p>
+
+        <div class="wf-math"><pre>Attention params = 4 × 4096 × 4096 = 67,108,864
+FFN params       = 3 × 4096 × 11008 = 135,266,304
+Norm params      = 2 × 4096         = 8,192
+Total per layer  = 202,383,360</pre></div>
+        <p>In English: one dense layer block in this configuration has about <strong>202.4 million</strong> parameters. Most of them live in the feed-forward network, not attention. That surprises people who focus only on the fame of attention. At short contexts, the FFN often accounts for a large fraction of the FLOPs as well.</p>
+
+        <p data-plain="A 32-layer model with about 202 million parameters per layer already gets you into multi-billion-parameter territory." data-psi="Scale emerges from repetition of a fixed operator budget. The model is not huge because one layer is incomprehensible; it is huge because a comprehensible layer is instantiated many times." data-duck="If one canal lock contains a lot of machinery, then building 32 or 80 of those locks in a row creates a very large waterworks system even though each lock follows the same blueprint.">Multiply that per-layer total by 32 layers and you get roughly <strong>6.48 billion</strong> parameters inside the repeating blocks alone. Add token embeddings, the final normalization, and possibly an untied output head, and you land in the familiar marketed range of a 7B-class model. If the input embedding table and output projection share weights, total parameters are lower. If they are separate, add another full vocabulary-by-model-width matrix.</p>
+
+        <div class="wf-math"><pre>Embedding params = vocab_size × d_model
+Example: 32,000 × 4096 = 131,072,000</pre></div>
+        <p>In English: a 32k vocabulary with width 4096 needs another 131 million parameters for the token embedding table. If the <strong>lm_head</strong> is untied, add the same amount again for output scoring. At FP16, each parameter is two bytes, so 6.6 to 6.7 billion parameters means roughly 13.2 to 13.5 GB of raw weight storage before runtime overhead, alignment, <a href="#/glossary" class="wf-gloss">KV cache</a>, or temporary activations are counted.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Layer specialization and real model depth</h3>
+        <p>Real decoder stacks commonly use 32, 40, 48, 70, or 80-plus layers depending on model class. Empirically, early layers often behave more syntactically, middle layers more relationally, and later layers more semantically or task-specifically, although those are tendencies rather than clean module boundaries. For the France example, early layers may mostly sharpen token identity and local phrase structure, while later layers are where factual associations and answer-token preference become more obvious. The important engineering point is that the residual stream lets those specializations accumulate without forcing a rigid handoff protocol between layers.</p>
+
+        <p>The stack depth also changes what dominates runtime. With very short sequences, deeper models pay mostly for repeated weight reads and GEMMs. With long prefills, attention's sequence-length scaling becomes more visible. With single-token decode, the layer count often dominates latency because every generated token must traverse every block in order. That is why seemingly small per-layer inefficiencies become painful at interactive generation time.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Prefill and decode are different workloads</h3>
+        <p>It is worth pausing on one inference-specific point: the same transformer layer behaves differently during prefill and during decode. When the model first processes <strong>What is the capital of France?</strong>, all seven prompt tokens enter the block together. The QKV projections are true matrix-matrix multiplies over a small batch of rows, attention forms scores across the seven-token window, and the FFN processes seven rows at once. That is the regime where GPUs look happiest, because the block exposes enough parallel work to keep large matrix engines busy. If you benchmark only prefill, the layer looks pleasantly compute-heavy and often scales well with batch size.</p>
+
+        <p data-plain="The first pass processes all prompt tokens together; later decode steps process one new token at a time against the cache." data-psi="The block has two temporal modes: bulk assimilation of a context and incremental state extension at the frontier. Same weights, different operational physics." data-duck="At the start, the whole flock passes through the lock together. After that, each new duck arrives one at a time and still has to consult the entire travel ledger before moving on.">Once the model emits <strong>Paris</strong> and moves to the next token decision, the workload changes. Old tokens are not fully recomputed through attention; their keys and values are already stored. The new token still traverses every layer, but now the projections look more like matrix-vector multiplies, and the attention read path walks the accumulated cache. Arithmetic intensity drops, weight reads repeat every step, and memory traffic starts to dominate. That is why single-token latency can disappoint even when prefill throughput looks strong.</p>
+
+        <p>The implementation consequence is simple: profile the block in both modes and optimize them differently. Prefill wants large fused kernels and batch-friendly GEMMs. Decode wants ruthless control over memory movement, cache layout, launch overhead, and synchronization. Many systems that look fast in synthetic throughput charts feel sluggish in a chat interface because they were tuned for prefill but not for the one-token-at-a-time reality that users actually experience.</p>
+
+        <div class="wf-callout accent">
+            <p><strong>Rule of thumb:</strong> prefill is about chewing through a batch of existing context; decode is about paying the full layer stack cost for one new token while consulting cached history. The same block serves both modes, but the bottlenecks are not the same.</p>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Pseudocode for one block</h3>
+        <div class="wf-code"><pre>void transformer_block(float* x,            // [T, d_model]
+                       KVCache* cache,
+                       const Weights* w,
+                       int T,
+                       int layer_idx,
+                       int pos_base)
+{
+    float* n1 = rmsnorm(x, w->attn_norm);                 // [T, d_model]
+    float* q  = matmul(n1, w->Wq);                        // [T, H*d_head]
+    float* k  = matmul(n1, w->Wk);                        // [T, H_kv*d_head]
+    float* v  = matmul(n1, w->Wv);                        // [T, H_kv*d_head]
+
+    apply_rope(q, k, w->rope_tables, pos_base, T);
+    cache_append(cache, layer_idx, k, v, T);
+
+    float* attn = masked_attention(q,
+                                   cache_keys(cache, layer_idx),
+                                   cache_vals(cache, layer_idx),
+                                   T);
+    float* attn_out = matmul(attn, w->Wo);                // [T, d_model]
+    add_inplace(x, attn_out);                             // residual add
+
+    float* n2 = rmsnorm(x, w->ffn_norm);                  // [T, d_model]
+    float* g  = matmul(n2, w->Wgate);                     // [T, d_ff]
+    float* u  = matmul(n2, w->Wup);                       // [T, d_ff]
+    silu_inplace(g);
+    mul_inplace(g, u);                                    // SwiGLU gate
+    float* ffn_out = matmul(g, w->Wdown);                 // [T, d_model]
+    add_inplace(x, ffn_out);                              // residual add
+}</pre></div>
+        <p>In English: one block is an attention sandwich followed by an FFN sandwich, both wrapped around the same residual buffer. Temporary tensors appear and disappear, but the persistent state that matters is the updated <strong>x</strong> and the per-layer KV cache entries used for future decode steps.</p>
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Computational cost, memory cost, and what can be cached</h3>
+        <p>The weight matrices dominate model storage. The KV cache dominates growing runtime state during autoregressive decode. Within one block, attention cost scales with sequence length because each query must compare against available keys, while the FFN cost scales mainly with width and is independent of context length for a fixed token batch. That means short-context inference often spends a large fraction of total FLOPs in the FFN, whereas long-context prefill increasingly exposes attention's quadratic score work.</p>
+
+        <div class="wf-math"><pre>Approx dense FLOPs per layer, per token:
+QKV + Wo     ≈ 4 × d_model × d_model
+Gate/Up/Down ≈ 3 × d_model × d_ff
+Attention score/value terms add sequence-dependent cost</pre></div>
+        <p>In English: ignoring constants and kernel details, the block pays four square projections for attention and three tall-and-wide projections for the FFN. The attention sublayer then adds extra work proportional to how much context each token can see. For decode with a single new token, the projection cost is fixed but the query still scans all cached keys and values from prior positions.</p>
+
+        <p data-plain="The main persistent cache for a transformer block is the KV cache, not the FFN intermediates." data-psi="Autoregressive reuse lives where future tokens need past context. Only the addressable memory of prior keys and values survives across steps; most other activations are disposable." data-duck="After each canal checkpoint, the ducks keep a ledger of signposts and supplies for future ducks. They do not keep every splash of water from every earlier gate.">What can be cached? Static weights are obviously loaded once and reused. RoPE tables or ALiBi slopes are static auxiliary state. The big dynamic cache is keys and values per layer and per past token. You usually do <em>not</em> cache RMSNorm outputs, FFN hidden states, or attention probabilities across decode steps because they are specific to one token's forward pass and would cost too much memory relative to the benefit. Good implementations reuse scratch buffers aggressively instead of preserving them.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Operation type and bound type classification</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Substep</th>
+                        <th>Operation type</th>
+                        <th>Bound type</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>RMSNorm</td><td>Reduction + normalization + scale</td><td>Memory / bandwidth</td><td>Low arithmetic intensity, sensitive to fusion</td></tr>
+                    <tr><td>Q/K/V/Wo projections</td><td>Projection</td><td>Compute at prefill, memory at decode</td><td>Large GEMMs or GEMVs depending on batch</td></tr>
+                    <tr><td>Attention score + softmax</td><td>Reduction + normalization</td><td>Sequence-length dependent; often bandwidth/latency limited</td><td>Masking and KV access matter</td></tr>
+                    <tr><td>RoPE</td><td>Elementwise rotation</td><td>Bandwidth with light compute</td><td>Usually fused around projections</td></tr>
+                    <tr><td>Gate/Up/Down projections</td><td>Projection</td><td>Compute for large batches, memory for decode</td><td>FFN often owns many params</td></tr>
+                    <tr><td>SiLU and gating multiply</td><td>Activation + elementwise product</td><td>Bandwidth</td><td>Best fused with surrounding kernels</td></tr>
+                    <tr><td>Residual add</td><td>Elementwise add</td><td>Bandwidth</td><td>Cheap mathematically, expensive if it causes extra writes</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Hardware behavior</h3>
+        <p data-plain="On GPUs, the layer is mostly a scheduling problem around matrix multiplies and memory traffic." data-psi="The abstract block collapses onto hardware as alternating regimes of dense linear algebra and stateful memory access. Throughput is won by keeping data in flight, not by changing the math." data-duck="A duck canal runs fast when the pumps, gates, and ledgers are arranged so ducks keep moving. If ducks keep climbing out to fetch paperwork from a distant shed, the canal stalls.">On GPUs, prefill is dominated by large GEMMs where tensor cores shine. Decode looks different: one token or a tiny batch must still read huge weight matrices every layer, so arithmetic intensity drops and memory bandwidth becomes more painful. Fusing RMSNorm, RoPE, biasless projections, and activation steps around GEMMs can eliminate extra trips to HBM. Attention kernels must also read the growing KV cache efficiently, which is why layout choices and paged-cache designs matter so much.</p>
+
+        <p>On CPUs, transformer blocks live or die by cache locality, vectorization, and quantized weight formats. Matrices that fit poorly into LLC or require scattered dequant paths will crush throughput. Decode on CPU is especially unforgiving because the batch is tiny and the weight read cost is repeated for every token. That is why good CPU inference engines obsess over weight packing, grouped matvec kernels, and keeping the residual stream in contiguous, SIMD-friendly layouts.</p>
+
+        <p>On FPGAs, a transformer block is attractive because the execution order is rigid and repetitive. RMSNorm, projection pipelines, RoPE, and activation functions can be deeply pipelined, while on-chip memory holds slices of weights or cache metadata. The downside is capacity. Large dense weights and long KV caches quickly exceed on-chip storage, so practical FPGA systems often combine streamed external memory with aggressive quantization and careful partitioning of layers across fabric regions.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Variants used by modern models</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Variant</th>
+                        <th>Common in</th>
+                        <th>Effect on the block</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Pre-norm with RMSNorm</td><td>Llama, Mistral, Qwen</td><td>Normalize before sublayers, cheaper than LayerNorm</td></tr>
+                    <tr><td>Post-norm</td><td>Older Transformer and some encoder stacks</td><td>Normalization after residual add, harder at large depth</td></tr>
+                    <tr><td>SwiGLU FFN</td><td>Llama-family</td><td>Two wide projections plus gated activation</td></tr>
+                    <tr><td>GELU FFN</td><td>GPT-style models</td><td>Single up projection, activation, single down projection</td></tr>
+                    <tr><td>GQA / MQA attention</td><td>Many modern decode-optimized models</td><td>Smaller K/V projections and smaller KV cache</td></tr>
+                    <tr><td>MoE FFN</td><td>Mixtral, DeepSeek variants</td><td>Replaces dense FFN with routed experts inside the block</td></tr>
+                    <tr><td>Biasless projections</td><td>Many LLMs</td><td>Simplifies kernels and reduces parameter count slightly</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Tensor parallelism and pipeline parallelism</h3>
+        <p>Because almost every expensive substep is a projection, transformer layers shard naturally. In tensor parallelism, you split large weight matrices across devices. Column-parallel sharding is common for <strong>W_Q</strong>, <strong>W_K</strong>, <strong>W_V</strong>, <strong>W_gate</strong>, and <strong>W_up</strong>: each device computes a slice of the output features. Row-parallel sharding often fits <strong>W_O</strong> and <strong>W_down</strong>: each device contributes a partial sum that is reduced across devices. The residual stream remains logically one tensor, but physically its transforms are distributed.</p>
+
+        <p data-plain="Tensor parallelism splits the matrices; pipeline parallelism splits the stack of layers." data-psi="One form partitions width, the other partitions depth. Both preserve the same block semantics while changing where bytes travel." data-duck="Tensor parallelism is several ducks each turning one part of the same crank. Pipeline parallelism is different ducks stationed at different locks along the canal, handing the flock from one lock to the next.">Pipeline parallelism instead cuts the model along depth. GPU 0 may own layers 0 through 7, GPU 1 layers 8 through 15, and so on. During prefill or batched serving, microbatches can occupy different stages concurrently. During single-stream decode, pipeline bubbles are harder to hide because each token must march through the stages in order. That is why pipeline parallelism helps capacity but does not automatically solve interactive latency.</p>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Database analogy and systems programming analogy</h3>
+        <p>A transformer layer is like a physical query operator stack over an in-memory record batch. Attention is the read-across operator: each row can consult other rows subject to causal rules. The FFN is a per-row projection and enrichment stage. The residual stream is the working rowset that persists across operators, with each stage appending or refining columns in an implicit compressed form rather than replacing the table outright. From that view, a deep transformer is a long execution plan over the same evolving batch.</p>
+
+        <p data-plain="A systems programmer can view the layer as repeated passes over a contiguous buffer with scratch space and a persistent cache." data-psi="The block is an optimized state transformer: a stable carrier buffer, transient workspaces, and deterministic passes that alternate global lookup with local rewrite." data-duck="The ducks stay in one long canal buffer. Each lock reads the shared map, does local grooming, updates the travel ledger, and sends the same flock onward.">The systems analogy is a hot loop over a resident buffer. You have a main array <strong>x</strong>, a set of packed weight blobs, a per-layer KV cache, and ephemeral scratch buffers sized to the largest intermediate. Efficient implementations minimize copies, fuse passes, and reuse scratch pages. Inefficient ones materialize every intermediate, bounce between layouts, and turn a clean operator pipeline into a memory-allocation benchmark.</p>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common implementation mistakes</h3>
+        <p>Typical bugs cluster around shape discipline and cache discipline. Examples: normalizing the wrong tensor in pre-norm, forgetting the residual add after <strong>W_O</strong>, applying activation to the wrong FFN branch, transposing a weight matrix incorrectly, mishandling grouped-query head counts, or writing KV cache entries with the wrong position offset during decode. These bugs often preserve tensor shapes and therefore survive basic smoke tests while silently corrupting model behavior.</p>
+
+        <p>Performance bugs are just as common. Launching separate kernels for every small elementwise step, reallocating scratch buffers every token, dequantizing into large temporary matrices instead of fused use, or materializing attention probabilities unnecessarily will wreck throughput. In distributed setups, mismatched sharding assumptions between <strong>W_O</strong> and the residual reduction path can produce either wrong answers or hidden synchronization costs that erase the benefit of parallelism.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself...</h3>
+        <p>If you were implementing this yourself, begin with one block and make it numerically boring before making it fast. Hard-code a tiny model width and sequence length, print every tensor shape, and verify the exact execution order: pre-norm attention, residual add, pre-norm FFN, residual add. Then swap in realistic widths and confirm that every named projection is just a matrix multiply with the expected shape. After correctness, attack memory traffic: fuse RMSNorm where practical, avoid unnecessary temporaries, and make the KV cache layout explicit. Finally, profile prefill and single-token decode separately. They stress the same block in different ways. If the one-block implementation is right, the rest of the model is mostly repetition plus routing.</p>
+
+        <div class="wf-inline-nav">
+            <a href="#/ch4" onclick="event.preventDefault(); route('ch4')">← Part 4: Positional Encoding</a>
+            <a href="#/ch6" onclick="event.preventDefault(); route('ch6')">Part 6: Attention →</a>
+        </div>
+    </div>
+</div>

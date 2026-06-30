@@ -1,0 +1,680 @@
+<div id="ch6" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Part 6 — Attention</div>
+        <h1 class="wf-section-hdr">Attention</h1>
+        <p class="wf-section-desc">The mechanism that lets tokens talk to each other. This is where context happens.</p>
+    </div>
+    <div class="wf-article-body">
+        <p>Attention is the core operation that turns a stack of token vectors into a context-sensitive machine. An embedding by itself only says what a token looked like when it entered the model. Attention asks a more useful question: given where we are in the sequence right now, which earlier tokens matter, by how much, and what information should flow forward from them? In the running example <strong>What is the capital of France?</strong>, the model does not solve the whole sentence at once. It repeatedly builds relevance maps so the final position can look backward and discover that <strong>capital</strong> and <strong>France</strong> are especially informative for predicting the next token <strong>Paris</strong>.</p>
+
+        <p data-plain="Attention lets each token look backward across the sequence and collect information from the tokens that seem most relevant." data-psi="Attention is differentiable routing over sequence state. Each position emits a query into a learned geometry, measures resonance against stored keys, and then transports value mass along the strongest paths." data-duck="Imagine each duck in a pond shouting what it needs. Other ducks reply with how relevant they are. The shouting duck then gathers advice mostly from the ducks whose quacks matched best.">If you want one sentence to keep in your head for the whole chapter, use this: <strong>attention is a learned lookup over prior context</strong>. It is not a hash table lookup with exact keys, and it is not symbolic reasoning in the classical sense. It is a soft, weighted, high-dimensional search. Every token asks what it is looking for, every earlier token advertises what it contains, and the model blends information from the best matches.</p>
+
+        <div class="wf-callout gold">
+            <p><strong>Why this chapter matters:</strong> the rest of the transformer layer mainly supports attention. The feed-forward block expands and compresses features, normalisation stabilises them, and residual paths preserve them, but attention is where sequence positions actually interact. Without it, the model would be a pile of independent per-token transformations and would never truly condition on context.</p>
+        </div>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Meaning</th>
+                        <th>Typical shape</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>X</strong></td>
+                        <td>Input token states</td>
+                        <td>[T, d_model]</td>
+                        <td>One vector per token before attention</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Q</strong></td>
+                        <td>Queries</td>
+                        <td>[H, T, d_head]</td>
+                        <td>What each token is looking for</td>
+                    </tr>
+                    <tr>
+                        <td><strong>K</strong></td>
+                        <td>Keys</td>
+                        <td>[H or H<sub>kv</sub>, T, d_head]</td>
+                        <td>What each token can be matched on</td>
+                    </tr>
+                    <tr>
+                        <td><strong>V</strong></td>
+                        <td>Values</td>
+                        <td>[H or H<sub>kv</sub>, T, d_head]</td>
+                        <td>What each token contributes if selected</td>
+                    </tr>
+                    <tr>
+                        <td><strong>S</strong></td>
+                        <td>Score matrix</td>
+                        <td>[H, T, T]</td>
+                        <td>Pairwise relevance before masking and softmax</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A</strong></td>
+                        <td>Attention weights</td>
+                        <td>[H, T, T]</td>
+                        <td>Normalized relevance after softmax</td>
+                    </tr>
+                    <tr>
+                        <td><strong>O</strong></td>
+                        <td>Attention output</td>
+                        <td>[T, d_model]</td>
+                        <td>Context-enriched representation returned to the layer</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">1. The intuition</h3>
+        <p>Historically, attention replaced the older mental model of sequence processing dominated by recurrent neural networks. In an RNN, information about token one had to travel through token two, then token three, then token four, and so on. That serial chain made long-distance dependencies both hard to learn and expensive to compute. Attention breaks that chain. Token seven can talk directly to token two in a single layer. That direct edge is the reason transformers parallelise well during prefill and why they usually preserve distant context better than classical recurrent architectures.</p>
+
+        <p>The best analogy is the cocktail party. You stand in a loud room full of overlapping conversations. Most voices are background noise. But if somebody says your name, or mentions the topic you care about, your brain can lock onto that voice. Attention does something similar with vectors. The current token emits a query. Earlier tokens each present a key. Similarity between the query and the keys determines which voices rise above the noise. The winning voices then contribute their value vectors to the updated representation.</p>
+
+        <div class="wf-math"><pre>attention(i, j) ∝ sim(q_i, k_j)
+output_i = Σ_j α_ij v_j</pre></div>
+        <p data-plain="For token i, compute how much it cares about each earlier token j, then mix together those tokens' value vectors using those care amounts as weights." data-psi="The sequence becomes a content-addressable memory. Query vectors are read addresses, key vectors are address descriptors, and value vectors are the payload retrieved through weighted superposition." data-duck="A duck asks the pond who knows something useful. Each other duck raises a flipper by an amount equal to its relevance. The asking duck then scoops a little information from every raised flipper, mostly from the highest ones.">In plain English, the equation says: for the current token <strong>i</strong>, compute a weight for every candidate source token <strong>j</strong>, normalize those weights, and use them to blend source information into a new vector. The shapes underneath this intuition are already concrete: you begin with <strong>X[T, d_model]</strong>, project to <strong>Q[T, d_head]</strong>, <strong>K[T, d_head]</strong>, and <strong>V[T, d_head]</strong> for each head, and end with one updated vector per token.</p>
+
+        <div class="wf-code"><pre># Conceptual single-head view
+for i in range(T):
+    scores = []
+    for j in range(T):
+        if j &lt;= i:               # causal model
+            scores.append(dot(Q[i], K[j]))
+        else:
+            scores.append(-inf)
+    weights = softmax(scores)
+    Y[i] = sum(weights[j] * V[j] for j in range(T))</pre></div>
+
+        <div class="wf-callout">
+            <p><strong>If you were implementing this yourself:</strong> classify the projections as matrix multiplies, the score step as matrix multiply plus reduction, the mask as an elementwise write, the <a href="#/glossary" class="wf-gloss">softmax</a> as a row-wise reduction plus elementwise exponentials, and the output blend as another matrix multiply. During prefill this whole path is mostly compute-bound because the big dense matmuls dominate; during decode it increasingly becomes memory-bound because every new token rereads old keys and values. Variants at this level include bidirectional attention, cross-attention, and local attention. The first mistake people make is forgetting that causal language models cannot look into the future. The second is thinking attention is an abstract idea instead of a very specific tensor program.</p>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">2. Queries, Keys, and Values</h3>
+        <p>The three projections are the vocabulary of attention. A <strong>query</strong> answers the question <em>what am I looking for right now?</em> A <strong>key</strong> answers <em>what kind of information do I contain that others might search for?</em> A <strong>value</strong> answers <em>if selected, what content should I actually contribute?</em> All three come from the same input activations <strong>X</strong>, but they are projected through different learned matrices, so the model is free to separate matching behavior from payload behavior.</p>
+
+        <div class="wf-math"><pre>Q = X · Wq
+K = X · Wk
+V = X · Wv</pre></div>
+        <p>The immediate translation is mechanical: take the token-state matrix <strong>X[T, d_model]</strong> and multiply it by three parameter matrices. For one head, <strong>Wq</strong>, <strong>Wk</strong>, and <strong>Wv</strong> usually have shape <strong>[d_model, d_head]</strong>, producing <strong>Q[T, d_head]</strong>, <strong>K[T, d_head]</strong>, and <strong>V[T, d_head]</strong>. In fused implementations, all three are often computed in one large GEMM and then split, because one bigger matrix multiplication is usually better for hardware than three smaller ones.</p>
+
+        <p data-plain="Queries are search vectors, keys are index labels, and values are the actual payload. The model learns all three together." data-psi="A token is factorized into intention, identity, and contribution. Query expresses desire, key expresses recognizability, and value carries transportable state." data-duck="Think of a toolbox. The query is the shape of the socket you need, the key is the shape each tool advertises, and the value is the actual turning force you get once you pick the right wrench.">For the running example, imagine the token states for <strong>What</strong>, <strong>is</strong>, <strong>the</strong>, <strong>capital</strong>, <strong>of</strong>, <strong>France</strong>, and <strong>?</strong> already exist in <strong>X</strong>. The last position does not contain the answer by itself; it contains a state that says something like <em>I am at the end of a question asking for a capital city</em>. After projection, its query vector is shaped to match keys associated with geography and answer-bearing tokens. Meanwhile the key for <strong>France</strong> may advertise that it is a country entity, and the key for <strong>capital</strong> may advertise that the question is about a capital-city relation.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Tiny numeric example</th>
+                        <th>Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>x<sub>France</sub></strong></td>
+                        <td>[2, 1, 0]</td>
+                        <td>Token state before QKV projection</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Wq</strong></td>
+                        <td>[[1, 0], [0, 1], [1, -1]]</td>
+                        <td>Map token state into query space</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Wk</strong></td>
+                        <td>[[0, 1], [1, 0], [1, 1]]</td>
+                        <td>Map token state into key space</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Wv</strong></td>
+                        <td>[[1, 1], [0, 1], [1, 0]]</td>
+                        <td>Map token state into value space</td>
+                    </tr>
+                    <tr>
+                        <td><strong>q<sub>France</sub></strong></td>
+                        <td>[2, 1]</td>
+                        <td>[2, 1, 0] · Wq</td>
+                    </tr>
+                    <tr>
+                        <td><strong>k<sub>France</sub></strong></td>
+                        <td>[1, 2]</td>
+                        <td>[2, 1, 0] · Wk</td>
+                    </tr>
+                    <tr>
+                        <td><strong>v<sub>France</sub></strong></td>
+                        <td>[2, 3]</td>
+                        <td>[2, 1, 0] · Wv</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="wf-code"><pre># Fused QKV projection for one layer
+X        # [T, d_model]
+Wqkv     # [d_model, H_q*d_head + 2*H_kv*d_head]
+QKV = X @ Wqkv
+Q, K, V = split(QKV, [H_q*d_head, H_kv*d_head, H_kv*d_head])
+Q = reshape(Q, [T, H_q, d_head])
+K = reshape(K, [T, H_kv, d_head])
+V = reshape(V, [T, H_kv, d_head])</pre></div>
+
+        <div class="wf-callout gold">
+            <p><strong>If you were implementing this yourself:</strong> this step is a projection-heavy, usually compute-bound stage in prefill and a latency-sensitive but still relatively small stage in decode. Common optimisations are fused QKV weights, quantized linear layers, prepacked weight layouts, and avoiding extra transposes after reshape. Caching starts to matter here because you only need to compute and append <strong>K</strong> and <strong>V</strong> for newly arrived tokens during decode; old ones remain valid. Common mistakes include mixing up row-major versus column-major weight conventions, forgetting that <strong>Q</strong> can have more heads than <strong>K</strong> and <strong>V</strong> in GQA, and assuming the same projection matrix could serve all three roles without loss of expressiveness.</p>
+        </div>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">3. The dot product score</h3>
+        <p>Once you have queries and keys, attention scoring is just pairwise similarity. For every destination token and every candidate source token, compute a dot product between their vectors. If the directions align strongly, the score is high. If they are orthogonal or opposed, the score is lower. Collecting these pairwise comparisons for all tokens yields the score matrix. In a single head with sequence length <strong>T</strong>, that matrix has shape <strong>[T, T]</strong>.</p>
+
+        <div class="wf-math"><pre>S = Q · Kᵀ</pre></div>
+        <p>The immediate explanation is: take every query row and compare it to every key row. If <strong>Q</strong> is <strong>[T, d_head]</strong> and <strong>K</strong> is <strong>[T, d_head]</strong>, then <strong>Kᵀ</strong> is <strong>[d_head, T]</strong>, so the product is <strong>[T, T]</strong>. In multi-head form the shape is <strong>[H, T, T]</strong>. The entry <strong>S[i, j]</strong> is the raw relevance score telling us how much token <strong>i</strong> wants to read from token <strong>j</strong> before masking and normalization.</p>
+
+        <p data-plain="The dot product is large when the query and key point in similar directions and small when they do not." data-psi="Similarity is measured as geometric alignment in latent space. Attention does not ask whether symbols match exactly; it asks whether representational directions cohere." data-duck="Hold two arrows painted on paddles. If they point the same way, they stack neatly and get a big score. If one points sideways, the stack is weak.">Geometrically, the dot product combines direction and magnitude. If two vectors point in similar directions, their dot product is positive and can be large. If they point in unrelated directions, it is near zero. This is why attention can be thought of as a content-based routing mechanism: the current token does not need an explicit address for <strong>France</strong>; it only needs a query whose direction aligns well with keys representing the country and the requested relation.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Query / Key</th>
+                        <th>What</th>
+                        <th>capital</th>
+                        <th>France</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>q<sub>What</sub> = [1, 0]</strong></td>
+                        <td>1</td>
+                        <td>0</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td><strong>q<sub>capital</sub> = [1, 2]</strong></td>
+                        <td>1</td>
+                        <td>4</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td><strong>q<sub>?</sub> = [2, 1]</strong></td>
+                        <td>2</td>
+                        <td>2</td>
+                        <td>5</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Read the last row as the final question token asking which earlier token matters most for answering the prompt. In this toy example it scores <strong>France</strong> at <strong>5</strong>, higher than <strong>What</strong> or <strong>capital</strong>. In a real model you would have all prompt positions in the matrix, not just three summarized ones, and every head would produce its own score matrix, often attending to quite different things.</p>
+
+        <div class="wf-code"><pre># Score computation for one head
+Q  # [T, d_head]
+K  # [T, d_head]
+S = Q @ transpose(K)   # [T, T]</pre></div>
+
+        <div class="wf-callout accent">
+            <p><strong>If you were implementing this yourself:</strong> classify this as a dense matrix multiply in prefill and as a matrix-vector style read in decode when the query length is one. The score matrix is often the place where naive implementations explode memory because <strong>[T, T]</strong> becomes very large at long context. Variants include additive attention and cosine attention, but modern transformer inference overwhelmingly uses scaled dot-product attention. Hardware notes: choose <strong>d_head</strong> values that map well to tensor-core tile sizes, and keep the <strong>Q</strong> and <strong>K</strong> layouts friendly for batched GEMM. Common mistakes are transposing the wrong dimension, mixing head and time axes, or forgetting that score magnitude will grow with head width unless you scale it.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">4. Scaling by √d<sub>k</sub></h3>
+        <p>A raw dot product grows with vector dimension. If query and key entries are roughly zero-mean with unit variance, then summing <strong>d<sub>k</sub></strong> products produces a value whose variance grows linearly with <strong>d<sub>k</sub></strong>. Large raw scores are a problem because the next step is softmax. If some scores become too large relative to others, softmax saturates. Saturated softmax makes learning harder during training and makes numeric behavior less pleasant during inference. The standard fix is simple: divide scores by <strong>√d<sub>k</sub></strong>.</p>
+
+        <div class="wf-math"><pre>scaled_scores = (Q · Kᵀ) / √d_k
+
+If q_a, k_a ~ N(0, 1), then:
+Var(q · k) = d_k
+Var((q · k) / √d_k) = 1</pre></div>
+        <p>The immediate explanation is that dividing by the square root of the head dimension keeps score variance roughly stable as head size changes. If <strong>d<sub>k</sub> = 128</strong>, the raw standard deviation of scores is about <strong>11.3</strong>. Passing numbers of that size into exponentials quickly yields extremely peaky distributions. After scaling, typical score magnitudes are pulled back toward a saner range where softmax still differentiates among candidates without instantly collapsing to almost one-hot outputs.</p>
+
+        <p data-plain="Bigger vectors naturally produce bigger dot products, so we divide by the square root of the vector size to keep scores in a reasonable range." data-psi="Scaling is variance control. It normalizes the energy of latent comparisons so representational width does not arbitrarily distort routing sharpness." data-duck="If you let bigger ducks count more flaps just because they have bigger wings, the contest becomes unfair. Dividing by the wing-size factor makes the quack-off about relevance instead of raw wingspan.">Without scaling, attention would become accidentally sharper as models used wider heads. That is not a desirable semantic effect; it is an artifact of arithmetic growth. The scaling factor makes attention behavior more invariant to representational width. Some newer variants instead normalize queries and keys directly or use cosine-style attention, but the baseline transformer formulation remains the scaled dot-product form.</p>
+
+        <div class="wf-code"><pre>scores = (Q @ K.transpose(-1, -2)) * (1.0 / sqrt(d_head))</pre></div>
+
+        <div class="wf-callout">
+            <p><strong>If you were implementing this yourself:</strong> this is a cheap elementwise multiply on the score tensor, so the operation itself is not expensive; its importance is numerical. In both prefill and decode it is usually bandwidth-trivial compared with the surrounding GEMMs. Good kernels fold the scale into the score computation to avoid an extra pass. Common mistakes include scaling by <strong>d_k</strong> instead of <strong>√d_k</strong>, applying scale after softmax where it changes the wrong quantity, or forgetting that QK normalization variants alter the expected score distribution and may need different handling. Caching is unaffected directly, but the quality of attention over the cached history absolutely depends on this stable score range.</p>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">5. Causal masking</h3>
+        <p>Language-model inference is autoregressive. When predicting token <strong>i</strong>, the model must not peek at tokens <strong>i + 1</strong>, <strong>i + 2</strong>, or anything else from the future. During training this rule prevents cheating. During generation it preserves causality by ensuring that the output depends only on the prompt and previously generated tokens. The causal mask enforces this by overwriting illegal future positions with negative infinity before softmax.</p>
+
+        <div class="wf-math"><pre>masked_scores[i, j] = scores[i, j]   if j ≤ i
+masked_scores[i, j] = -∞             if j &gt; i</pre></div>
+        <p>The shape stays the same as the score matrix: <strong>[T, T]</strong> per head in prefill, or <strong>[1, T]</strong> per head in single-token decode. The important structural property is lower triangular visibility. Token zero can only see token zero. Token five can see tokens zero through five. Nobody can see token six until token six actually exists. After the mask, softmax will assign exactly zero probability mass to future positions because <strong>exp(-∞) = 0</strong>.</p>
+
+        <div class="wf-code"><pre># Lower-triangular causal mask for T = 4
+[[0, -inf, -inf, -inf],
+ [0,    0, -inf, -inf],
+ [0,    0,    0, -inf],
+ [0,    0,    0,    0]]</pre></div>
+
+        <p data-plain="The mask stops the model from cheating by hiding every position to the right of the current token." data-psi="Causality is enforced as a hard visibility constraint over the attention graph. The future is not merely discouraged; it is removed from the reachable state space." data-duck="Picture ducks sitting in a line with blinders that only open backward. A duck can glance at ducks behind it, never at ducks still swimming in from the future.">Prefill and decode handle masking differently in practice. In prefill, you often build or implicitly apply the full lower-triangular mask because many query positions are active at once. In decode, the query length is usually one, so there are no future positions relative to that new token. The effective mask is then mostly a length boundary on the existing cache rather than a dense triangular matrix you explicitly materialize.</p>
+
+        <div class="wf-callout gold">
+            <p><strong>If you were implementing this yourself:</strong> classify masking as a cheap elementwise or fused bias-write, but treat it as correctness-critical. In efficient kernels the mask is fused into score generation so illegal elements are never meaningfully written. This step is not expensive enough to change the bound classification by itself; prefill remains compute-heavy and decode remains dominated by cache reads. Variants include bidirectional masks for encoders, block-sparse masks, and sliding-window masks. Frequent mistakes are using the wrong sign, applying the mask after softmax, off-by-one errors around the current position, and forgetting that cached decode paths need logical sequence lengths even when no explicit triangular tensor exists.</p>
+        </div>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">6. Softmax</h3>
+        <p>Raw scores are not yet weights. They can be negative, positive, or on incompatible scales across rows. Softmax converts each row of scores into a probability-like distribution: every weight is non-negative and the row sums to one. That normalization matters because attention output is supposed to be a convex blend of values, not an uncontrolled accumulation whose scale drifts with context length.</p>
+
+        <div class="wf-math"><pre>α_ij = exp(s_ij) / Σ_j exp(s_ij)</pre></div>
+        <p>In English: exponentiate every score in the row, then divide by the sum of all exponentials in that row. Large scores become disproportionately influential because exponentials amplify differences. This is why softmax is often called a <a href="#/glossary" class="wf-gloss">softmax</a> or soft argmax: it does not choose exactly one source, but it tends to concentrate mass on the best few. For the example row <strong>[1, 4, 5]</strong>, subtracting the row max gives <strong>[-4, -1, 0]</strong>; exponentiating yields roughly <strong>[0.018, 0.368, 1.0]</strong>; normalizing produces about <strong>[0.013, 0.265, 0.722]</strong>.</p>
+
+        <p data-plain="Softmax turns arbitrary scores into usable weights that add up to one, usually giving most of the weight to the biggest scores." data-psi="Softmax transforms an energy landscape into a normalized measure over alternatives. It preserves ranking while converting comparison into transport mass." data-duck="The ducks hold a pie. Bigger scores earn bigger slices, but the pie is always cut into exactly one whole pie in total.">The numerical stability trick is mandatory in real implementations: subtract the maximum score in each row before exponentiating. This does not change the final distribution, because adding or subtracting the same constant from every element cancels out in the normalization. But it prevents overflow when one score is very large. Fused kernels often compute the row max, row sum of exponentials, and normalized outputs in one pass or tile-aware sequence.</p>
+
+        <div class="wf-code"><pre>row_max = max(scores[i])
+exps = exp(scores[i] - row_max)
+weights = exps / sum(exps)</pre></div>
+
+        <div class="wf-callout accent">
+            <p><strong>If you were implementing this yourself:</strong> classify softmax as a row-wise reduction plus elementwise nonlinear transform. On short decode rows it is usually not the dominant cost, but it can still be latency-sensitive because it sits on the critical path and touches the whole visible sequence. Optimisations include fused masked softmax, online softmax for tiled attention, reduced-precision exponentials with accumulation in higher precision, and avoiding materialized temporary buffers. Variants include temperature scaling, sparsemax, and entmax, though standard causal LLM inference uses vanilla softmax. Frequent mistakes are skipping max subtraction, normalizing across the wrong axis, or assuming softmax is expensive in FLOPs rather than expensive in memory traffic and synchronization.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">7. Weighted value accumulation</h3>
+        <p>After softmax, attention finally performs the actual information transfer. The weight matrix tells each destination token how much of each source value vector to collect. This is the moment where context is aggregated. Up to now the model has only computed match scores. Here it uses those scores to rewrite token states based on what earlier tokens contributed.</p>
+
+        <div class="wf-math"><pre>Y = A · V</pre></div>
+        <p>The shape story is simple and worth memorizing. If <strong>A</strong> is <strong>[T, T]</strong> and <strong>V</strong> is <strong>[T, d_head]</strong>, then the output <strong>Y</strong> is <strong>[T, d_head]</strong>. In multi-head form you do this independently for every head. Using the example weights <strong>[0.013, 0.265, 0.722]</strong> and toy value vectors <strong>v<sub>What</sub> = [0, 0]</strong>, <strong>v<sub>capital</sub> = [3, 0]</strong>, and <strong>v<sub>France</sub> = [0, 4]</strong>, the resulting output is approximately <strong>[0.795, 2.888]</strong>. That vector is not literally the word Paris. It is a context-enriched latent feature vector that now strongly reflects the relevant source tokens.</p>
+
+        <p data-plain="Attention output is a weighted average of value vectors. The weights decide who gets to contribute." data-psi="Values are transported through a learned mixture field. Attention scores decide not what a token is, but how much of its state is admitted into another token's updated representation." data-duck="The asking duck takes spoonfuls of soup from every other duck's bowl. The size of each spoonful is the attention weight. The final bowl is a blend, not a copy.">This distinction between keys and values is important. Keys decide <em>who wins the lookup</em>; values decide <em>what content is delivered once they win</em>. That separation gives the model flexibility. A token can be easy to match on one feature yet contribute payload emphasizing some other feature. In hardware terms, this step is another dense multiply, but semantically it is the moment where information actually moves across positions.</p>
+
+        <div class="wf-code"><pre># Blend values with attention weights
+A  # [T, T]
+V  # [T, d_head]
+Y = A @ V   # [T, d_head]</pre></div>
+
+        <div class="wf-callout">
+            <p><strong>If you were implementing this yourself:</strong> this step is a GEMM in prefill and a weighted gather over the full visible cache in decode. It often shares the same memory-pressure story as the score step because every decode token reads the entire value history it is allowed to see. Optimisations include fusing with surrounding steps, storing values in cache-friendly layouts, and reusing shared K/V in MQA or GQA to reduce bandwidth. Variants exist in linear-attention families, but standard transformer inference still computes the explicit weighted blend. Common mistakes include multiplying the matrices in the wrong order, forgetting to broadcast K/V groups correctly, or assuming the output should stay sparse because the weights are concentrated.</p>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">8. Multi-head attention</h3>
+        <p>A single attention head can learn one family of relationships, but language has many kinds of structure happening at once. Some dependencies are local syntax. Some are entity references. Some are long-range topic cues. Some are formatting patterns. Multi-head attention lets the model learn several distinct query-key-value subspaces in parallel. Rather than one head of width <strong>d_model</strong>, the model uses <strong>H</strong> heads of width <strong>d_head</strong> such that <strong>H · d_head = d_model</strong> in the standard case.</p>
+
+        <div class="wf-math"><pre>head_h = Attention(Q_h, K_h, V_h)
+MultiHead(Q, K, V) = Concat(head_1, …, head_H) · Wo</pre></div>
+        <p>The tensor shapes are the operational truth. Suppose <strong>d_model = 4096</strong>, <strong>H = 32</strong>, and therefore <strong>d_head = 128</strong>. Then queries are shaped like <strong>Q[32, T, 128]</strong>. Each head independently builds scores <strong>[T, T]</strong>, applies masking and softmax, and produces an output <strong>[T, 128]</strong>. The outputs from all heads are concatenated into <strong>[T, 4096]</strong> and then multiplied by <strong>W<sub>o</sub>[4096, 4096]</strong> to mix head results back into model space.</p>
+
+        <p data-plain="Multiple heads let the model look for several kinds of relationships at the same time." data-psi="Head factorization creates parallel attention subspaces. Each subspace learns its own geometry of relevance, then the output projection recomposes them into a unified state." data-duck="Instead of one duck with one pair of eyes, imagine a duck with many goggles, each tinted for a different clue: geography, syntax, punctuation, or topic. Each goggle produces its own view, then the duck combines them.">In the running example, one head might focus on entity identity and heavily attend from the final token to <strong>France</strong>. Another might focus on the relation implied by <strong>capital</strong>. Another might mostly care about punctuation and question structure. The important thing is not that every head corresponds cleanly to a human concept; often they do not. The important thing is that the architecture gives the model parallel channels for distinct matching patterns.</p>
+
+        <div class="wf-code"><pre># Multi-head attention shapes
+Q = reshape(X @ Wq, [T, H, d_head]).transpose(1, 0, 2)   # [H, T, d_head]
+K = reshape(X @ Wk, [T, H, d_head]).transpose(1, 0, 2)   # [H, T, d_head]
+V = reshape(X @ Wv, [T, H, d_head]).transpose(1, 0, 2)   # [H, T, d_head]
+
+for h in range(H):
+    Y[h] = attention(Q[h], K[h], V[h])                    # [T, d_head]
+
+Y = transpose(Y, [1, 0, 2]).reshape([T, H * d_head])     # [T, d_model]
+O = Y @ Wo                                                # [T, d_model]</pre></div>
+
+        <div class="wf-callout gold">
+            <p><strong>If you were implementing this yourself:</strong> classify head splitting and concatenation as shape transforms around the real work, not as new mathematics. On modern accelerators, performance depends heavily on how you lay out head and sequence dimensions before launching GEMMs or fused attention kernels. Prefill remains compute-bound because you are doing many large dense operations; decode becomes increasingly bandwidth-bound because every active head must read old K/V state. Variants include cross-attention, head pruning, and fused multi-head kernels. Common mistakes are reshaping in the wrong order, producing non-contiguous tensors that trigger hidden copies, and assuming more heads automatically mean better quality regardless of total model width.</p>
+        </div>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">9. Multi-Query Attention (MQA)</h3>
+        <p>Classic multi-head attention gives every head its own queries, keys, and values. That is expressive but expensive at decode time because the <a href="#/glossary" class="wf-gloss">KV cache</a> grows with the number of K/V heads. Multi-query attention changes one design choice: every query head keeps its own <strong>Q</strong>, but all heads share the same <strong>K</strong> and <strong>V</strong>. In notation, <strong>H<sub>q</sub></strong> can be large while <strong>H<sub>kv</sub> = 1</strong>.</p>
+
+        <div class="wf-math"><pre>Q ∈ [H_q, T, d_head]
+K ∈ [1,   T, d_head]
+V ∈ [1,   T, d_head]</pre></div>
+        <p>The immediate consequence is dramatic memory reduction. If a model had <strong>32</strong> query heads and switched from full multi-head attention to MQA, its per-layer K/V cache would shrink by roughly <strong>32×</strong> compared with storing distinct keys and values for all heads. The trade-off is that different query heads no longer get head-specific source representations. They can ask different questions, but they all read from the same key-value inventory.</p>
+
+        <p data-plain="MQA keeps many searchers but gives them one shared memory bank to search through." data-psi="The model preserves multiplicity in read intention while collapsing the write-side memory representation. Diversity remains in queries; source state is shared." data-duck="Picture thirty-two ducks asking different questions, but all of them consult the same librarian duck and the same shared bookshelf instead of keeping thirty-two separate libraries.">Why is this attractive? Because decode performance is dominated less by arithmetic and more by reading the cache. Shared keys and values mean less memory to store, less memory to move, and better batch density across many concurrent requests. The quality loss is often modest enough to be worth it, especially in serving systems where long contexts and large batches make cache pressure painful.</p>
+
+        <div class="wf-code"><pre># MQA decode sketch
+Q_new = project_q(x_new)               # [H_q, 1, d_head]
+K_new = project_k(x_new)               # [1,   1, d_head]
+V_new = project_v(x_new)               # [1,   1, d_head]
+append_to_cache(K_new, V_new)
+
+for h in range(H_q):
+    scores[h] = Q_new[h] @ K_cache[0].T
+    out[h] = softmax(scores[h]) @ V_cache[0]</pre></div>
+
+        <div class="wf-callout accent">
+            <p><strong>If you were implementing this yourself:</strong> this section is fundamentally about cache economics. The projections still cost compute, but the big win is that decode becomes less memory-hungry because the stored and reread K/V tensors are far smaller. Hardware teams like MQA because it reduces bandwidth pressure and increases the number of sequences that fit on-device. Variants include pure MQA and more common grouped forms such as GQA. Common mistakes are forgetting to broadcast the shared K/V correctly across query heads, benchmarking only short contexts where the memory savings are less visible, or assuming that any quality drop must come from arithmetic rather than from reducing source-side representational diversity.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">10. Grouped Query Attention (GQA)</h3>
+        <p>Grouped query attention is the compromise between classic multi-head attention and MQA. Instead of giving every query head its own key and value, or forcing all query heads to share one global key and value set, GQA groups query heads so each group shares a K/V head. This keeps most of the cache savings of MQA while recovering much of the quality of full multi-head attention.</p>
+
+        <div class="wf-math"><pre>group_size = H_q / H_kv
+kv_head = floor(q_head / group_size)</pre></div>
+        <p>A concrete example makes this intuitive. Llama-2 70B uses <strong>64</strong> query heads but only <strong>8</strong> K/V heads. That means each K/V head serves a group of <strong>8</strong> query heads. The query tensor is <strong>Q[64, T, 128]</strong>, while the key and value tensors are <strong>K[8, T, 128]</strong> and <strong>V[8, T, 128]</strong>. During attention, query head <strong>17</strong> might reuse key-value head <strong>2</strong> because <strong>17 // 8 = 2</strong>.</p>
+
+        <p data-plain="GQA says several heads can share one key-value memory bank, but not all heads have to share the same one." data-psi="GQA introduces structured sharing on the source side. It constrains memory multiplicity with groupwise reuse while preserving multiple query subspaces." data-duck="Think of a flock split into eight little libraries. Every duck still asks its own question, but ducks are assigned to one of eight shared bookshelves rather than owning a private shelf or fighting over just one shelf.">The implementation detail that matters most is consistency of head mapping. You either physically store fewer K/V heads and broadcast them logically at use time, or you materialize an expanded view without copying. Good kernels do the former. The arithmetic behavior is almost the same as MHA from the query side, but the cache footprint scales with <strong>H<sub>kv</sub></strong>, not <strong>H<sub>q</sub></strong>. That is why GQA is now common in practical inference models.</p>
+
+        <div class="wf-code"><pre># GQA mapping
+group_size = H_q // H_kv
+for qh in range(H_q):
+    kvh = qh // group_size
+    scores[qh] = Q[qh] @ K[kvh].T
+    out[qh] = softmax(scores[qh]) @ V[kvh]</pre></div>
+
+        <div class="wf-callout">
+            <p><strong>If you were implementing this yourself:</strong> store cache tensors physically as <strong>[max_seq, H_kv, d_head]</strong> per layer, not as fully expanded <strong>H_q</strong> copies. That is the whole point. Operation classification remains the same as ordinary attention, but the bound classification improves in decode because less cache state must be moved. Variants include different group sizes across model families. Hardware notes: group sizes that align with warp or wavefront-friendly broadcasting patterns are easier to optimize. Frequent mistakes include allocating cache for the wrong number of heads, expanding shared K/V into full copies by accident, and mixing up the head-mapping rule when reshaping fused QKV projection outputs.</p>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">11. The KV cache</h3>
+        <p>Now we reach the state object that dominates real autoregressive inference. During decode, only one new token arrives at a time. The query for that new token must be computed fresh, but the keys and values for all earlier tokens are unchanged. Recomputing the old K and V tensors on every step would be absurdly wasteful, so implementations store them in a per-layer cache. When token <strong>t + 1</strong> arrives, the layer computes its new <strong>K</strong> and <strong>V</strong>, appends them to the cache, and attends over the entire history already stored there.</p>
+
+        <div class="wf-math"><pre>KV cache shape per layer:
+K_cache[max_seq, H_kv, d_head]
+V_cache[max_seq, H_kv, d_head]
+
+Full model conceptual shape:
+[num_layers, max_seq, num_kv_heads, d_head]</pre></div>
+        <p>The memory math is brutal enough that every systems engineer should do it by hand at least once. Suppose a model has <strong>32</strong> layers, context length <strong>8192</strong>, <strong>8</strong> K/V heads, head width <strong>128</strong>, and uses bf16 storage at <strong>2 bytes</strong> per number. Because keys and values are both stored, the cache size per sequence is:</p>
+
+        <div class="wf-math"><pre>32 layers × 8192 tokens × 8 heads × 128 dims × 2 tensors × 2 bytes
+= 1,073,741,824 bytes
+≈ 1 GiB per sequence</pre></div>
+        <p data-plain="The KV cache stores old keys and values so the model does not recompute them every token, but this stored history gets very large." data-psi="Autoregressive inference externalizes the past into persistent layerwise memory. The cache is the concrete, operational residue of prior context." data-duck="Every new duck leaves behind a card in a filing cabinet saying how it can be recognized and what it would contribute if asked again. The cabinet gets bigger with every duck in the story.">If the same model used full <strong>64</strong> K/V heads instead of <strong>8</strong>, that single-sequence cache would jump to about <strong>8 GiB</strong>. This is why MQA and GQA matter so much. At long context, the cache, not the weights, often becomes the per-request memory bottleneck. The arithmetic for one decode token may be modest, but the system still has to drag enormous history tensors through memory every step.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Knob</th>
+                        <th>Effect on cache</th>
+                        <th>Serving implication</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Longer context</td>
+                        <td>Linear increase with max_seq</td>
+                        <td>Fewer concurrent sequences fit in memory</td>
+                    </tr>
+                    <tr>
+                        <td>More layers</td>
+                        <td>Linear increase with depth</td>
+                        <td>Deeper models pay the cost repeatedly</td>
+                    </tr>
+                    <tr>
+                        <td>More KV heads</td>
+                        <td>Linear increase with H<sub>kv</sub></td>
+                        <td>Full MHA is expensive to serve</td>
+                    </tr>
+                    <tr>
+                        <td>Wider heads</td>
+                        <td>Linear increase with d_head</td>
+                        <td>Higher bandwidth per decode step</td>
+                    </tr>
+                    <tr>
+                        <td>Lower precision</td>
+                        <td>Reduces bytes per element</td>
+                        <td>Often essential for capacity</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="wf-code"><pre># Decode-time cache update
+for layer in range(num_layers):
+    q = project_q(x_new)                    # fresh every step
+    k = project_k(x_new)                    # one new row
+    v = project_v(x_new)                    # one new row
+    K_cache[layer, pos] = k
+    V_cache[layer, pos] = v
+    y = attend(q, K_cache[layer, :pos+1], V_cache[layer, :pos+1])</pre></div>
+
+        <p>Cache management strategies differ by serving stack. A simple implementation allocates a contiguous buffer per request per layer. Sliding-window models can use ring buffers because old tokens eventually fall out of visibility. High-throughput engines often use paged or block-based allocators so many variable-length sequences can share device memory efficiently. No matter the policy, correctness depends on associating every cached row with the exact layer, logical position, head group, and positional encoding state that produced it.</p>
+
+        <div class="wf-callout gold">
+            <p><strong>If you were implementing this yourself:</strong> treat the cache as first-class state, not as an afterthought. Operation classification here is append plus gather; bound classification is overwhelmingly memory-bound during decode. Hardware notes: keep cache rows contiguous in the dimensions you will read together, choose a precision that balances quality and footprint, and minimize pointer chasing unless paged allocation is buying enough batching efficiency to justify it. Optimisations include MQA/GQA, sliding windows, quantized caches, ring buffers, and paged allocation. Common mistakes are forgetting to apply RoPE before caching K, mixing absolute and logical positions, double-writing on speculative decode rollbacks, and underestimating how much end-to-end latency is really cache bandwidth in disguise.</p>
+        </div>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">12. Prefill vs decode</h3>
+        <p>People often say transformer inference as if it were one thing, but two very different regimes exist inside that phrase. <strong>Prefill</strong> processes the initial prompt, often many tokens at once, and populates the KV cache. <strong>Decode</strong> then processes one new token at a time, attending against the full cached history. The same layer equations apply in both modes, yet the performance profile changes dramatically because the tensor shapes change.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Mode</th>
+                        <th>Query length</th>
+                        <th>Main shapes</th>
+                        <th>Typical bound</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Prefill</strong></td>
+                        <td>T prompt tokens</td>
+                        <td>Q[K/V] with large T, scores [H, T, T]</td>
+                        <td>Mostly compute-bound</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Decode</strong></td>
+                        <td>1 new token</td>
+                        <td>Q[H, 1, d], K/V from cache [H<sub>kv</sub>, T, d]</td>
+                        <td>Mostly memory-bound</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="wf-math"><pre>Prefill attention cost per layer ≈ O(T² · d_head · H_q)
+Decode attention cost per new token per layer ≈ O(T · d_head · H_q)</pre></div>
+        <p>The asymptotics already hint at the difference. Prefill is full-matrix work. Large prompt chunks mean large GEMMs, which accelerators handle well. Decode is a narrow query against a long history. Arithmetic per step is much smaller, but the system must read the entire visible cache for every layer and every generated token. That is why prefill tokens per second and decode tokens per second behave so differently on the same hardware. One is a throughput problem dominated by dense compute; the other is a latency and bandwidth problem dominated by repeatedly rereading history.</p>
+
+        <p data-plain="Prefill is the big batch pass over the prompt. Decode is the one-token-at-a-time loop afterward. They stress hardware in different ways." data-psi="Inference bifurcates into a bulk initialization phase and a recurrent state-extension phase. The equations are shared; the bottlenecks are not." data-duck="First the ducks set up the whole filing cabinet from the prompt all at once. After that, each new duck arrives alone and must rummage through the cabinet one card at a time.">This distinction affects batching strategy, scheduler design, and kernel choice. Prefill wants big contiguous work and benefits from chunking large prompts together. Decode wants careful continuous batching across many requests so the hardware stays occupied while each request only contributes a tiny query. It is common for a serving engine to treat these modes almost like separate workloads sharing the same weights.</p>
+
+        <div class="wf-code"><pre># Prefill
+X_prompt = embed(prompt_tokens)
+for layer in layers:
+    X_prompt, K_cache[layer], V_cache[layer] = attention_prefill(X_prompt)
+
+# Decode
+while not stop:
+    x_new = embed(last_token)
+    for layer in layers:
+        x_new = attention_decode(x_new, K_cache[layer], V_cache[layer])
+    last_token = sample(x_new)</pre></div>
+
+        <div class="wf-callout accent">
+            <p><strong>If you were implementing this yourself:</strong> benchmark prefill and decode separately. A system that looks fast on prompt ingestion may still feel slow to users if decode is weak. Optimisations for prefill include FlashAttention, prompt chunking, and large GEMM efficiency; optimisations for decode include GQA, paged attention, cache quantization, continuous batching, and careful memory layout. Caching is the defining difference between the two modes. Common mistakes are quoting one tokens-per-second number as if it described both phases, failing to reserve memory for worst-case cache growth, and tuning only FLOPs while ignoring the bandwidth wall that dominates long-context generation.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">13. FlashAttention</h3>
+        <p>Naive attention has an ugly memory habit: it often materializes the full score matrix <strong>[T, T]</strong>, sometimes the masked matrix, and sometimes the post-softmax weight matrix too. At long context, these intermediates are huge and expensive to move to and from high-bandwidth memory. FlashAttention attacks this problem not by changing the mathematical result, but by changing the execution schedule. It tiles the computation so the full attention matrix never has to exist in device memory at once.</p>
+
+        <div class="wf-math"><pre>Instead of:
+S = QKᵀ
+A = softmax(S)
+Y = AV
+
+FlashAttention computes tiled blocks and maintains
+running row max m_i and running row sum l_i
+to produce the same Y without materializing S or A globally.</pre></div>
+        <p>The crucial trick is <strong>online softmax</strong>. Softmax usually needs the whole row to know the row max and denominator. FlashAttention processes the row in chunks but keeps enough running statistics to combine chunks exactly. For each tile it updates the running maximum and running normalization term, rescales partial outputs when a new tile changes the maximum, and accumulates the final output directly. The result is mathematically equivalent to standard attention up to floating-point details, yet dramatically lower in memory traffic.</p>
+
+        <p data-plain="FlashAttention gets the same answer as normal attention but avoids storing the huge T by T matrix. It works on small tiles instead." data-psi="The optimization is an IO schedule transformation. By respecting memory hierarchy and maintaining streaming normalization invariants, it trades a global materialization for locality-preserving accumulation." data-duck="Instead of dumping every duck-to-duck relevance score onto a giant field-sized scoreboard, the ducks process a few lanes at a time and keep only the running winners and totals in a notebook.">Why can it be faster even if the arithmetic count is similar or slightly higher? Because modern accelerators are often bottlenecked by memory movement rather than raw multiply-add throughput. Moving a giant score matrix out to HBM and then reading it back is expensive. Recomputing or rescaling inside on-chip SRAM can be cheaper than storing and reloading massive intermediates. That is the essence of the IO complexity story.</p>
+
+        <div class="wf-code"><pre># Highly simplified FlashAttention sketch
+for q_tile in tiles(Q):
+    m = -inf
+    l = 0
+    o = 0
+    for k_tile, v_tile in zip(tiles(K), tiles(V)):
+        s = q_tile @ k_tile.T
+        s = apply_mask_and_scale(s)
+        m_new = max(m, rowmax(s))
+        l = exp(m - m_new) * l + sum(exp(s - m_new))
+        o = exp(m - m_new) * o + exp(s - m_new) @ v_tile
+        m = m_new
+    output_tile = o / l</pre></div>
+
+        <p>FlashAttention matters most in prefill, where the score matrix is widest and densest. Decode already has query length one, so the specific benefit of not materializing a huge square matrix is smaller, though related flash-decoding kernels still matter. Variants such as FlashAttention-2 improve work partitioning and GPU utilization. The conceptual lesson is broader than the specific kernel family: in transformer inference, the schedule of memory movement can matter more than the nominal FLOP count.</p>
+
+        <div class="wf-callout">
+            <p><strong>If you were implementing this yourself:</strong> classify FlashAttention as a fused tiled kernel that changes the memory schedule, not the model architecture. Bound classification shifts toward compute because the kernel avoids writing and rereading giant intermediates. Hardware notes: the optimization depends on good use of SRAM, register pressure control, and tile shapes that fit the accelerator. Variants include FlashAttention-2 and specialized decode kernels. Caching still exists exactly as before; FlashAttention merely changes how active queries consume K/V. Common mistakes are assuming it approximates attention, forgetting that mask and scale must be fused consistently, or benchmarking only kernel time without including launch overhead and scheduler effects.</p>
+        </div>
+
+        <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">14. Sliding window attention</h3>
+        <p>Not every task needs every token to see the entire past. Many dependencies are local, and recent context often matters more than ancient context. Sliding window attention exploits that by limiting visibility to the most recent <strong>W</strong> tokens. Instead of attending over all prior positions <strong>0..i</strong>, token <strong>i</strong> attends only over <strong>max(0, i - W + 1)..i</strong>. Mistral-style models use this idea successfully.</p>
+
+        <div class="wf-math"><pre>visible(i) = { j | max(0, i - W + 1) ≤ j ≤ i }</pre></div>
+        <p>The shape implication is straightforward. Instead of a score matrix <strong>[T, T]</strong> per head in prefill, the active neighborhood is conceptually <strong>[T, W]</strong>. During decode, instead of reading the entire cache of length <strong>T</strong>, the layer only needs the most recent <strong>W</strong> rows. If the implementation truly evicts or overwrites older cache entries, memory usage becomes <strong>O(W)</strong> rather than <strong>O(T)</strong> for the active state.</p>
+
+        <p data-plain="Sliding window attention only looks back a fixed distance, which saves memory and bandwidth if older tokens are rarely needed." data-psi="The model imposes locality on the attention graph, restricting the reachable past to a moving temporal neighborhood." data-duck="Each duck can only consult the last few ducks in line, not the entire parade. That sounds limiting, but if the important gossip is usually recent, the flock still works fine.">Why does this often work? Because many language tasks rely heavily on recent syntax, nearby discourse, and the latest instructions. The model can still keep long-range information indirectly if that information is propagated forward layer by layer or summarized into recent tokens. The trade-off is obvious: you save memory and improve throughput, but hard long-distance retrieval becomes less reliable unless the architecture adds some other mechanism such as periodic global tokens or retrieval augmentation.</p>
+
+        <div class="wf-code"><pre># Sliding-window decode read
+start = max(0, pos - window + 1)
+K_view = K_cache[start:pos+1]
+V_view = V_cache[start:pos+1]
+scores = q @ K_view.T
+weights = softmax(scores)
+out = weights @ V_view</pre></div>
+
+        <div class="wf-callout gold">
+            <p><strong>If you were implementing this yourself:</strong> a ring buffer is the natural cache structure because old rows fall out of use deterministically. The operation types remain familiar, but the bound classification improves because both memory footprint and read bandwidth are capped by <strong>W</strong>. Variants include dilated windows, hybrid local-plus-global attention, and chunked recurrence. Hardware notes: fixed windows simplify scheduling and keep working sets hot. Common mistakes are mishandling wraparound in ring buffers, misaligning positional encoding when old slots are overwritten, and assuming that local attention automatically preserves every long-range behavior of full attention.</p>
+        </div>
+
+        <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">15. Paged attention</h3>
+        <p>Once many requests of different lengths share one accelerator, cache management becomes an allocator problem. Simple contiguous per-sequence buffers waste memory because real requests finish at different times and grow at different rates. Paged attention, popularized by systems such as vLLM, treats the KV cache more like virtual memory. Instead of requiring one long contiguous region per request, it stores K/V rows in fixed-size blocks and keeps a mapping from each sequence's logical token positions to physical blocks in device memory.</p>
+
+        <div class="wf-math"><pre>physical_blocks[num_blocks, block_size, H_kv, d_head]
+page_table[sequence_id][logical_block] -&gt; physical_block_id</pre></div>
+        <p>The operating-system analogy is good and worth keeping. Logical position <strong>5000</strong> in a sequence does not have to live next to logical position <strong>4999</strong> in memory if both positions can be located through an indirection table. This means the serving engine can allocate, free, and reuse fixed-size cache pages as requests arrive and complete. Fragmentation drops, continuous batching becomes easier, and the accelerator can stay busier because more variable-length requests fit into the same memory budget.</p>
+
+        <p data-plain="Paged attention stores the KV cache in fixed-size blocks and uses a lookup table to find the right blocks for each sequence." data-psi="It virtualizes sequence memory. Logical context remains contiguous to the model while physical placement becomes an implementation detail governed by an indirection layer." data-duck="Instead of each duck owning one giant shelf, the pond uses many labeled storage crates. A duck's history is a list of crate numbers. The crates can live anywhere as long as the index card points to them.">There is, of course, an extra level of address calculation. The engine must translate logical positions into physical blocks before reading K/V. But that indirection cost is usually far smaller than the memory waste avoided by abandoning contiguous reservation. Paged attention pairs especially well with continuous batching, speculative execution, and other serving strategies where requests are frequently entering, leaving, or being reordered.</p>
+
+        <div class="wf-code"><pre># Conceptual paged cache lookup
+logical_block = pos // block_size
+offset = pos % block_size
+physical_block = page_table[seq_id][logical_block]
+k = K_blocks[physical_block, offset]
+v = V_blocks[physical_block, offset]</pre></div>
+
+        <div class="wf-callout accent">
+            <p><strong>If you were implementing this yourself:</strong> classify paged attention as a memory-management optimization around ordinary attention math. It does not change the equations; it changes how cache state is laid out and retrieved. The bound classification remains decode-memory-bound, but capacity and batching efficiency improve because fragmentation falls. Hardware notes: page sizes should balance locality against allocator overhead, and the indirection structures themselves should stay compact and cache-friendly. Variants include block compaction and copy-on-write pages for shared prompts. Frequent mistakes are picking page sizes with poor locality, turning address translation into a branchy bottleneck, or forgetting that logical sequence order must remain exact even when physical storage is scattered.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">16. Putting it all together</h3>
+        <p>By now the pieces should feel less mystical. Attention starts with token states, projects them into queries, keys, and values, scores every allowed source token against every destination token, scales, masks, normalizes, blends values, and projects the multi-head result back into model space. The mathematics is compact; the systems consequences are not. Every design choice around heads, cache layout, masking, batching, and kernel fusion changes real serving behavior.</p>
+
+        <div class="wf-code"><pre># One complete causal self-attention layer, GQA form
+# Inputs:
+#   X           [T_q, d_model]              prefill: T_q = T, decode: T_q = 1
+#   K_cache     [T_k, H_kv, d_head]
+#   V_cache     [T_k, H_kv, d_head]
+# Parameters:
+#   Wq          [d_model, H_q * d_head]
+#   Wk          [d_model, H_kv * d_head]
+#   Wv          [d_model, H_kv * d_head]
+#   Wo          [H_q * d_head, d_model]
+
+Q = reshape(X @ Wq, [T_q, H_q, d_head])
+K = reshape(X @ Wk, [T_q, H_kv, d_head])
+V = reshape(X @ Wv, [T_q, H_kv, d_head])
+
+Q = apply_rope(Q, positions_q)
+K = apply_rope(K, positions_q)
+
+append(K_cache, K)
+append(V_cache, V)
+
+K_all = view(K_cache, visible_positions)              # [T_k_total, H_kv, d_head]
+V_all = view(V_cache, visible_positions)              # [T_k_total, H_kv, d_head]
+
+for qh in range(H_q):
+    kvh = qh // (H_q // H_kv)
+    scores = Q[:, qh, :] @ transpose(K_all[:, kvh, :])    # [T_q, T_k_total]
+    scores *= 1 / sqrt(d_head)
+    scores = apply_causal_or_window_mask(scores)
+    weights = softmax(scores)
+    context[:, qh, :] = weights @ V_all[:, kvh, :]         # [T_q, d_head]
+
+Y = reshape(context, [T_q, H_q * d_head])
+O = Y @ Wo                                                 # [T_q, d_model]
+return O, K_cache, V_cache</pre></div>
+
+        <p data-plain="This pseudocode is the whole mechanism: project, cache, score, scale, mask, softmax, mix values, and project back out." data-psi="Attention is an execution loop that alternates between representational factorization and content-addressed retrieval, with persistent state living in the cache." data-duck="The duck recipe is now complete: make questions, keep indexed cards for old ducks, compare the new question with every old card, ignore illegal future ducks, normalize the votes, blend the useful soup, and hand the result to the next stage.">Notice how many implementation details are hidden inside seemingly small verbs. <strong>append</strong> means managing persistent cache memory. <strong>view</strong> might mean following a page table or ring-buffer offset. <strong>apply mask</strong> may encode full causal visibility, sliding windows, or paged lookup boundaries. <strong>softmax</strong> may be a fused online kernel. The pseudocode is short because the abstraction is clean, not because the engineering is trivial.</p>
+
+        <div class="wf-code"><pre>X[T_q, d_model]
+  ↓ linear projections
+Q[T_q, H_q, d_head]   K_new[T_q, H_kv, d_head]   V_new[T_q, H_kv, d_head]
+  ↓ RoPE               ↓ RoPE                     ↓
+Q_rot                  K_rot                      V_new
+  ↓                    ↓ append to K cache        ↓ append to V cache
+  └───────────────visible K/V view from cache───────────────┘
+                    ↓
+scores[H_q, T_q, T_visible]
+  ↓ scale + mask
+masked scores
+  ↓ softmax
+weights[H_q, T_q, T_visible]
+  ↓ weighted sum with V
+context[H_q, T_q, d_head]
+  ↓ transpose + concat
+[T_q, d_model]
+  ↓ Wo
+O[T_q, d_model]</pre></div>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Attention component</th>
+                        <th>Approx FLOPs per layer at T = 4096, d_model = 4096, H<sub>q</sub> = 32, H<sub>kv</sub> = 8, d_head = 128</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Q projection</td>
+                        <td>2 × 4096 × 4096 × 4096 ≈ 137.4 GFLOPs</td>
+                        <td>Dense GEMM</td>
+                    </tr>
+                    <tr>
+                        <td>K projection</td>
+                        <td>2 × 4096 × 4096 × 1024 ≈ 34.4 GFLOPs</td>
+                        <td>Because H<sub>kv</sub> &lt; H<sub>q</sub></td>
+                    </tr>
+                    <tr>
+                        <td>V projection</td>
+                        <td>≈ 34.4 GFLOPs</td>
+                        <td>Same shape as K projection</td>
+                    </tr>
+                    <tr>
+                        <td>QKᵀ scores</td>
+                        <td>2 × 32 × 4096 × 4096 × 128 ≈ 137.4 GFLOPs</td>
+                        <td>Before mask and softmax</td>
+                    </tr>
+                    <tr>
+                        <td>AV value blend</td>
+                        <td>≈ 137.4 GFLOPs</td>
+                        <td>Same order as score compute</td>
+                    </tr>
+                    <tr>
+                        <td>Output projection</td>
+                        <td>2 × 4096 × 4096 × 4096 ≈ 137.4 GFLOPs</td>
+                        <td>Dense GEMM back to model width</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total attention only</strong></td>
+                        <td><strong>≈ 618.4 GFLOPs per layer</strong></td>
+                        <td>Excludes RoPE, softmax overhead, and residual add</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>That total is for prefill at a long prompt length. Decode looks very different. For one new token at sequence length <strong>4096</strong>, the Q projection is small, the K/V projections are tiny, and the QK plus AV work per layer is only on the order of tens of millions of floating-point operations. Yet the system still must read thousands of cached rows for each layer, and that memory traffic often dominates latency. This is why real transformer inference is not just about FLOPs. It is about the shape of the state you move through memory step after step.</p>
+
+        <p>When a model predicts <strong>Paris</strong> after the prompt <strong>What is the capital of France?</strong>, attention is the mechanism that made the prompt coherent at the decision point. Some heads learned to route from the final position toward <strong>France</strong>. Some learned to route toward <strong>capital</strong>. Some maintained the broader question structure. Together they transformed the last token's hidden state into one that strongly supports the right output token in vocabulary space. The prediction feels holistic, but the execution is local, repeated, and exact: project, compare, normalize, blend, cache, repeat.</p>
+
+        <div class="wf-callout accent">
+            <p><strong>Final engineering lens:</strong> attention is simultaneously an algorithm, a dataflow graph, and a memory-system stress test. Plain English says it helps tokens decide what matters. The mathematical form is scaled masked softmax over dot products followed by a weighted value sum. The tensor view is a small set of predictable shapes repeated across layers. The systems view is dominated by cache layout, batching, and IO-aware kernels. If you were implementing this yourself, start from the reference equations, validate every shape, separate prefill from decode in your benchmarks, and only then add GQA, FlashAttention, sliding windows, or paged allocation. The core mechanism is simple enough to write down on one page and subtle enough to determine almost all real-world inference performance.</p>
+        </div>
+
+        <div class="wf-inline-nav">
+            <a href="#/ch5" onclick="event.preventDefault(); route('ch5')">← Part 5: The Transformer Layer</a>
+            <a href="#/ch7" onclick="event.preventDefault(); route('ch7')">Part 7: RMSNorm →</a>
+        </div>
+    </div>
+</div>

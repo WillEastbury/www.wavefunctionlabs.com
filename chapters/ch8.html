@@ -1,0 +1,354 @@
+<div id="ch8" class="wf-section wf-article">
+    <div class="wf-article-head">
+        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+        <div class="wf-kicker">Part 8 — Feed-Forward Networks</div>
+        <h1 class="wf-section-hdr">Feed-Forward Networks</h1>
+        <p class="wf-section-desc">The per-token nonlinear transformation inside each transformer block: wide projections, activations, gates, experts, and why this stage often consumes more FLOPs than people expect.</p>
+    </div>
+    <div class="wf-article-body">
+        <p>The feed-forward network, usually shortened to FFN or MLP, is the part of a transformer layer that does heavy per-token transformation without mixing information across sequence positions. Attention lets one token read other tokens. The FFN takes the resulting token representation and says, now that this token has context, reshape it through a large nonlinear circuit. If attention is the communication stage, the FFN is the per-token compute stage. It is where the model expands a hidden state into a much wider intermediate space, applies a nonlinearity, and compresses it back to the model width.</p>
+
+        <p>That expansion-compute-compression pattern is why the FFN feels like a private workshop attached to every token. The hidden state for the last token in <strong>"What is the capital of France?"</strong> arrives carrying context gathered by attention. The FFN does not ask any new questions about earlier tokens. Instead, it transforms the token's current feature mixture into a new one, often making some features stronger, damping others, and generating interactions that a purely linear stack could never express.</p>
+
+        <p data-plain="The FFN is the model's per-token transformation engine. It thinks about one token vector at a time after attention has provided context." data-psi="Attention opens the conversation; the FFN is where each token goes alone into the machine room and gets rebuilt." data-duck="The ducks have already heard the crowd. The FFN is the station where each duck gets individually retagged, reshaped, and sent back onto the line.">This is why FFNs matter so much. Without nonlinear per-token transformation, a transformer would collapse into a stack of largely linear mixing operations wrapped around residual paths. You could still move information around, but the model's ability to build rich conditional features would be much weaker. The activation function is the break in linearity, and the wide hidden layer is the room in which that nonlinearity has space to operate.</p>
+
+        <div class="wf-callout gold">
+            <p><strong>Plain English summary:</strong> attention decides what a token should pay attention to; the FFN decides how that token should internally change once it has absorbed the context.</p>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Why this stage exists</h3>
+        <p>Suppose attention has already made the final token strongly aware that the phrase <strong>"capital of France"</strong> is pointing toward the concept of Paris. That awareness is still just a vector of numbers. The FFN gives the model a way to build higher-level internal features from that vector. Some neurons or channels may behave like detectors for geography, answer-form, capitalization style, or the likelihood that a city token should follow. The exact semantics are distributed and messy, but the structural point is simple: the FFN makes context-sensitive features sharper and more compositional.</p>
+
+        <p>In systems language, the FFN is the large nonlinear projector that sits between communication phases. It gives each token a deep transformation budget that is independent of sequence length. Whether the prompt has 7 tokens or 7,000, the FFN cost for one token depends mainly on <strong>d_model</strong> and <strong>d_ff</strong>, not on how many other positions exist. That is why the FFN remains important even when attention receives most of the conceptual attention.</p>
+
+        <p data-plain="The FFN exists because moving information around is not enough; the model also needs a place to transform that information into useful internal features." data-psi="A message can travel through the city, but it still needs a factory where raw signal becomes shaped machinery." data-duck="Hearing which duck matters is not enough. You still need a workstation that paints the right stripe on the chosen duck.">In many modern models, the FFN is also the single biggest source of floating-point work per layer. People often assume attention dominates everything because it is the famous mechanism. But once you optimize attention with caches and smart kernels, the repeated large dense projections inside the FFN become impossible to ignore. On decode workloads in particular, the FFN is often one of the central compute costs for every generated token.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The standard and gated formulas</h3>
+        <div class="wf-math"><pre>Standard FFN(x) = W_down(φ(W_up · x))
+Gated FFN(x)   = W_down(σ(W_gate · x) ⊙ (W_up · x))</pre></div>
+        <p>The standard form is two matrix multiplies with an activation in the middle. First project from <strong>d_model</strong> up to a larger width <strong>d_ff</strong>. Then apply an activation function <strong>φ</strong>. Then project back down to <strong>d_model</strong>. The gated form, common in current LLMs, adds a second up-projection called the gate. One wide projection produces content, another wide projection produces gate values, and the two are multiplied elementwise before the down projection.</p>
+
+        <p>Read the gated equation in English. Take the input vector <strong>x</strong>. Compute <strong>W_up · x</strong> and <strong>W_gate · x</strong>. Pass the gate path through an activation such as SiLU. Multiply the activated gate elementwise with the up path. Then send the result through <strong>W_down</strong>. The gate acts like a learned valve across the wide intermediate space: some channels pass strongly, some weakly, some almost not at all.</p>
+
+        <p>The elementwise multiply is cheap compared with the wide projections, but conceptually important. It turns the FFN from a simple nonlinear map into a gated nonlinear map, which often improves model quality. Architectures like LLaMA use SwiGLU-style gating, and that design choice is one reason you often see an apparently odd intermediate width such as 11008 for a model width of 4096. The gate and up paths both need large projections, but the chosen width is tuned so parameter count and compute stay in a useful budget.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Tensor shapes</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Tensor</th>
+                        <th>Meaning</th>
+                        <th>Typical shape</th>
+                        <th>Example with d_model = 4096</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>x</strong></td>
+                        <td>Input hidden state for one token</td>
+                        <td>[d_model]</td>
+                        <td>[4096]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>W_up</strong></td>
+                        <td>Expansion weight matrix</td>
+                        <td>[d_ff, d_model]</td>
+                        <td>[11008, 4096]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>W_gate</strong></td>
+                        <td>Gate weight matrix</td>
+                        <td>[d_ff, d_model]</td>
+                        <td>[11008, 4096]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>u</strong></td>
+                        <td>Up-projected activations</td>
+                        <td>[d_ff]</td>
+                        <td>[11008]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>g</strong></td>
+                        <td>Gate activations</td>
+                        <td>[d_ff]</td>
+                        <td>[11008]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>m</strong></td>
+                        <td>Elementwise product σ(g) ⊙ u</td>
+                        <td>[d_ff]</td>
+                        <td>[11008]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>W_down</strong></td>
+                        <td>Compression weight matrix</td>
+                        <td>[d_model, d_ff]</td>
+                        <td>[4096, 11008]</td>
+                    </tr>
+                    <tr>
+                        <td><strong>y</strong></td>
+                        <td>FFN output</td>
+                        <td>[d_model]</td>
+                        <td>[4096]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>That ratio, <strong>d_ff ≈ 2.67 × d_model</strong>, is a common modern choice for gated designs. With <strong>d_model = 4096</strong>, a typical intermediate width is <strong>11008</strong>. Earlier non-gated transformers often used <strong>4 × d_model</strong> with a simpler activation. The exact multiplier varies by architecture, but the pattern is stable: widen aggressively, do nonlinear work in the wide space, then compress back down.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Why widen so much?</h3>
+        <p>The expansion is not arbitrary decoration. A wider intermediate space gives the model room to represent many more candidate features than fit in the base residual stream. The input hidden state may be 4096 numbers wide, but once you project it to 11008 or more, the model can temporarily express a much richer set of detectors, mixtures, gates, and interactions. Most of those intermediate channels never survive intact. They exist only long enough for the activation and down projection to decide what should flow back into the narrow residual path.</p>
+
+        <p>That is the same reason a compiler may use a generous intermediate representation or a database engine may build a larger temporary structure than the final answer requires. The wide space is working memory. It is not the stable schema of the model; it is the scratch zone where the model can test many possibilities before compressing them into the next hidden state.</p>
+
+        <p data-plain="The FFN gets wider so it has temporary room to build and combine more features than fit in the model's normal hidden width." data-psi="The token steps into a larger room so more machinery can briefly exist around it before being folded back into a compact form." data-duck="A duck may enter a huge sorting hall with many chutes, even though only one small badge comes out at the end.">The down projection is therefore not just a cleanup step. It is the stage that decides which wide-space computations deserve to re-enter the main residual stream. If the up projection creates the candidate feature cloud, the down projection is the bottleneck that distills that cloud back into a reusable token state.</p>
+
+        <div class="wf-tabs" data-group="ch8-layouts">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="plain">Plain Up → Act → Down</button>
+                <button class="wf-tab" data-tab="gated">Gated / SwiGLU</button>
+                <button class="wf-tab" data-tab="moe">MoE Layout</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <p>An FFN layout answers one question: how does the block turn one hidden vector into another? All layouts widen the vector, apply some nonlinear rule, and produce a same-width output, but they differ in how much gating, routing, or conditional computation they add.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="plain">
+                <p>The classic form is <strong>Up → Activation → Down</strong>. It is dense, predictable, and easy to optimize. Every token pays for the same two big projections and the same activation function.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="gated">
+                <p>Gated layouts add a second wide projection and an elementwise multiply. This lets the network modulate the intermediate channels rather than merely clipping or bending them. In practice this often improves quality enough to justify the extra projection.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="moe">
+                <p>Mixture of Experts replaces one shared dense FFN with multiple expert FFNs and a router that chooses which experts each token should use. Total parameter count rises dramatically, but active compute per token only touches the chosen experts.</p>
+            </div>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Activation functions</h3>
+        <p>The activation function is where the FFN stops being a linear sandwich. Without an activation, two stacked linear projections collapse into one equivalent linear projection, which would waste the entire wide hidden space. The activation introduces curvature: some values pass unchanged, some are damped, some are gated smoothly, and the output depends on magnitude in a nonlinear way.</p>
+
+        <div class="wf-tabs" data-group="ch8-activations">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="relu">ReLU</button>
+                <button class="wf-tab" data-tab="gelu">GeLU</button>
+                <button class="wf-tab" data-tab="silu">SiLU / Swish</button>
+                <button class="wf-tab" data-tab="swiglu">SwiGLU</button>
+                <button class="wf-tab" data-tab="geglu">GeGLU</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <p>Activations make the FFN something more than one big matrix multiply. Conceptually, they let the model respond differently to small, medium, and large intermediate values, so the network can build conditional features instead of just rotating and scaling vectors.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="relu">
+                <p><strong>Formula:</strong> <strong>ReLU(x) = max(0, x)</strong>. Graphically it is flat for negative values and linear for positive values. It is cheap and historically important, but it discards all negative inputs and can create harsher transitions than smoother alternatives. Older transformer variants used it more often than current LLM families.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="gelu">
+                <p><strong>Formula:</strong> <strong>GeLU(x) = x Φ(x)</strong>, commonly approximated. It softly gates values based on their magnitude instead of hard-clipping them at zero. That smoother shape worked well in BERT-style models and many transformer descendants because it preserves more nuance around zero.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="silu">
+                <p><strong>Formula:</strong> <strong>SiLU(x) = x · sigmoid(x)</strong>. Also called Swish in closely related usage. It is smooth, non-monotonic near zero, and tends to behave well in large networks. When paired with a separate gate projection, it becomes part of SwiGLU, which is common in modern decoder-only LLMs.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="swiglu">
+                <p><strong>Formula:</strong> <strong>SwiGLU(x) = SiLU(W_gate x) ⊙ (W_up x)</strong> before the down projection. Strictly speaking it is a gated FFN pattern rather than just a scalar activation. It is popular because the smooth gate often yields better quality than simpler activations at similar parameter budgets.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="geglu">
+                <p><strong>Formula:</strong> <strong>GeGLU(x) = GeLU(W_gate x) ⊙ (W_up x)</strong>. Like SwiGLU, it uses a separate gate path, but GeLU supplies the gating nonlinearity. It preserves the intuition of a smooth learned valve while matching GeLU-centered model families more closely.</p>
+            </div>
+        </div>
+
+        <p data-plain="Different activations are different ways of deciding which intermediate channels should matter and by how much." data-psi="They are different curve languages for saying yes, no, or maybe to a feature." data-duck="Some duck gates slam shut at zero, some open smoothly, and some ask a second duck whether the first duck may pass.">The reason current LLMs gravitated toward gated smooth variants is empirical rather than theological. Hard nonlinearities like ReLU are simple, but smooth gates often preserve richer gradient behavior during training and richer feature modulation during inference. Once a model family proves that a gated design yields better quality for the same deployment class, that design quickly becomes the new default.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Weight matrices and weight types</h3>
+        <p>A weight matrix is just a large grid of learned numbers that defines a linear transformation. In the FFN, those grids are unusually large because the hidden width expands so aggressively. For a 4096-to-11008 projection, each matrix contains over 45 million parameters. Multiply that by multiple matrices per layer and dozens of layers per model, and you can see why FFN weights occupy so much of the total parameter budget.</p>
+
+        <div class="wf-tabs" data-group="ch8-weight-types">
+            <div class="wf-tab-bar">
+                <button class="wf-tab active" data-tab="generic">Generic</button>
+                <button class="wf-tab" data-tab="fullprecision">Full Precision (FP32/FP16/BF16)</button>
+                <button class="wf-tab" data-tab="quantized">Quantized (INT8/INT4/GPTQ/AWQ)</button>
+                <button class="wf-tab" data-tab="bitlinear">BitLinear (1-bit / 1.58-bit)</button>
+                <button class="wf-tab" data-tab="sparse">Sparse</button>
+                <button class="wf-tab" data-tab="moeweights">MoE (Mixture of Experts)</button>
+            </div>
+            <div class="wf-tab-panel active" data-tab="generic">
+                <p>A weight matrix is a learned linear map. It takes one vector space in and produces another vector space out. The FFN uses these maps to expand the token representation, optionally gate it, and compress it back. The variants below change how the weights are stored and executed, not the basic conceptual role.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="fullprecision">
+                <p>Full-precision dense weights are the straightforward baseline. FP32 uses 4 bytes per parameter and is accurate but expensive in memory. FP16 and BF16 use 2 bytes per parameter and are common in inference because they cut bandwidth roughly in half. BF16 keeps a wider exponent range than FP16, which often makes it numerically friendlier for activations and accumulations.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="quantized">
+                <p>Quantized weights store parameters in formats like INT8 or INT4 plus scales and sometimes zero-points. Methods such as GPTQ and AWQ try to preserve accuracy while shrinking memory and increasing throughput. Quantization helps FFNs enormously because their big matrices are usually bandwidth-heavy. The price is extra dequantization logic and possible accuracy loss if calibration is poor.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="bitlinear">
+                <p>BitLinear-style weights push compression much further, using very low-bit or ternary schemes like {-1, 0, +1}. In the ideal case, multiply operations become sign flips, additions, or skips. The memory savings are dramatic, but quality, training method, and hardware support become far more delicate than with ordinary INT8 or INT4 quantization.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="sparse">
+                <p>Sparse FFNs set many weights to zero and try to exploit that zero structure at inference time. Unstructured sparsity is hard for generic hardware to accelerate because the indexing cost can eat the gains. Structured sparsity, such as N:M patterns, is friendlier because hardware can skip work in a regular pattern. Whether sparsity helps depends heavily on real accelerator support.</p>
+            </div>
+            <div class="wf-tab-panel" data-tab="moeweights">
+                <p>MoE replaces one giant shared FFN with many expert FFNs. Total parameter count can increase dramatically, but a router activates only top-k experts per token. That means active parameters per token are much smaller than total parameters. Memory still has to hold all experts somewhere, but compute touches only the selected subset each step.</p>
+            </div>
+        </div>
+
+        <p>The important deployment distinction is this: total parameters and active parameters are not the same thing. In a dense FFN, every token uses the whole block. In an MoE FFN, every token sees only the routed experts. That can buy more representational capacity without multiplying per-token FLOPs by the full number of experts. But it also introduces routing overhead, expert imbalance problems, and more complicated serving systems.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Mixture of Experts routing in detail</h3>
+        <div class="wf-math"><pre>router_scores = softmax(W_router · x)
+experts = top_k(router_scores)
+FFN_MoE(x) = Σ(selected expert i) p_i · Expert_i(x)</pre></div>
+        <p>In an MoE layer, the router computes scores over experts for the current token. The system then selects the top-k experts, often one or two, and runs only those expert FFNs. Their outputs are weighted by the router probabilities and summed. Conceptually, this is conditional computation: the model has many specialist sub-networks available, but each token only pays for a few.</p>
+
+        <p>Load balancing matters because without it, the router may overuse a small subset of experts. During training, models often add auxiliary balancing losses or capacity constraints so experts receive work more evenly. During inference, imbalance still matters operationally because a hot expert can become a bottleneck. If expert 3 receives half the traffic while expert 11 is idle, latency and device utilization suffer even though the math on paper looks fine.</p>
+
+        <p data-plain="MoE gives a token access to many possible FFN specialists, but only runs a few of them." data-psi="It is a city of workshops with a dispatcher at the gate." data-duck="Instead of sending every duck through every station, a clerk picks the two stations most relevant to this duck and skips the rest.">This is the crucial inference trade-off. MoE reduces active compute but not total model footprint. All experts must still be stored, paged, or otherwise made available. Serving an MoE model is therefore partly a memory placement problem. You save arithmetic per token, but you may create new complexity in routing, expert locality, and all-to-all communication if experts span devices.</p>
+
+        <div class="wf-code"><pre>void gated_ffn(float* y, const float* x,
+               const Matrix W_gate,
+               const Matrix W_up,
+               const Matrix W_down) {
+    float gate[D_FF];
+    float up[D_FF];
+    float mix[D_FF];
+
+    matvec(gate, W_gate, x);   // [d_ff]
+    matvec(up,   W_up,   x);   // [d_ff]
+
+    for (int i = 0; i &lt; D_FF; ++i) {
+        float s = gate[i] / (1.0f + expf(-gate[i])); // SiLU
+        mix[i] = s * up[i];
+    }
+
+    matvec(y, W_down, mix);    // [d_model]
+}</pre></div>
+
+        <p>The pseudocode hides the true performance story, because production implementations do not literally allocate stack arrays like this for every token. They tile, batch, fuse, and vectorize. But structurally it is right: two wide projections, one elementwise gate, one down projection. If you understand that loop nest, you understand the logic of dense gated FFNs.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Why FFNs are such large compute consumers</h3>
+        <p>For a dense non-gated FFN, the token pays for two large matrix-vector products during decode: up and down. For a gated FFN, it pays for three: gate, up, and down. Each one touches tens of millions of weights in a modern layer. By comparison, the activation function and elementwise multiply are tiny. This asymmetry explains why engineers talk so much about GEMM and GEMV performance when optimizing transformer inference: the projections dominate.</p>
+
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>FFN form</th>
+                        <th>Large projections per token</th>
+                        <th>Main cost</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Plain dense</strong></td>
+                        <td>2</td>
+                        <td>Up, Down</td>
+                        <td>Activation cost is comparatively tiny</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gated dense</strong></td>
+                        <td>3</td>
+                        <td>Gate, Up, Down</td>
+                        <td>Common in modern LLMs; often the default mental model</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MoE</strong></td>
+                        <td>Router + expert projections</td>
+                        <td>Selected experts only</td>
+                        <td>Total params high, active compute lower than full dense expert set</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>During prefill, these may be matrix-matrix multiplies over many tokens and many batch items, which GPUs love. During single-token decode, they shrink into matrix-vector style workloads, which are more bandwidth-sensitive and often harder to saturate. The same operator family therefore behaves differently depending on serving mode. Prefill is throughput-oriented. Decode is latency-oriented.</p>
+
+        <p data-plain="The FFN is often expensive because it repeatedly multiplies each token by very large matrices." data-psi="The token enters a cathedral of weights, and the cost is walking every aisle." data-duck="Each duck must be compared against a giant wall of rules, not just a few labels.">That is also why FFN quantization is so attractive. If you can halve or quarter the bytes read for those huge matrices while keeping acceptable quality, the wins multiply across every layer and every generated token. The arithmetic may still be significant, but on many real systems the first enemy is weight bandwidth.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Residual reintegration: why the FFN does not get the last word</h3>
+        <p>After the FFN produces its output, that output is added back to the residual stream rather than replacing it wholesale. This design matters. It means the FFN can contribute a learned correction or enrichment while the old token state still remains available downstream. From a systems perspective, the FFN behaves more like an update function than a complete overwrite. That makes very deep stacks easier to optimize and harder to destabilize.</p>
+
+        <p>It also clarifies why the FFN can be extremely expressive without needing to preserve every intermediate feature explicitly. The wide channels are disposable. Their only long-term job is to influence the smaller residual vector that survives to the next layer. The architecture is saying: compute extravagantly in the middle if you want, but compress your final message back into the shared layer-to-layer format.</p>
+
+        <p data-plain="The FFN writes an update back into the residual stream instead of replacing the old token state entirely." data-psi="The workshop sends a revision back to the main manuscript, not a whole new book." data-duck="The duck leaves the station with an updated tag, but it is still the same duck continuing down the main belt.">That residual contract is one reason FFN mistakes can be subtle. A broken FFN might not cause immediate catastrophic outputs if the residual path still carries reasonable information. Instead it may quietly degrade quality, making the model feel vague, repetitive, or less discriminating. The residual path keeps the system alive; the FFN determines how much sharper it becomes.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Hardware behavior: CPU, GPU, FPGA</h3>
+        <p>On CPUs, FFNs are typically dominated by GEMV or small-batch GEMM kernels. Cache blocking, NUMA placement, quantized matmul kernels, and thread scheduling matter enormously. Dense FFNs can run well on modern CPUs, but they are usually bandwidth-sensitive during decode because each token requires touching large weight matrices that do not fit in low-level cache.</p>
+
+        <p>On GPUs, FFNs are often the comfortable part of the model because large dense matrix multiplies map naturally to tensor cores and highly tuned libraries. During prefill, the GPU can process wide batches efficiently. During decode, efficiency drops because you have fewer live tokens per step, but the hardware ecosystem is still optimized around this pattern. Quantization support, weight packing, and fused activation kernels can produce major gains.</p>
+
+        <p>On FPGAs or custom inference ASICs, FFNs are attractive precisely because the structure is regular. If the weights are streamed or tiled effectively, the datapath is mostly repeated multiply-accumulate work with small elementwise glue around it. The difficult part is not understanding the operator; it is storing or supplying the enormous weight volume at a rate that keeps the compute array busy.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common optimisations</h3>
+        <p>Kernel fusion is the first obvious optimization. You may fuse biasless linear outputs with activation, fuse gate activation with elementwise multiplication, or pack weight layouts so the up and gate projections are read in a way that matches the device's preferred memory pattern. Production systems also batch tokens across requests during decode to turn more GEMVs into GEMMs, trading some queueing latency for higher device utilization.</p>
+
+        <p>Quantization is the second major optimization family. INT8 and INT4 FFNs reduce memory movement and can improve throughput dramatically when kernels are mature. AWQ and GPTQ are popular because they try to preserve accuracy in aggressively quantized weights. The best choice depends on your model family, tolerance for quality loss, and hardware support for low-bit matrix multiplies.</p>
+
+        <p>For MoE systems, optimization expands into routing and placement. Keep frequently co-activated experts near each other. Avoid unnecessary cross-device traffic. Consider expert parallelism only if the communication cost does not erase the reduced compute cost. MoE serving is where model architecture and cluster architecture start negotiating directly.</p>
+
+        <p>One more practical optimization is serving-policy aware batching. If you can batch several requests so their tokens hit the FFN together, the kernels move from skinny matrix-vector work toward healthier matrix-matrix work. That often improves throughput dramatically, though it introduces queueing trade-offs. A real inference engine is therefore optimizing not just the FFN kernel, but the arrival pattern of work sent into that kernel.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Database and systems analogies</h3>
+        <p>The FFN is a bit like a per-row user-defined function in a database engine, except massively vectorized and learned rather than hand-written. Attention is the join-like phase that lets rows consult other rows in the sequence. The FFN is the heavy row-local transformation that takes the enriched row and derives new columns from it. Every token goes through it, and the engine expects the same schema on the way out as on the way in: <strong>[d_model]</strong> in, <strong>[d_model]</strong> out.</p>
+
+        <p data-plain="Another good analogy is a compiler pass that rewrites each instruction after looking at the current program context." data-psi="The FFN is the workshop where context gets hammered into local shape." data-duck="After the ducks hear the announcement, each duck visits a machine that repaints its own badge based on what it heard.">The wide hidden layer is like a very large scratchpad of candidate derived features. Most of those features are transient. They exist only long enough to decide how the token should re-enter the residual stream. That is why the FFN can be so computationally heavy even though it leaves behind only one same-sized output vector.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">What can be cached</h3>
+        <p>The answer is: almost none of the token-local activations. The persistent state is the weights. The intermediate gate values, up values, activation outputs, and elementwise products are all ephemeral. Once the token leaves the FFN, those arrays can be discarded. This is very different from attention, where keys and values must be preserved across future decoding steps.</p>
+
+        <p>You can of course rely on ordinary hardware caches, reuse packed weights across requests, and keep expert weights resident on the device. But there is no semantic cache analogous to the KV cache for dense FFN activations. The same prompt token in a different context produces a different hidden state, so memoizing FFN outputs is generally not useful.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Operation and bound classification</h3>
+        <div class="wf-table-wrap">
+            <table class="wf-table">
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Answer for FFN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Primary operation class</strong></td>
+                        <td>Projection → Activation/Gating → Projection</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Does it mix tokens?</strong></td>
+                        <td>No, each token is processed independently once attention has produced the input state</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dominant bound</strong></td>
+                        <td>Usually compute-bound or bandwidth-heavy matmul territory, depending on batch size and precision</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prefill behavior</strong></td>
+                        <td>Large GEMMs, high throughput, good accelerator utilization</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Decode behavior</strong></td>
+                        <td>Smaller GEMV-like work, more latency-sensitive, often more bandwidth-limited</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common implementation mistakes</h3>
+        <p>One classic mistake is getting the matrix orientation wrong. Depending on the framework, the stored weight shape may be <strong>[out, in]</strong> or <strong>[in, out]</strong>, and blindly multiplying without checking conventions produces silent nonsense. Another is forgetting that the gated form needs two distinct wide projections, not one projection reused twice.</p>
+
+        <p>Quantized implementations often fail on scale handling rather than on the matmul itself. If per-channel scales, zero-points, or dequantization order are wrong, the FFN output drifts badly. MoE implementations introduce their own failures: top-k selection bugs, incorrect probability weighting, dropped experts at capacity boundaries, or routing tensors accidentally sorted out of sync with token order.</p>
+
+        <p data-plain="The easy mistakes are wrong shapes, wrong activation, wrong gate path, or bad quantization scales." data-psi="The FFN rarely fails because of profound theory; it fails because one matrix is turned sideways or one valve is attached to the wrong pipe." data-duck="Usually someone sent the duck through the up gate twice and forgot the actual gate duck entirely.">A less obvious mistake is benchmarking the FFN only in prefill mode and assuming decode will look similar. Many serving problems emerge only under small-batch, single-token latency conditions, where kernel launch overheads, weight bandwidth, and cross-request batching policy suddenly matter much more.</p>
+
+        <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself</h3>
+        <p>Start dense, not clever. Implement <strong>Up → Activation → Down</strong> first, verify against a reference checkpoint, then extend to gated variants. Print shapes, compare a few output elements, and make sure residual wiring is correct around the block. Once that works, add the second gate projection and confirm that your SwiGLU or GeGLU outputs match a trusted implementation exactly enough for the chosen precision.</p>
+
+        <p>Only after correctness should you optimize. Decide whether your target workload is prefill-heavy, decode-heavy, or both. That decision changes almost everything about kernel selection and batching strategy. If you expect low-latency interactive decode, focus on weight layout, quantization, and request batching. If you expect offline batch inference, focus on large GEMM efficiency and expert placement if MoE is involved.</p>
+
+        <p>Most importantly, keep the conceptual model straight. The FFN is not sequence mixing. It is per-token nonlinear transformation. If you remember that one sentence, the shapes, costs, optimizations, and failure modes all make more sense.</p>
+
+        <p>And if performance work ever becomes confusing, return to the three dominant questions: how many big projections are being executed, how many bytes of weight data must move to execute them, and how effectively the hardware is being kept busy while they run. Most FFN engineering decisions are just refinements of those three questions.</p>
+
+        <div class="wf-inline-nav">
+            <a href="#/ch7" onclick="event.preventDefault(); route('ch7')">← Part 7</a>
+            <a href="#/ch9" onclick="event.preventDefault(); route('ch9')">Part 9 →</a>
+        </div>
+    </div>
+</div>
