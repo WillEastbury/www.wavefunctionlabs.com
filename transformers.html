@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plain English: The Transformer Model (LLMs)</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2300d4ff'/%3E%3Cstop offset='50%25' stop-color='%239b59b6'/%3E%3Cstop offset='100%25' stop-color='%23f1c40f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='%2307070c'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Georgia,serif' font-size='40' font-weight='bold' fill='url(%23g)'%3E%CE%A8%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WillEastbury/BareMetalJsTools@main/src/BareMetalStyles.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+        :root {
+          --bs-body-bg: #07070c;
+          --bs-body-color: #c8ccd4;
+          --wf-accent: #a855f7;
+          --wf-gold: #f0c040;
+          --wf-cyan: #06b6d4;
+          --wf-muted: #8891a0;
+          --wf-surface: rgba(14, 14, 22, 0.85);
+          --wf-border: rgba(99, 102, 241, 0.12);
+          --wf-primary: #6366f1;
+          --wf-surface-strong: rgba(18, 18, 28, 0.96);
+          --wf-nav-bg: rgba(7, 7, 12, 0.84);
+          --wf-shadow: 0 16px 44px rgba(0, 0, 0, 0.32);
+        }
+
+        * { box-sizing: border-box; }
+        html { overflow-x: hidden; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: 'JetBrains Mono', monospace;
+            background:
+                radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 26%),
+                radial-gradient(circle at top right, rgba(168, 85, 247, 0.12), transparent 24%),
+                radial-gradient(circle at bottom center, rgba(240, 192, 64, 0.08), transparent 28%),
+                var(--bs-body-bg);
+            color: var(--bs-body-color);
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            );
+            opacity: 0.9;
+        }
+        a { color: inherit; text-decoration: none; }
+        .layer { position: relative; z-index: 2; }
+
+        .wf-nav {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            padding: 1rem 1.4rem;
+            border-bottom: 1px solid var(--wf-border);
+            backdrop-filter: blur(16px);
+            background: var(--wf-nav-bg);
+        }
+        .wf-nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            background: linear-gradient(135deg, var(--wf-cyan), var(--wf-accent), var(--wf-gold));
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gshift 8s ease infinite;
+            filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.3));
+        }
+        .wf-nav-links {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 0.15rem;
+            scrollbar-width: thin;
+            flex: 1;
+        }
+        .wf-nav-links a {
+            flex: 0 0 auto;
+            padding: 0.42rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: lowercase;
+            color: var(--wf-muted);
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .wf-nav-links a:hover,
+        .wf-nav-links a.active {
+            color: #e2e8f0;
+            border-color: var(--wf-border);
+            background: rgba(99, 102, 241, 0.11);
+        }
+        .wf-nav-links .wf-site-back {
+            color: var(--wf-cyan);
+            border-color: rgba(6, 182, 212, 0.18);
+            background: rgba(6, 182, 212, 0.07);
+        }
+
+        .wf-section {
+            display: none;
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 3.5rem 1.4rem 5.5rem;
+            animation: fadeIn 0.35s ease;
+        }
+        .wf-section.active { display: block; }
+        .wf-article { max-width: 980px; }
+        .wf-hero-card,
+        .wf-panel,
+        .wf-tile,
+        .wf-callout,
+        .wf-card,
+        .wf-placeholder {
+            background: var(--wf-surface);
+            border: 1px solid var(--wf-border);
+            border-radius: 12px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--wf-shadow);
+        }
+        .wf-hero-card {
+            padding: 1.6rem;
+            margin-bottom: 1.5rem;
+        }
+        .wf-kicker {
+            color: var(--wf-cyan);
+            font-size: 0.76rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 0.65rem;
+        }
+        .wf-section-hdr {
+            margin: 0 0 0.55rem;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            font-weight: 600;
+            line-height: 1.15;
+            color: #e2e8f0;
+        }
+        .wf-section-desc {
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: var(--wf-muted);
+            max-width: 78ch;
+        }
+        .wf-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 1.25rem;
+        }
+        .wf-chip {
+            padding: 0.38rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid var(--wf-border);
+            color: var(--wf-muted);
+            font-size: 0.7rem;
+            background: rgba(14, 14, 22, 0.55);
+        }
+        .wf-tile-grid,
+        .wf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+        .wf-tile {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            padding: 1.2rem;
+            min-height: 210px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .wf-tile:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.35);
+        }
+        .wf-tile-part {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .wf-tile-name {
+            font-size: 0.96rem;
+            color: #e2e8f0;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        .wf-tile-desc,
+        .wf-tile-topics {
+            font-size: 0.74rem;
+            color: var(--wf-muted);
+            line-height: 1.65;
+        }
+        .wf-tile-action {
+            margin-top: auto;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: lowercase;
+        }
+        .tone-cyan .wf-tile-part,
+        .tone-cyan .wf-tile-action,
+        .tone-cyan .wf-placeholder-title { color: var(--wf-cyan); }
+        .tone-accent .wf-tile-part,
+        .tone-accent .wf-tile-action,
+        .tone-accent .wf-placeholder-title { color: var(--wf-accent); }
+        .tone-gold .wf-tile-part,
+        .tone-gold .wf-tile-action,
+        .tone-gold .wf-placeholder-title { color: var(--wf-gold); }
+        .tone-cyan { border-left: 3px solid var(--wf-cyan); }
+        .tone-accent { border-left: 3px solid var(--wf-accent); }
+        .tone-gold { border-left: 3px solid var(--wf-gold); }
+
+        .wf-article-head {
+            margin-bottom: 2rem;
+        }
+        .wf-back {
+            display: inline-flex;
+            margin-bottom: 1rem;
+            font-size: 0.78rem;
+            color: var(--wf-cyan);
+        }
+        .wf-article-body {
+            font-size: 0.92rem;
+            line-height: 1.9;
+            color: var(--bs-body-color);
+        }
+        .wf-article-body p {
+            margin: 0 0 1.05rem;
+        }
+        .wf-article-body strong { color: #e2e8f0; }
+        .wf-callout,
+        .wf-card,
+        .wf-placeholder {
+            padding: 1rem 1.1rem;
+            margin: 1rem 0;
+        }
+        .wf-callout {
+            border-left: 3px solid var(--wf-cyan);
+        }
+        .wf-callout.gold { border-left-color: var(--wf-gold); }
+        .wf-callout.accent { border-left-color: var(--wf-accent); }
+        .wf-code,
+        .wf-math {
+            margin: 1rem 0 1.15rem;
+            padding: 1rem 1.15rem;
+            border-radius: 10px;
+            border: 1px solid var(--wf-border);
+            background: rgba(14, 14, 22, 0.72);
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+        .wf-code pre,
+        .wf-math pre {
+            margin: 0;
+            white-space: pre;
+            line-height: 1.7;
+            color: #d9dee8;
+            font-size: 0.8rem;
+        }
+        .wf-math pre { color: var(--wf-gold); }
+        .wf-table-wrap {
+            margin: 1rem 0 1.35rem;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--wf-border);
+            background: rgba(14, 14, 22, 0.58);
+        }
+        table.wf-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+        }
+        .wf-table th,
+        .wf-table td {
+            padding: 0.78rem 0.85rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+            text-align: left;
+            vertical-align: top;
+            font-size: 0.78rem;
+            line-height: 1.65;
+        }
+        .wf-table th {
+            color: #e2e8f0;
+            font-weight: 600;
+            background: rgba(6, 182, 212, 0.06);
+        }
+        .wf-table td { color: var(--bs-body-color); }
+        .wf-table tr:last-child td { border-bottom: none; }
+
+        .wf-inline-nav {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2.3rem;
+            padding-top: 1.4rem;
+            border-top: 1px solid var(--wf-border);
+        }
+        .wf-inline-nav a {
+            font-size: 0.78rem;
+            color: var(--wf-muted);
+        }
+        .wf-inline-nav a:last-child { color: var(--wf-cyan); }
+        .wf-placeholder-title {
+            margin: 0 0 0.65rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .wf-placeholder ul {
+            margin: 0.5rem 0 0;
+            padding-left: 1.1rem;
+            color: var(--wf-muted);
+            font-size: 0.82rem;
+            line-height: 1.8;
+        }
+        .wf-note {
+            color: var(--wf-muted);
+            font-size: 0.78rem;
+        }
+
+        @keyframes gshift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 760px) {
+            .wf-nav { align-items: flex-start; flex-direction: column; }
+            .wf-nav-links { width: 100%; }
+            .wf-section { padding-top: 2.4rem; }
+            .wf-code pre,
+            .wf-math pre { font-size: 0.73rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="wf-nav layer">
+        <a class="wf-nav-brand" href="index.html" aria-label="Back to WaveFunctionLabs index">Ψ</a>
+        <div class="wf-nav-links" id="chapterNav"></div>
+    </nav>
+
+    <main class="layer">
+        <div id="index" class="wf-section active">
+            <div class="wf-hero-card">
+                <div class="wf-kicker">technical book · llm inference · plain english</div>
+                <h1 class="wf-section-hdr">Plain English: The Transformer Model (LLMs)</h1>
+                <p class="wf-section-desc">A systems-level walkthrough of transformer inference for senior engineers. The running example for the entire book is the prompt <strong>"What is the capital of France?"</strong> and the goal is simple: explain, in precise engineering terms, how a static pile of matrices turns that prompt into the next token <strong>" Paris"</strong> and then keeps going.</p>
+                <div class="wf-meta">
+                    <span class="wf-chip">dark theme · JetBrains Mono</span>
+                    <span class="wf-chip">hash-routed single file</span>
+                    <span class="wf-chip">Part 1 written in full</span>
+                    <span class="wf-chip">Parts 2-12 outlined</span>
+                </div>
+            </div>
+
+            <div class="wf-callout gold">
+                <p><strong>What this book is trying to do:</strong> remove the fog. A transformer is not a bag of vibes. It is an execution engine with a tokenizer on the front, a sampler on the back, and a lot of linear algebra in the middle. Each chapter isolates one subsystem so you can see where the cost, state, and behavior actually live.</p>
+            </div>
+
+            <div class="wf-grid" style="margin-bottom:1.35rem;">
+                <div class="wf-card tone-cyan">
+                    <div class="wf-placeholder-title">How to use this page</div>
+                    <p class="wf-note">Use the chapter nav or the tiles below. Routing is hash-based, so every chapter is a section in this single HTML document.</p>
+                </div>
+                <div class="wf-card tone-accent">
+                    <div class="wf-placeholder-title">Audience</div>
+                    <p class="wf-note">You already understand caches, pipelines, memory bandwidth, vectorized compute, and why data movement dominates more software than people admit.</p>
+                </div>
+                <div class="wf-card tone-gold">
+                    <div class="wf-placeholder-title">Method</div>
+                    <p class="wf-note">No hype, no mysticism, and no unexplained equations. Every symbolic step is immediately translated back into plain English.</p>
+                </div>
+            </div>
+
+            <div id="chapterTiles" class="wf-tile-grid"></div>
+        </div>
+
+        <div id="ch1" class="wf-section wf-article">
+            <div class="wf-article-head">
+                <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+                <div class="wf-kicker">Part 1 — The Big Picture</div>
+                <h1 class="wf-section-hdr">Overview of the Full Inference Pipeline</h1>
+                <p class="wf-section-desc">From raw text to one sampled token at a time. This chapter gives you the whole machine before later chapters zoom into the individual gears.</p>
+            </div>
+
+            <div class="wf-article-body">
+                <p>If you have spent years building systems, the most useful first move is to stop thinking of a transformer as a mystical language object and start thinking of it as a numerical execution pipeline. At inference time it takes an input sequence, turns that sequence into integers, turns those integers into vectors, repeatedly transforms those vectors with a fixed stack of operators, projects the final state into vocabulary-sized scores, chooses one next token, appends it, and repeats. That is the entire loop. The behavior can be astonishing, but the mechanics are not supernatural. They are rigid, inspectable, and mostly built out of the same few primitives repeated at scale.</p>
+
+                <p>Our running example for the whole book is the prompt <strong>"What is the capital of France?"</strong> For a human, the answer <strong>Paris</strong> feels immediate. For a transformer, there is no symbolic country table, no explicit reasoning object called capital-city, and no hidden librarian. There is only a trained set of weight tensors and a forward pass. The model receives a sequence of token IDs representing the prompt, pushes them through the network, and produces logits: one numeric score for every token in its vocabulary. If the model is good, the token corresponding to something like <strong>" Paris"</strong> gets a high score. Sampling then turns those scores into an actual choice. The model emits that token, appends it to the context, and begins the next step from the new longer sequence.</p>
+
+                <div class="wf-callout">
+                    <p><strong>Key claims for the rest of the book:</strong> transformers are execution engines, not magic; almost everything is matrix multiplication or a lightweight operation wrapped around matrix multiplication; inference never modifies weights; a model is a large collection of number matrices loaded from disk into memory; and generation is autoregressive, meaning one token is generated at a time and fed back into the next step.</p>
+                </div>
+
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The full pipeline in one screen</h3>
+                <div class="wf-code">
+<pre>Input Text
+   ↓
+Tokenizer
+   ↓
+Embeddings
+   ↓
+Positional Encoding
+   ↓
+N × Transformer Layers
+   ↓
+Final RMSNorm
+   ↓
+lm_head (vocabulary projection)
+   ↓
+Sampling
+   ↓
+Next Token
+   ↓
+(repeat until stop)</pre>
+                </div>
+                <p>The diagram is short because the outer structure really is short. The complexity is hidden inside the repeated transformer layers and in the scale of the matrices. In a modern model, those layers may repeat dozens of times, hidden widths may be in the thousands, and the vocabulary projection may score tens of thousands of candidate tokens every step. But the control flow is still the same ten-line pipeline shown above.</p>
+
+                <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">A tensor map for the running example</h3>
+                <div class="wf-table-wrap">
+                    <table class="wf-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Meaning</th>
+                                <th>Example for “What is the capital of France?”</th>
+                                <th>Typical shape</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>T</strong></td>
+                                <td>Current sequence length in tokens</td>
+                                <td>Conceptually 7 prompt tokens before generation starts</td>
+                                <td>scalar</td>
+                            </tr>
+                            <tr>
+                                <td><strong>token_ids</strong></td>
+                                <td>Tokenizer output</td>
+                                <td>[w₀, w₁, w₂, …, w₆]</td>
+                                <td>[T]</td>
+                            </tr>
+                            <tr>
+                                <td><strong>E</strong></td>
+                                <td>Embedding table</td>
+                                <td>One row per vocabulary item</td>
+                                <td>[V, d_model]</td>
+                            </tr>
+                            <tr>
+                                <td><strong>X</strong></td>
+                                <td>Token representations in the model</td>
+                                <td>One vector per prompt token</td>
+                                <td>[T, d_model]</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Q, K, V</strong></td>
+                                <td>Attention projections</td>
+                                <td>Queries, keys, and values for each token</td>
+                                <td>[T, H, d_head]</td>
+                            </tr>
+                            <tr>
+                                <td><strong>A</strong></td>
+                                <td>Attention weights</td>
+                                <td>How strongly each token attends to earlier tokens</td>
+                                <td>[H, T, T]</td>
+                            </tr>
+                            <tr>
+                                <td><strong>cache</strong></td>
+                                <td>Stored past keys and values</td>
+                                <td>Needed after the first emitted token</td>
+                                <td>[layer, time, H_kv, d_head]</td>
+                            </tr>
+                            <tr>
+                                <td><strong>h</strong></td>
+                                <td>Final hidden state of the last token</td>
+                                <td>Representation of the question at the decision point</td>
+                                <td>[d_model]</td>
+                            </tr>
+                            <tr>
+                                <td><strong>logits</strong></td>
+                                <td>Unnormalised vocabulary scores</td>
+                                <td>High score for “ Paris” if the model behaves well</td>
+                                <td>[V]</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>We will keep coming back to these shapes because most confusion about transformer inference disappears once you track dimensions honestly. A layer is not performing poetry. It is transforming arrays of known shape into other arrays of known shape, with learned parameters supplying the coefficients.</p>
+
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 1 — Tokenizer</h3>
+                <p>The tokenizer is the front door. It converts raw text into integer token IDs. Those tokens may look like words, subwords, punctuation marks, or byte-oriented fragments depending on the tokenizer family. For our prompt, the conceptual sequence is something like <strong>[“What”, “ is”, “ the”, “ capital”, “ of”, “ France”, “?”]</strong>, although a real tokenizer may split it differently. The important point is that the model itself does not read Unicode strings. It reads integer IDs. Tokenization is therefore a lossy interface boundary between text and model space: every later operation depends on how the tokenizer segmented the input, but once the IDs exist, the neural network never sees the original characters again.</p>
+
+                <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 2 — Embeddings</h3>
+                <p>Each token ID indexes a row in an embedding table. If the vocabulary size is <strong>V</strong> and the model width is <strong>d_model</strong>, the embedding matrix has shape <strong>[V, d_model]</strong>. The operation is often written as <strong>X₀ = E[token_ids]</strong>.</p>
+                <div class="wf-math"><pre>X₀ = E[token_ids]</pre></div>
+                <p>In English: take each token ID, look up its row in the embedding matrix, and return the corresponding vector. This is a lookup, not a computation-heavy transformation. The meaning of “France” is not stored as a dictionary definition, but as a learned point in a high-dimensional space. The same applies to “capital”, “What”, and every other token. The result is a sequence of vectors, one per token, ready for the rest of the network.</p>
+
+                <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 3 — Positional encoding</h3>
+                <p>Embeddings alone do not encode order. If you hand a model the same token vectors in a different sequence, the bare lookup stage does not know the difference. Positional encoding injects order information. Older models added a position vector directly to each token vector. Many current LLMs instead use rotary position encoding, which rotates query and key components in a position-dependent way inside attention. Either way, the job is the same: distinguish <strong>“France capital”</strong> from <strong>“capital France”</strong> and preserve where each token sits in the sequence. Without this stage, the network would know what tokens are present but not where they occurred.</p>
+
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 4 — N × transformer layers</h3>
+                <p>This is where almost all of the interesting work happens. Each layer takes the current token representations, computes attention so tokens can condition on other tokens, runs a per-token feed-forward network, and uses residual connections so information survives depth. The same prompt vectors are refined repeatedly. By the time the last layer finishes, the final token’s hidden state is no longer just “the vector for question mark” or “the vector for France”. It is a context-sensitive representation of the entire prompt, shaped by every earlier layer’s learned projections. Later chapters will break this apart in detail, but for now the key idea is simple: the layer stack is the execution core.</p>
+
+                <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 5 — Final RMSNorm</h3>
+                <p>After the last transformer block, many modern LLMs apply one more RMSNorm before the output projection. RMSNorm rescales activations based on their root-mean-square magnitude and multiplies by a learned gain vector. It does not invent new information; it stabilises the scale of what is already there so the next projection behaves predictably. From a systems perspective, think of it as a cheap calibration step inserted before the final large matrix multiply. It is small compared with attention or the feed-forward network, but it matters because the output head expects inputs with a consistent scale distribution.</p>
+
+                <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 6 — lm_head (vocabulary projection)</h3>
+                <p>The model now takes the hidden state for the last position and projects it into vocabulary space. If the hidden width is <strong>d_model</strong> and the vocabulary size is <strong>V</strong>, the output head has shape <strong>[V, d_model]</strong> or equivalent depending on layout. The usual shorthand is <strong>logits = h · W_vocabᵀ</strong>.</p>
+                <div class="wf-math"><pre>logits = h · W_vocabᵀ</pre></div>
+                <p>In English: produce one score per vocabulary token by taking dot products between the final hidden state and every output embedding row. High score means “this token fits well here according to the learned model”. At this point there is still no chosen word, only a large vector of candidate scores. For our running example, one of those scores should correspond to a token like <strong>“ Paris”</strong>. Whether it becomes the actual next token depends on the sampling step.</p>
+
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 7 — Sampling</h3>
+                <p>Sampling converts logits into a decision. The standard first step is softmax, optionally after dividing logits by temperature. Then decoding policy trims or biases the distribution: greedy selection, top-k, top-p, repetition penalties, minimum probability thresholds, or something similar. The canonical equation is <strong>pᵢ = exp(logitᵢ / τ) / Σⱼ exp(logitⱼ / τ)</strong>.</p>
+                <div class="wf-math"><pre>pᵢ = exp(logitᵢ / τ) / Σⱼ exp(logitⱼ / τ)</pre></div>
+                <p>In English: turn raw scores into probabilities, optionally sharpen or flatten them with temperature <strong>τ</strong>, then choose the next token according to the selected policy. If you set temperature to zero and always take the maximum, generation becomes deterministic for a fixed implementation. If you allow stochastic sampling, the same prompt can produce different continuations. Either way, the model is choosing the next token from a scored vocabulary, not composing a whole sentence in one operation.</p>
+
+                <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Stage 8 — Repeat until stop</h3>
+                <p>Generation is autoregressive. Once a token is chosen, it is appended to the existing token sequence, and the model runs again to choose the next one. If the first generated token is <strong>“ Paris”</strong>, the next pass operates on something equivalent to <strong>“What is the capital of France? Paris”</strong> in token space. The process stops when the model emits an end token, reaches a configured limit, or satisfies an external stop condition. This one-token-at-a-time loop is why latency matters so much in user-facing inference. Even if each step is fast, you pay for dozens or hundreds of them in sequence.</p>
+
+                <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">What the model actually is</h3>
+                <p>It helps to state this bluntly. A deployed transformer is not a thinking object sitting in memory. It is a serialized parameter set plus code that knows how to execute a forward pass. The weight files contain large tensors: embedding matrices, projection matrices, normalisation weights, and sometimes quantized variants of those tensors. Loading the model means reading those numbers from disk and placing them into CPU memory, GPU memory, or both. Inference means applying those numbers to live inputs. Nothing in that description requires anthropomorphic language.</p>
+
+                <p>Because the parameters are fixed during inference, the only mutable state is operational state: the current tokens, temporary activations, random-number state if sampling is stochastic, and the KV cache that stores prior keys and values for each layer. The phrase <strong>“the model knows Paris is the capital of France”</strong> is a useful shorthand, but mechanically it means something narrower: the trained weight tensors encode statistical structure such that, in contexts like this prompt, the output projection tends to score tokens associated with Paris very highly. The knowledge is distributed numerically across many weights, not stored as a single symbolic cell.</p>
+
+                <div class="wf-callout accent">
+                    <p><strong>Inference never modifies weights.</strong> If the model answers badly, it does not learn from the mistake during ordinary generation. Changing the weights requires training or fine-tuning, which means computing gradients, running an optimizer, and writing updated parameters back out. Normal inference is read-mostly on weights.</p>
+                </div>
+
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Almost everything is matrix multiplication</h3>
+                <p>The slogan is only slightly exaggerated. Embedding lookup is not matrix multiplication, RMSNorm is not matrix multiplication, softmax is not matrix multiplication, and sampling is not matrix multiplication. But the expensive, expressive center of the model overwhelmingly is. Queries, keys, values, output projections, feed-forward expansions, gating projections, down projections, and the final vocabulary head are all matrix-vector or matrix-matrix operations under different batching layouts. If you stripped away the bookkeeping, a large fraction of the FLOPs in transformer inference comes from multiplying activation matrices by weight matrices.</p>
+
+                <div class="wf-math"><pre>Q = X · WQ
+K = X · WK
+V = X · WV
+A = softmax((Q · Kᵀ) / √d_head + mask)
+O = A · V</pre></div>
+                <p>In English: first project the current token representations into three new views called queries, keys, and values. Then compare queries against keys to produce relevance scores, normalise those scores, and use them to blend values into updated token representations. This is the core of attention. The symbols can look abstract, but operationally they are ordinary dense tensor operations repeated across layers and heads.</p>
+
+                <p>The feed-forward block is the same story at a different shape. In a gated LLM variant you often see something like <strong>FFN(x) = W_down(σ(W_gate x) ⊙ W_up x)</strong>.</p>
+                <div class="wf-math"><pre>FFN(x) = Wdown(σ(Wgate x) ⊙ Wup x)</pre></div>
+                <p>In English: project the token representation into a wider space, apply a nonlinearity and gate, combine the results elementwise, and project back down to the model width. Again, the learned behavior lives in the matrices. The nonlinearities and elementwise multiplies are necessary, but the bulk of the heavy lifting is still in the projections.</p>
+
+                <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Training versus inference</h3>
+                <p>Training and inference share the same forward computation, but they are operationally different worlds. In inference, you run the forward pass to obtain logits and maybe a sampled token. In training, you also know the correct next token for each position, compute a loss, backpropagate gradients through the entire network, and use an optimizer to update the weights. Training therefore needs to store or recompute much more intermediate state, performs both forward and backward passes, and changes model parameters after each optimization step or batch. Inference is the cheap relative: read weights, compute outputs, keep weights fixed.</p>
+
+                <div class="wf-table-wrap">
+                    <table class="wf-table">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Training</th>
+                                <th>Inference</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Goal</strong></td>
+                                <td>Improve weights so future predictions are better</td>
+                                <td>Use existing weights to generate predictions now</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Passes</strong></td>
+                                <td>Forward + backward + optimizer update</td>
+                                <td>Forward only</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Weight updates</strong></td>
+                                <td>Yes</td>
+                                <td>No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Stored intermediates</strong></td>
+                                <td>Many activations for gradients</td>
+                                <td>Mainly activations for the current step and KV cache</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Operational flavour</strong></td>
+                                <td>Expensive optimisation job</td>
+                                <td>Low-latency serving job</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>That distinction matters because a lot of public explanation accidentally mixes them. If someone says “the model adjusts itself as it thinks through the answer”, that is usually wrong for ordinary inference. The model may update the sequence state as it generates, but it is not performing online learning on its main weights.</p>
+
+                <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The primitive operations underneath the whole pipeline</h3>
+                <div class="wf-table-wrap">
+                    <table class="wf-table">
+                        <thead>
+                            <tr>
+                                <th>Primitive</th>
+                                <th>Where it appears</th>
+                                <th>Plain-English role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Lookup</strong></td>
+                                <td>Token embeddings, sometimes output embedding reuse, tokenizer tables</td>
+                                <td>Fetch a prelearned row or rule by ID rather than recomputing it</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Projection</strong></td>
+                                <td>QKV, attention output, FFN up/down, lm_head</td>
+                                <td>Remix one vector space into another by weighted sums</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Reduction</strong></td>
+                                <td>Dot products, softmax denominator, max search, top-k selection</td>
+                                <td>Collapse many numbers into fewer summary numbers</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Normalisation</strong></td>
+                                <td>RMSNorm</td>
+                                <td>Rescale activations so later layers see stable magnitudes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Activation</strong></td>
+                                <td>SiLU, GeLU, gated FFN paths</td>
+                                <td>Add nonlinearity so the network is more than one giant linear map</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Sampling</strong></td>
+                                <td>Final decoding step</td>
+                                <td>Turn a probability distribution into one concrete next token</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>If you internalize those six primitives, most transformer code stops looking alien. Frameworks, kernels, quantization formats, and fused implementations add engineering detail, but they do not fundamentally change what the machine is doing.</p>
+
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">A systems programmer’s mental model</h3>
+                <p>There are at least two mental models that work well. The first is a CPU pipeline analogy. The prompt tokens are your input stream. Each layer is a processing stage. Residual paths are bypass lanes that stop deep pipelines from discarding earlier signal. The weight tensors are not instruction code in the normal sense, but they do define the fixed transformation behavior of the machine. Activations are transient register-like state flowing through the stages. The KV cache is a persistent side buffer that prevents recomputing history for every decode step. Viewed that way, inference is a deeply pipelined dataflow program with an unusually large constant memory footprint.</p>
+
+                <p>The second useful analogy is a database query executor. The tokenizer is a parser that produces an internal representation. Embeddings are table lookups. Attention is an all-to-all relevance join constrained by causal masking, where each token can look backward but not forward. The feed-forward block is a per-row expression evaluator running after contextual enrichment. The output head is a large scoring projection over the vocabulary relation. Sampling is the final row selection policy. This analogy is imperfect, but it highlights something important: the model is executing a learned plan over structured data, not free-associating in the abstract.</p>
+
+                <div class="wf-grid">
+                    <div class="wf-card tone-cyan">
+                        <div class="wf-placeholder-title">CPU lens</div>
+                        <p class="wf-note">Think in terms of stages, registers, cache lines, arithmetic intensity, and dependency chains. The autoregressive loop is the serial dependency that dominates latency.</p>
+                    </div>
+                    <div class="wf-card tone-gold">
+                        <div class="wf-placeholder-title">Database lens</div>
+                        <p class="wf-note">Think in terms of parsing, lookup, projection, join-like context aggregation, and final selection. Attention behaves like a learned, soft, vectorized relevance join over prior tokens.</p>
+                    </div>
+                </div>
+
+                <h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Where the time goes</h3>
+                <p>The answer depends on whether you are processing the initial prompt or generating additional tokens. The first pass over the prompt is often called <strong>prefill</strong>. During prefill, all prompt tokens are processed together, so matrix multiplications are large and parallel enough for GPUs to use well. Attention here includes full token-token comparisons inside the prompt, so sequence length matters quadratically in the raw attention score matrix. If <strong>T</strong> doubles, the number of pairwise attention comparisons grows by roughly four times.</p>
+
+                <div class="wf-math"><pre>Attention score cost per head during prefill ≈ O(T² · d_head)</pre></div>
+                <p>In English: every token compares itself against many other tokens, so longer prompts produce disproportionately more attention work. This is why very long context windows are expensive even before generation begins.</p>
+
+                <p>After prefill comes <strong>decode</strong>: generating one token at a time. With a KV cache, you do not recompute keys and values for the entire prefix on every step. You only compute them for the new token and attend against cached history. That changes the scaling shape, but it also makes inference more bandwidth-sensitive. The model still has to read large weight tensors every step, and now the arithmetic per step is smaller. On many deployments, interactive decode becomes limited less by peak FLOPs and more by memory traffic, kernel launch overhead, and cache behavior.</p>
+
+                <div class="wf-math"><pre>FFN cost per token per layer ≈ O(d_model · d_ff)</pre></div>
+                <p>In English: the feed-forward network scales linearly with sequence length, but the hidden expansion is wide enough that it still consumes a large share of total compute. Attention gets the headlines, yet feed-forward blocks often dominate raw multiply-add volume in real models.</p>
+
+                <div class="wf-table-wrap">
+                    <table class="wf-table">
+                        <thead>
+                            <tr>
+                                <th>Pipeline stage</th>
+                                <th>Typical bound</th>
+                                <th>Why</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Tokenizer</strong></td>
+                                <td>Memory / branch / CPU-bound</td>
+                                <td>Table-driven text processing, not big dense math</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Embedding lookup</strong></td>
+                                <td>Memory-bound</td>
+                                <td>Mostly fetching rows from a large table</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Positional encoding</strong></td>
+                                <td>Light compute or bandwidth-bound</td>
+                                <td>Cheap relative to the big projections</td>
+                            </tr>
+                            <tr>
+                                <td><strong>QKV projections</strong></td>
+                                <td>Compute-bound</td>
+                                <td>Dense matrix multiplies with substantial arithmetic work</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Attention score matmul</strong></td>
+                                <td>Compute-bound during prefill</td>
+                                <td>Large pairwise dot-product workload</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Softmax + masking</strong></td>
+                                <td>Reduction / latency-bound</td>
+                                <td>Requires exponentials, reductions, and normalization per row</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Attention apply (A · V)</strong></td>
+                                <td>Compute-bound</td>
+                                <td>Another dense multiply once weights are known</td>
+                            </tr>
+                            <tr>
+                                <td><strong>RMSNorm</strong></td>
+                                <td>Memory-bound</td>
+                                <td>Read, reduce, rescale, write; little arithmetic per byte</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Feed-forward network</strong></td>
+                                <td>Compute-bound</td>
+                                <td>Very large projection matrices, often a major FLOP sink</td>
+                            </tr>
+                            <tr>
+                                <td><strong>lm_head</strong></td>
+                                <td>Compute + bandwidth-heavy</td>
+                                <td>Project one hidden state against the whole vocabulary</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Sampling</strong></td>
+                                <td>Reduction / control-bound</td>
+                                <td>Top-k, top-p, and token selection are small but serially important</td>
+                            </tr>
+                            <tr>
+                                <td><strong>KV cache reads/writes</strong></td>
+                                <td>Memory-bound</td>
+                                <td>Decode speed depends heavily on cache layout and bandwidth</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>That table is one reason performance work on LLM inference often looks like systems work rather than pure math work. Once the model architecture is fixed, throughput and latency are largely questions of memory layout, quantization, kernel fusion, batching strategy, device placement, and how often you can avoid moving the same data twice.</p>
+
+                <h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Pseudocode for the whole inference loop</h3>
+                <div class="wf-code">
+<pre>weights    = load_model_tensors_from_disk()
+tokenizer  = load_tokenizer()
+kv_cache   = allocate_empty_cache(weights.num_layers, max_context)
+tokens     = tokenizer.encode("What is the capital of France?")
+positions  = [0 .. len(tokens)-1]
+
+for step in 0 .. max_new_tokens-1:
+    if step == 0:
+        active_tokens    = tokens          # prefill on the whole prompt
+        active_positions = positions
+    else:
+        active_tokens    = [tokens[-1]]    # decode one token at a time
+        active_positions = [len(tokens)-1]
+
+    x = embedding_lookup(weights.embedding_table, active_tokens)
+    x = apply_positional_scheme(x, active_positions)
+
+    for layer in weights.layers:
+        residual = x
+        u = rmsnorm(x, layer.attn_norm)
+        q, k, v = project_qkv(u, layer)
+        q, k = apply_rope_or_other_positioning(q, k, active_positions)
+        kv_cache[layer].append(k, v)
+        attn = causal_attention(q, kv_cache[layer].keys, kv_cache[layer].values)
+        x = residual + project_attention_out(attn, layer)
+
+        residual = x
+        u = rmsnorm(x, layer.ffn_norm)
+        x = residual + feed_forward(u, layer)
+
+    h = final_rmsnorm(last_token(x), weights.final_norm)
+    logits = vocabulary_projection(h, weights.lm_head)
+    next_token = sample(logits, temperature, top_k, top_p)
+    tokens.append(next_token)
+
+    if next_token in stop_tokens:
+        break
+
+text = tokenizer.decode(tokens)</pre>
+                </div>
+                <p>The important thing about this pseudocode is not the exact function names. It is the control shape. Prefill the prompt. Cache keys and values. Decode one token at a time. Keep weights fixed. Project the final hidden state to logits. Sample. Append. Loop. If you can explain those lines clearly, you understand the outer mechanics of transformer inference.</p>
+
+                <h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself…</h3>
+                <p>Start with the boring pieces. Load a tiny model. Get tokenization correct. Load tensors with verified shapes. Write the embedding lookup. Implement RMSNorm. Implement a single attention head without optimization and compare against a known reference. Then add multi-head attention, residuals, and the feed-forward block. Once the math is correct, add the output projection and a basic sampler. Only after that should you introduce a KV cache, quantization, fused kernels, batching, or device-specific acceleration.</p>
+
+                <p>If you come from systems programming, the surprises are rarely in the equations themselves. They are in layout and movement. You will spend real time on how tensors are packed, when transposes happen, whether weights should be pre-sharded, how to keep cache writes contiguous, where quantization scales live, and how to avoid copying activations between buffers. You will also discover that “one token at a time” is a ruthless latency constraint. Small inefficiencies that would disappear inside a batch job remain visible to users when repeated for every generated token.</p>
+
+                <p>So the practical closing advice is this: treat the transformer like an execution engine with a strict state model. Know which buffers are immutable, which are per-request, and which are per-step. Know which operations are lookups, which are projections, and which are reductions. Measure prefill separately from decode. Do not describe hidden state as magic when you can describe it as a tensor. And when the model answers <strong>“Paris”</strong>, remember what actually happened: a fixed numerical machine scored a vocabulary, one token won, and the loop advanced by exactly one step.</p>
+
+                <div class="wf-inline-nav">
+                    <a href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+                    <a href="#/ch2" onclick="event.preventDefault(); route('ch2')">Part 2: Tokenization →</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="dynamicSections"></div>
+    </main>
+
+    <script>
+        const chapters = [
+            {
+                id: 'ch1',
+                part: 'Part 1',
+                title: 'The Big Picture',
+                desc: 'overview of the full inference pipeline',
+                topics: ['full pipeline', 'training vs inference', 'systems mental model'],
+                status: 'Read now'
+            },
+            {
+                id: 'ch2',
+                part: 'Part 2',
+                title: 'Tokenization',
+                desc: 'BPE, SentencePiece, byte-level',
+                topics: ['merge rules', 'unicode boundaries', 'why tokens are not words'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch3',
+                part: 'Part 3',
+                title: 'Embeddings',
+                desc: 'lookup tables, vector spaces, quantisation',
+                topics: ['row lookup', 'semantic neighborhoods', 'embedding storage formats'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch4',
+                part: 'Part 4',
+                title: 'Positional Encoding',
+                desc: 'RoPE, sinusoidal, ALiBi, YaRN',
+                topics: ['order injection', 'long-context scaling', 'rotary mechanics'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch5',
+                part: 'Part 5',
+                title: 'The Transformer Layer',
+                desc: 'layer structure, projections',
+                topics: ['residual paths', 'pre-norm layout', 'weight shapes'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch6',
+                part: 'Part 6',
+                title: 'Attention',
+                desc: 'QKV, multi-head, GQA, FlashAttention, KV cache',
+                topics: ['score matrices', 'head sharing', 'decode-time caching'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch7',
+                part: 'Part 7',
+                title: 'RMSNorm',
+                desc: 'normalisation, epsilon, hardware',
+                topics: ['magnitude control', 'numerical stability', 'kernel cost'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch8',
+                part: 'Part 8',
+                title: 'Feed-Forward Networks',
+                desc: 'gate/up/down, activations, MoE',
+                topics: ['wide projections', 'gating', 'expert routing'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch9',
+                part: 'Part 9',
+                title: 'The Language Model Head',
+                desc: 'vocabulary projection, logits',
+                topics: ['output embeddings', 'weight tying', 'score interpretation'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch10',
+                part: 'Part 10',
+                title: 'Sampling',
+                desc: 'temperature, top-k, top-p, penalties',
+                topics: ['distribution shaping', 'decoding policy', 'determinism boundaries'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch11',
+                part: 'Part 11',
+                title: 'Building an Inference Engine',
+                desc: 'progressive assembly',
+                topics: ['reference implementation', 'cache design', 'performance passes'],
+                status: 'Planned'
+            },
+            {
+                id: 'ch12',
+                part: 'Part 12',
+                title: 'The Database Lens',
+                desc: 'speculative: transformer as execution engine',
+                topics: ['soft joins', 'query plans', 'execution semantics'],
+                status: 'Planned'
+            }
+        ];
+
+        const tones = ['tone-cyan', 'tone-accent', 'tone-gold'];
+
+        function toneFor(index) {
+            return tones[index % tones.length];
+        }
+
+        function renderNav() {
+            const nav = document.getElementById('chapterNav');
+            nav.innerHTML = [
+                '<a class="wf-site-back" href="index.html">← index.html</a>',
+                '<a href="#/index" data-route="index" onclick="event.preventDefault(); route(\'index\')">chapters</a>',
+                ...chapters.map((chapter, index) =>
+                    `<a href="#/${chapter.id}" data-route="${chapter.id}" onclick="event.preventDefault(); route('${chapter.id}')">${index + 1}. ${chapter.title.toLowerCase()}</a>`
+                )
+            ].join('');
+        }
+
+        function renderTiles() {
+            const tiles = document.getElementById('chapterTiles');
+            tiles.innerHTML = chapters.map((chapter, index) => `
+                <a class="wf-tile ${toneFor(index)}" href="#/${chapter.id}" onclick="event.preventDefault(); route('${chapter.id}')">
+                    <div class="wf-tile-part">${chapter.part}</div>
+                    <div class="wf-tile-name">${chapter.title}</div>
+                    <div class="wf-tile-desc">${chapter.desc}</div>
+                    <div class="wf-tile-topics">${chapter.topics.join(' · ')}</div>
+                    <div class="wf-tile-action">${chapter.status}</div>
+                </a>
+            `).join('');
+        }
+
+        function renderPlaceholders() {
+            const host = document.getElementById('dynamicSections');
+            host.innerHTML = chapters.slice(1).map((chapter, index) => `
+                <div id="${chapter.id}" class="wf-section wf-article">
+                    <div class="wf-article-head">
+                        <a class="wf-back" href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+                        <div class="wf-kicker">${chapter.part}</div>
+                        <h1 class="wf-section-hdr">${chapter.title}</h1>
+                        <p class="wf-section-desc">${chapter.desc}. This section is scaffolded here so the book routing is complete; the full chapter text still needs to be written.</p>
+                    </div>
+                    <div class="wf-article-body">
+                        <div class="wf-placeholder ${toneFor(index + 1)}">
+                            <div class="wf-placeholder-title">Planned coverage</div>
+                            <p class="wf-note">This page already reserves the chapter route and the chapter card. When written in full, this chapter will continue the same running example — “What is the capital of France?” — and isolate the subsystem listed below.</p>
+                            <ul>
+                                ${chapter.topics.map(topic => `<li>${topic}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="wf-inline-nav">
+                            <a href="#/index" onclick="event.preventDefault(); route('index')">← chapter index</a>
+                            <a href="#/${chapters[Math.min(index + 2, chapters.length - 1)].id}" onclick="event.preventDefault(); route('${chapters[Math.min(index + 2, chapters.length - 1)].id}')">Next planned chapter →</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showSection(section) {
+            const targetId = document.getElementById(section) ? section : 'index';
+            document.querySelectorAll('.wf-section').forEach(s => s.classList.remove('active'));
+            const el = document.getElementById(targetId);
+            if (el) {
+                el.classList.add('active');
+                el.style.animation = 'none';
+                el.offsetHeight;
+                el.style.animation = '';
+                window.scrollTo(0, 0);
+            }
+            document.querySelectorAll('.wf-nav-links a[data-route]').forEach(a => {
+                a.classList.toggle('active', a.dataset.route === targetId);
+            });
+        }
+
+        function route(section) {
+            const targetId = document.getElementById(section) ? section : 'index';
+            location.hash = '#/' + targetId;
+            showSection(targetId);
+        }
+
+        renderNav();
+        renderTiles();
+        renderPlaceholders();
+
+        window.addEventListener('hashchange', () => {
+            const hash = location.hash.replace('#/', '') || 'index';
+            showSection(hash);
+        });
+
+        const initHash = location.hash.replace('#/', '') || 'index';
+        showSection(initHash);
+    </script>
+</body>
+</html>
