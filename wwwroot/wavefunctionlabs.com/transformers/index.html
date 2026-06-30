@@ -1,317 +1,84 @@
 <style>
-.wf-section { display: block !important; }
-.wf-tabs { margin: 1.5rem 0; border: 1px solid var(--wf-border); border-radius: 12px; background: rgba(14,14,22,0.5); overflow: hidden; }
-.wf-tab-bar { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--wf-border); background: rgba(14,14,22,0.7); padding: 0.4rem 0.5rem 0; }
-.wf-tab { padding: 0.55rem 1rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--wf-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; border-radius: 6px 6px 0 0; }
-.wf-tab:hover { color: #e2e8f0; background: rgba(99,102,241,0.08); }
-.wf-tab.active { color: var(--wf-cyan); border-bottom-color: var(--wf-cyan); background: rgba(6,182,212,0.06); }
-.wf-tab-panel { display: none; padding: 1.2rem 1.3rem; font-size: 0.88rem; line-height: 1.85; color: var(--bs-body-color); }
-.wf-tab-panel.active { display: block; }
-.wf-tab-panel p { margin: 0 0 0.9rem; }
-.wf-tab-panel strong { color: #e2e8f0; }
-.wf-tab-panel .wf-code, .wf-tab-panel .wf-math, .wf-tab-panel .wf-table-wrap { margin: 0.8rem 0; }
-#wtf-btn, #psi-btn, #duck-btn { position: fixed; right: 1.5rem; z-index: 10000; display: none; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; background: rgba(4,4,14,0.94); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); transition: box-shadow 0.25s, transform 0.12s, opacity 0.2s; user-select: none; border-style: solid; border-width: 1px; }
-#wtf-btn { bottom: 1.5rem; color: #00c8ff; border-color: rgba(0,200,255,.55); box-shadow: 0 0 14px rgba(0,200,255,.2), 0 2px 10px rgba(0,0,0,.7); }
-#wtf-btn:hover { box-shadow: 0 0 26px rgba(0,200,255,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
-#psi-btn { bottom: 4.5rem; color: #f0c040; border-color: rgba(240,192,64,.55); box-shadow: 0 0 14px rgba(240,192,64,.2), 0 2px 10px rgba(0,0,0,.7); }
-#psi-btn:hover { box-shadow: 0 0 26px rgba(240,192,64,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
-#duck-btn { bottom: 7.5rem; color: #f97316; border-color: rgba(249,115,22,.55); box-shadow: 0 0 14px rgba(249,115,22,.2), 0 2px 10px rgba(0,0,0,.7); }
-#duck-btn:hover { box-shadow: 0 0 26px rgba(249,115,22,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
-#wtf-btn:active, #psi-btn:active, #duck-btn:active { transform: translateY(0); }
-#wtf-btn.busy, #psi-btn.busy, #duck-btn.busy { opacity: 0.45; cursor: wait; pointer-events: none; }
-.wf-gloss-entry { padding: 1rem 0; border-bottom: 1px solid var(--wf-border); }
-.wf-gloss-entry:last-child { border-bottom: none; }
-a.wf-gloss { color: var(--wf-cyan); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
-a.wf-gloss:hover { color: #e2e8f0; text-decoration-style: solid; }
-@media (max-width: 760px) {
-  .wf-tab { padding: 0.4rem 0.7rem; font-size: 0.68rem; }
-  #wtf-btn, #psi-btn, #duck-btn { right: 0.8rem; padding: 0.4rem 0.7rem; font-size: 0.68rem; }
-}
+.tf-wrap{max-width:720px;margin:0 auto;padding:0 0 1rem}.tf-sec{margin:0 auto 2rem}.tf-title{max-width:520px;margin:0 auto .85rem;color:#e2e8f0;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}.tf-prompt,.tf-loopback,.tf-out{max-width:520px;margin:0 auto;text-align:center;color:#e2e8f0}.tf-prompt,.tf-out{padding:.9rem 1rem;border:1px solid var(--wf-border);border-radius:10px;background:rgba(255,255,255,.02);font-size:.95rem}.tf-arrow{text-align:center;color:var(--wf-muted);font-size:1.3rem;line-height:1;margin:.5rem auto}.tf-step{max-width:520px;margin:0 auto;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:10px;background:var(--wf-surface);box-shadow:0 10px 24px rgba(0,0,0,.12)}.tf-name{display:block;margin:0 0 .45rem;font-size:.88rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.tf-cyan{color:var(--wf-cyan)}.tf-gold{color:var(--wf-gold)}.tf-accent{color:var(--wf-accent)}.tf-step p,.tf-card p{margin:0;color:var(--wf-muted);font-size:.82rem;line-height:1.6}.tf-link{margin-top:.55rem;text-align:right}.tf-link a,.tf-card a{color:var(--wf-cyan);font-size:.72rem;text-decoration:none}.tf-link a:hover,.tf-card a:hover,.tf-deeper a:hover{text-decoration:underline}.tf-loop{max-width:560px;margin:0 auto;padding:1rem;border:1px dashed rgba(6,182,212,.24);border-radius:12px;background:rgba(6,182,212,.05)}.tf-loop-label{margin:0 0 .7rem;text-align:center;color:var(--wf-accent);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase}.tf-loop .tf-step{max-width:500px}.tf-loopback{margin-top:.4rem;color:var(--wf-accent);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}.tf-compare{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.tf-card,.tf-deeper a{border:1px solid var(--wf-border);border-radius:10px;background:var(--wf-surface)}.tf-card{padding:1rem 1.1rem}.tf-card h3{margin:0 0 .45rem;color:#e2e8f0;font-size:.9rem}.tf-card-note{margin-top:.7rem;text-align:right}.tf-deeper{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.8rem}.tf-deeper a{display:block;padding:.95rem 1rem;color:inherit;text-decoration:none}.tf-deeper strong{display:block;margin:0 0 .3rem;color:#e2e8f0;font-size:.84rem;letter-spacing:.04em;text-transform:uppercase}.tf-deeper span{color:var(--wf-muted);font-size:.8rem;line-height:1.55}@media (max-width:640px){.tf-compare{grid-template-columns:1fr}.tf-wrap{padding:0}}
 </style>
 
-<div class="wf-hero-card">
-            <div class="wf-kicker">technical book · llm inference · plain english</div>
-            <h1 class="wf-section-hdr">Plain English: The Transformer Model (LLMs)</h1>
-            <p class="wf-section-desc">A systems-level walkthrough of transformer inference for senior engineers. The running example for the entire book is the prompt <strong>"What is the capital of France?"</strong> and the goal is simple: explain, in precise engineering terms, how a static pile of matrices turns that prompt into the next token <strong>" Paris"</strong> and then keeps going.</p>
-            <div class="wf-meta">
-                <span class="wf-chip">dark theme · JetBrains Mono</span>
-                <span class="wf-chip">standalone chapter pages</span>
-                <span class="wf-chip">15 chapters + glossary</span>
-                <span class="wf-chip">⁇ wtf? · ψ deeper · 🦆 ducky toggles</span>
-                <span class="wf-chip">tabbed variants</span>
-            </div>
-        </div>
-        <div class="wf-callout gold">
-            <p><strong>What this book is trying to do:</strong> remove the fog. A transformer is not a bag of vibes. It is an execution engine with a tokenizer on the front, a sampler on the back, and a lot of linear algebra in the middle. Each chapter isolates one subsystem so you can see where the cost, state, and behavior actually live.</p>
-        </div>
-        <div class="wf-grid" style="margin-bottom:1.35rem;">
-            <div class="wf-card tone-cyan">
-                <div class="wf-placeholder-title">How to use this page</div>
-                <p class="wf-note">Use the chapter nav or the tiles below. Each chapter is a standalone page with shared navigation.</p>
-            </div>
-            <div class="wf-card tone-accent">
-                <div class="wf-placeholder-title">Audience</div>
-                <p class="wf-note">You already understand caches, pipelines, memory bandwidth, vectorized compute, and why data movement dominates more software than people admit.</p>
-            </div>
-            <div class="wf-card tone-gold">
-                <div class="wf-placeholder-title">Method</div>
-                <p class="wf-note">No hype, no mysticism, and no unexplained equations. Every symbolic step is immediately translated back into plain English.</p>
-            </div>
-        </div>
-        <div class="wf-tile-grid">
-            <a class="wf-tile tone-cyan" href="ch1.html">
-                <div class="wf-tile-part">Part 1</div>
-                <div class="wf-tile-name">The Big Picture</div>
-                <div class="wf-tile-desc">What creates the magic? How do Language Models think? What types are there?</div>
-                <div class="wf-tile-topics">full pipeline · training vs inference · systems mental model</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-accent" href="ch2.html">
-                <div class="wf-tile-part">Part 2</div>
-                <div class="wf-tile-name">Tokenization</div>
-                <div class="wf-tile-desc">What is a token? How does the model encode meaning from text?</div>
-                <div class="wf-tile-topics">merge rules · unicode boundaries · why tokens are not words</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-gold" href="ch3.html">
-                <div class="wf-tile-part">Part 3</div>
-                <div class="wf-tile-name">Embeddings</div>
-                <div class="wf-tile-desc">What does a token actually mean? What does a machine need to process meaning?</div>
-                <div class="wf-tile-topics">row lookup · semantic neighborhoods · embedding storage formats</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-cyan" href="ch4.html">
-                <div class="wf-tile-part">Part 4</div>
-                <div class="wf-tile-name">Positional Encoding</div>
-                <div class="wf-tile-desc">Why does position matter? What's the difference between "duck roast" and "roast duck"?</div>
-                <div class="wf-tile-topics">order injection · long-context scaling · rotary mechanics</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-accent" href="ch5.html">
-                <div class="wf-tile-part">Part 5</div>
-                <div class="wf-tile-name">The Transformer Layer</div>
-                <div class="wf-tile-desc">The repeating building block — one layer of the thinking stack</div>
-                <div class="wf-tile-topics">residual paths · pre-norm layout · weight shapes</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-gold" href="ch6.html">
-                <div class="wf-tile-part">Part 6</div>
-                <div class="wf-tile-name">Attention</div>
-                <div class="wf-tile-desc">Pay attention! How each token decides what matters relative to it</div>
-                <div class="wf-tile-topics">score matrices · head sharing · decode-time caching</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-cyan" href="ch7.html">
-                <div class="wf-tile-part">Part 7</div>
-                <div class="wf-tile-name">RMSNorm</div>
-                <div class="wf-tile-desc">Normalization — a quick calibration step that keeps the numbers well-behaved</div>
-                <div class="wf-tile-topics">magnitude control · numerical stability · kernel cost</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-accent" href="ch8.html">
-                <div class="wf-tile-part">Part 8</div>
-                <div class="wf-tile-name">Feed-Forward Networks</div>
-                <div class="wf-tile-desc">The per-word thinking step — where patterns become decisions</div>
-                <div class="wf-tile-topics">wide projections · gating · expert routing</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-gold" href="ch9.html">
-                <div class="wf-tile-part">Part 9</div>
-                <div class="wf-tile-name">The Language Model Head</div>
-                <div class="wf-tile-desc">What next? Time to look forward to find the NEXT new token...</div>
-                <div class="wf-tile-topics">output embeddings · weight tying · score interpretation</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-cyan" href="ch10.html">
-                <div class="wf-tile-part">Part 10</div>
-                <div class="wf-tile-name">Sampling</div>
-                <div class="wf-tile-desc">Choosing the next word — and why the same prompt can give different answers</div>
-                <div class="wf-tile-topics">distribution shaping · decoding policy · determinism boundaries</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-accent" href="ch11.html">
-                <div class="wf-tile-part">Part 11</div>
-                <div class="wf-tile-name">Building an Inference Engine</div>
-                <div class="wf-tile-desc">Putting it all together into a working system, piece by piece</div>
-                <div class="wf-tile-topics">reference implementation · cache design · performance passes</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-gold" href="ch12.html">
-                <div class="wf-tile-part">Part 12</div>
-                <div class="wf-tile-name">The Database Lens</div>
-                <div class="wf-tile-desc">What if you squinted and saw a query engine instead of a neural network?</div>
-                <div class="wf-tile-topics">soft joins · query plans · execution semantics</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-cyan" href="ch13.html">
-                <div class="wf-tile-part">Part 13</div>
-                <div class="wf-tile-name">Model Formats</div>
-                <div class="wf-tile-desc">How models are stored on disk — and how to load them yourself</div>
-                <div class="wf-tile-topics">file structure · quantization formats · loading from disk</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-accent" href="ch14.html">
-                <div class="wf-tile-part">Part 14</div>
-                <div class="wf-tile-name">Building a CPU Transformer Library</div>
-                <div class="wf-tile-desc">Write your own inference engine — in four different languages</div>
-                <div class="wf-tile-topics">GGUF loading · matmul kernels · full inference loop</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-gold" href="ch15.html">
-                <div class="wf-tile-part">Part 15</div>
-                <div class="wf-tile-name">Database-Optimized Inference</div>
-                <div class="wf-tile-desc">Practical speed tricks borrowed from decades of database engineering</div>
-                <div class="wf-tile-topics">prefix caching · delta chains · query planning for attention</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-            <a class="wf-tile tone-cyan" href="glossary.html">
-                <div class="wf-tile-part">Reference</div>
-                <div class="wf-tile-name">Glossary</div>
-                <div class="wf-tile-desc">We don't need a PhD in ML — every scary term explained in one line for us mere mortals</div>
-                <div class="wf-tile-topics">softmax · QKV · lm_head · temperature · epsilon</div>
-                <div class="wf-tile-action">Read now</div>
-            </a>
-        </div>
+<div class="tf-wrap">
+  <div style="max-width:520px;margin:0 auto 2rem;text-align:center;">
+    <h1 class="wf-section-hdr" style="font-size:clamp(1.6rem,3.5vw,2.4rem);">How a Transformer Produces One Word</h1>
+    <p style="color:var(--wf-muted);font-size:.85rem;line-height:1.7;margin-top:.6rem;">
+      You type <strong style="color:#e2e8f0;">"The capital of France is"</strong> — the model runs this pipeline and out comes <strong style="color:var(--wf-cyan);">" Paris"</strong>.
+    </p>
+    <p style="color:var(--wf-muted);font-size:.78rem;margin-top:.4rem;">
+      Click any step to read more. No equations — those are in the <a href="glossary.html" style="color:var(--wf-cyan);text-decoration:underline dotted;text-underline-offset:3px;">glossary</a>.
+    </p>
+  </div>
 
-<button id="wtf-btn"><span>⁇</span>&nbsp;wtf?</button>
-<button id="psi-btn"><span>ψ</span>&nbsp;deeper</button>
-<button id="duck-btn"><span>🦆</span>&nbsp;ducky</button>
+  <div class="tf-sec">
+    <div class="tf-title">What you type becomes numbers</div>
+    <div class="tf-prompt">&ldquo;The capital of France is&rdquo;</div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Tokenizer</span><p>Break the sentence into small reusable pieces, then swap each piece for a dictionary number. The model never reads letters directly after this point. It only sees the numbered pieces that came out of this first lookup stage.</p><div class="tf-link"><a href="ch2.html">→ ch2</a></div></div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-gold">Embedding Lookup</span><p>Use each number as an address into a giant table and copy out one row of stored values. Every input piece gets its own row, so the sentence becomes a short stack of numeric strips ready for the main loop.</p><div class="tf-link"><a href="ch3.html">→ ch3</a></div></div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Position Stamp</span><p>Add a location tag to every row so first, second, third, and later pieces are treated differently. Without this stamp, the same rows could be shuffled around and the model would lose the order of the sentence.</p><div class="tf-link"><a href="ch4.html">→ ch4</a></div></div>
+  </div>
 
-<script>
-function initTabs() {
-    if (window.__wfTabsInit) return;
-    window.__wfTabsInit = 1;
-    document.addEventListener('click', e => {
-        const tab = e.target.closest('.wf-tab');
-        if (!tab) return;
-        const bar = tab.closest('.wf-tab-bar');
-        const tabs = bar.parentElement;
-        const target = tab.dataset.tab;
-        bar.querySelectorAll('.wf-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        tabs.querySelectorAll('.wf-tab-panel').forEach(panel => panel.classList.toggle('active', panel.dataset.tab === target));
-    });
-}
+  <div class="tf-sec">
+    <div class="tf-title">The thinking loop</div>
+    <div class="tf-loop">
+      <div class="tf-loop-label">× 32 Layers</div>
+      <div class="tf-arrow">↓</div>
+      <div class="tf-step"><span class="tf-name tf-gold">Normalise</span><p>Rescale the current numbers so no row grows too hot or too faint before the next operation. This keeps the running state steady and makes later comparisons more reliable from layer to layer.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
+      <div class="tf-arrow">↓</div>
+      <div class="tf-step"><span class="tf-name tf-cyan">Attention</span><p>For each word position, look back across the earlier words and decide what matters most right now. The result is a fresh summary row that blends in the most relevant earlier clues without rereading the original text.</p><div class="tf-link"><a href="ch6.html">→ ch6</a></div></div>
+      <div class="tf-arrow">↓</div>
+      <div class="tf-step"><span class="tf-name tf-gold">+ Add Back (Residual)</span><p>Keep the old running state and add the new update on top of it. This lets the layer improve what it knows without throwing away the useful structure that was already carried forward.</p><div class="tf-link"><a href="ch5.html">→ ch5</a></div></div>
+      <div class="tf-arrow">↓</div>
+      <div class="tf-step"><span class="tf-name tf-gold">Normalise (Again)</span><p>Rescale once more before the next transform. This second reset stops values from drifting as the stack gets deeper and helps each layer start from a calm, consistent numeric range.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
+      <div class="tf-arrow">↓</div>
+      <div class="tf-step"><span class="tf-name tf-cyan">Feed-Forward</span><p>Now each word row is processed on its own. The layer expands it, filters it, and compresses it again so rough patterns become sharper choices about what that word position should carry into the next stage.</p><div class="tf-link"><a href="ch8.html">→ ch8</a></div></div>
+      <div class="tf-arrow">↓</div>
+      <div class="tf-step"><span class="tf-name tf-gold">+ Add Back (Residual)</span><p>Blend this second update back into the running state as well. The model keeps a durable trail of everything learned so far, then hands that richer state to the next layer and repeats the same loop.</p><div class="tf-link"><a href="ch5.html">→ ch5</a></div></div>
+    </div>
+  </div>
 
-function initButtons() {
-    if (window.__wfButtonsInit) return;
-    window.__wfButtonsInit = 1;
+  <div class="tf-sec">
+    <div class="tf-title">Choosing the next word</div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-gold">Final Normalise</span><p>Give the finished row one last rescale before turning it into word scores. This final cleanup keeps the handoff tidy so the chooser at the end reads a stable, well-shaped result.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Score Every Word in the Dictionary</span><p>Compare the finished row against every possible next word the model knows. About 128,000 candidates each get a score, and higher scores mean the model sees a better fit for what should come next.</p><div class="tf-link"><a href="ch9.html">→ ch9</a></div></div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-gold">Pick One</span><p>Turn the scores into a final choice. Temperature, top-k, and top-p adjust how adventurous the pick can be, then one candidate wins and is emitted as the next piece of text.</p><div class="tf-link"><a href="ch10.html">→ ch10</a></div></div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-out">&ldquo; Paris&rdquo;<br><span style="color:var(--wf-muted);font-size:.78rem;">That&rsquo;s the output.</span></div>
+    <div class="tf-arrow">↓</div>
+    <div class="tf-loopback">Loop back → feed &ldquo;Paris&rdquo; in and repeat for the next word</div>
+  </div>
 
-    const plainEls = [...document.querySelectorAll('[data-plain]')];
-    const psiEls = [...document.querySelectorAll('[data-psi]')];
-    const duckEls = [...document.querySelectorAll('[data-duck]')];
-    if (!plainEls.length && !psiEls.length && !duckEls.length) return;
+  <div class="tf-sec">
+    <div class="tf-title">Prefill vs Decode</div>
+    <div class="tf-compare">
+      <div class="tf-card"><h3>Prefill</h3><p>Process the whole prompt in one pass, from the first word to the last. This fills the memory cache with the reusable history the model will lean on for every later output step.</p></div>
+      <div class="tf-card"><h3>Decode</h3><p>Generate one new word at a time after that first pass. Reuse the cached history, add one fresh result, then loop again until the answer is complete.</p></div>
+    </div>
+    <div class="tf-card-note" style="max-width:720px;margin: .7rem auto 0;text-align:right;"><a href="ch11.html" style="color:var(--wf-cyan);font-size:.72rem;text-decoration:none;">→ ch11 Building an Inference Engine</a></div>
+  </div>
 
-    let mode = 'tech';
-    let busy = false;
-    let activeEls = [];
-    const wtfBtn = document.getElementById('wtf-btn');
-    const psiBtn = document.getElementById('psi-btn');
-    const duckBtn = document.getElementById('duck-btn');
+  <div class="tf-sec">
+    <div class="tf-title">Going deeper</div>
+    <div class="tf-deeper">
+      <a href="ch12.html"><strong>Ch12</strong><span>The Database Lens</span></a>
+      <a href="ch13.html"><strong>Ch13</strong><span>Model Formats (GGUF, SafeTensors)</span></a>
+      <a href="ch14.html"><strong>Ch14</strong><span>Build Your Own (C, C#, PowerShell, Bash)</span></a>
+      <a href="ch15.html"><strong>Ch15</strong><span>Database-Optimized Inference</span></a>
+      <a href="glossary.html"><strong>Glossary</strong><span>Plain English definitions for the deeper terms used in the chapter pages.</span></a>
+    </div>
+  </div>
 
-    if (plainEls.length && wtfBtn) wtfBtn.style.display = 'inline-flex';
-    if (psiEls.length && psiBtn) psiBtn.style.display = 'inline-flex';
-    if (duckEls.length && duckBtn) duckBtn.style.display = 'inline-flex';
-
-    const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモラリルレロABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+=-|<>[]{}';
-
-    function decode(el, target, dur, hue, done) {
-        let start = null;
-        const len = target.length;
-
-        function frame(ts) {
-            if (!start) start = ts;
-            const p = Math.min((ts - start) / dur, 1);
-            const locked = Math.floor(p * len);
-            let out = '';
-            for (let i = 0; i < len; i++) {
-                out += (i < locked || target[i] === ' ' || target[i] === '
-')
-                    ? target[i]
-                    : CHARS[Math.random() * CHARS.length | 0];
-            }
-            el.textContent = out;
-            el.style.filter = p < 1 ? `blur(${((1 - p) * 4).toFixed(1)}px)` : '';
-            el.style.color = p < 1 ? `hsl(${hue + Math.round(p * 8)},85%,${42 + Math.round(p * 30)}%)` : '';
-            if (p < 1) {
-                requestAnimationFrame(frame);
-            } else {
-                el.style.filter = '';
-                el.style.color = '';
-                done && done();
-            }
-        }
-
-        requestAnimationFrame(frame);
-    }
-
-    function setLabels(nextMode) {
-        if (wtfBtn) {
-            wtfBtn.innerHTML = nextMode === 'plain' ? '<span>◎</span>&nbsp;tech' : '<span>⁇</span>&nbsp;wtf?';
-            wtfBtn.title = nextMode === 'plain' ? 'Back to technical' : 'Translate to plain English';
-        }
-        if (psiBtn) {
-            psiBtn.innerHTML = nextMode === 'psi' ? '<span>ψ</span>&nbsp;back' : '<span>ψ</span>&nbsp;deeper';
-            psiBtn.title = nextMode === 'psi' ? 'Back to technical' : 'Amplify the metaphor';
-        }
-        if (duckBtn) {
-            duckBtn.innerHTML = nextMode === 'duck' ? '<span>🦆</span>&nbsp;back' : '<span>🦆</span>&nbsp;ducky';
-            duckBtn.title = nextMode === 'duck' ? 'Back to technical' : 'Explain it in duck terms';
-        }
-    }
-
-    function restoreTech() {
-        activeEls.forEach(el => {
-            if (el.dataset.techHtml) el.innerHTML = el.dataset.techHtml;
-        });
-        activeEls = [];
-    }
-
-    function finish() {
-        busy = false;
-        wtfBtn && wtfBtn.classList.remove('busy');
-        psiBtn && psiBtn.classList.remove('busy');
-        duckBtn && duckBtn.classList.remove('busy');
-    }
-
-    function switchTo(newMode) {
-        if (busy) return;
-        busy = true;
-        wtfBtn && wtfBtn.classList.add('busy');
-        psiBtn && psiBtn.classList.add('busy');
-        duckBtn && duckBtn.classList.add('busy');
-
-        if (mode !== 'tech') restoreTech();
-        mode = newMode;
-        setLabels(mode);
-
-        if (mode === 'tech') {
-            finish();
-            return;
-        }
-
-        const els = mode === 'plain' ? plainEls : mode === 'psi' ? psiEls : duckEls;
-        const attr = mode === 'plain' ? 'data-plain' : mode === 'psi' ? 'data-psi' : 'data-duck';
-        const hue = mode === 'plain' ? 182 : mode === 'psi' ? 42 : 22;
-        activeEls = els.slice();
-        let done = 0;
-
-        els.forEach((el, i) => {
-            if (!el.dataset.techHtml) el.dataset.techHtml = el.innerHTML;
-            const target = el.getAttribute(attr);
-            const dur = Math.max(480, Math.min(target.length * 3.8, 1500));
-            setTimeout(() => decode(el, target, dur, hue, () => {
-                if (++done === els.length) finish();
-            }), i * 110);
-        });
-    }
-
-    wtfBtn && wtfBtn.addEventListener('click', () => switchTo(mode === 'plain' ? 'tech' : 'plain'));
-    psiBtn && psiBtn.addEventListener('click', () => switchTo(mode === 'psi' ? 'tech' : 'psi'));
-    duckBtn && duckBtn.addEventListener('click', () => switchTo(mode === 'duck' ? 'tech' : 'duck'));
-    setLabels(mode);
-}
-
-initTabs();
-initButtons();
-</script>
+  <p style="text-align:center;color:var(--wf-muted);font-size:.72rem;margin-top:3rem;">
+    This is a <a href="ch1.html" style="color:var(--wf-cyan);">plain English execution trace</a> of a decoder-only transformer (GPT/Llama/Claude style).
+    <br>For the full deep-dive with worked examples, start with <a href="ch1.html" style="color:var(--wf-cyan);">Chapter 1</a>.
+  </p>
+</div>
