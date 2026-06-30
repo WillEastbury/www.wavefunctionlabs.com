@@ -1,30 +1,35 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Plain English: The Transformer Model (LLMs)</title><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2300d4ff'/%3E%3Cstop offset='50%25' stop-color='%239b59b6'/%3E%3Cstop offset='100%25' stop-color='%23f1c40f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='%2307070c'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Georgia,serif' font-size='40' font-weight='bold' fill='url(%23g)'%3E%CE%A8%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WillEastbury/BareMetalJsTools@main/src/BareMetalStyles.min.css"><style>@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');:root{--bs-body-bg:#07070c;--bs-body-color:#c8ccd4;--wf-accent:#a855f7;--wf-gold:#f0c040;--wf-cyan:#06b6d4;--wf-muted:#8891a0;--wf-surface:rgba(14,14,22,0.85);--wf-border:rgba(99,102,241,0.12);--wf-primary:#6366f1;--wf-surface-strong:rgba(18,18,28,0.96);--wf-nav-bg:rgba(7,7,12,0.84);--wf-shadow:0 16px 44px rgba(0,0,0,0.32)}*{box-sizing:border-box}html{overflow-x:hidden}body{margin:0;min-height:100vh;overflow-x:hidden;font-family:'JetBrains Mono',monospace;background:radial-gradient(circle at top left,rgba(6,182,212,0.12),transparent 26%),radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 24%),radial-gradient(circle at bottom center,rgba(240,192,64,0.08),transparent 28%),var(--bs-body-bg);color:var(--bs-body-color)}body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;background:repeating-linear-gradient( 0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px );opacity:0.9}a{color:inherit;text-decoration:none}.layer{position:relative;z-index:2}.wf-nav{position:sticky;top:0;z-index:20;display:flex;gap:1rem;align-items:center;padding:1rem 1.4rem;border-bottom:1px solid var(--wf-border);backdrop-filter:blur(16px);background:var(--wf-nav-bg)}.wf-nav-brand{font-size:1.5rem;font-weight:700;letter-spacing:0.05em;white-space:nowrap;background:linear-gradient(135deg,var(--wf-cyan),var(--wf-accent),var(--wf-gold));background-size:300% 300%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:gshift 8s ease infinite;filter:drop-shadow(0 0 8px rgba(6,182,212,0.3))}.wf-nav-links{display:flex;gap:0.35rem;flex-wrap:nowrap;overflow-x:auto;padding-bottom:0.15rem;scrollbar-width:thin;flex:1}.wf-nav-links a{flex:0 0 auto;padding:0.42rem 0.75rem;border-radius:6px;font-size:0.72rem;letter-spacing:0.08em;text-transform:lowercase;color:var(--wf-muted);border:1px solid transparent;transition:all 0.2s ease}.wf-nav-links a:hover,.wf-nav-links a.active{color:#e2e8f0;border-color:var(--wf-border);background:rgba(99,102,241,0.11)}.wf-nav-links .wf-site-back{color:var(--wf-cyan);border-color:rgba(6,182,212,0.18);background:rgba(6,182,212,0.07)}.wf-section{display:none;max-width:1080px;margin:0 auto;padding:3.5rem 1.4rem 5.5rem;animation:fadeIn 0.35s ease}.wf-section.active{display:block}.wf-article{max-width:980px}.wf-hero-card,.wf-panel,.wf-tile,.wf-callout,.wf-card,.wf-placeholder{background:var(--wf-surface);border:1px solid var(--wf-border);border-radius:12px;backdrop-filter:blur(12px);box-shadow:var(--wf-shadow)}.wf-hero-card{padding:1.6rem;margin-bottom:1.5rem}.wf-kicker{color:var(--wf-cyan);font-size:0.76rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.65rem}.wf-section-hdr{margin:0 0 0.55rem;font-size:clamp(1.8rem,4vw,3rem);font-weight:600;line-height:1.15;color:#e2e8f0}.wf-section-desc{margin:0;font-size:0.9rem;line-height:1.8;color:var(--wf-muted);max-width:78ch}.wf-meta{display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:1.25rem}.wf-chip{padding:0.38rem 0.6rem;border-radius:999px;border:1px solid var(--wf-border);color:var(--wf-muted);font-size:0.7rem;background:rgba(14,14,22,0.55)}.wf-tile-grid,.wf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}.wf-tile{display:flex;flex-direction:column;gap:0.7rem;padding:1.2rem;min-height:210px;transition:transform 0.2s ease,border-color 0.2s ease}.wf-tile:hover{transform:translateY(-2px);border-color:rgba(99,102,241,0.35)}.wf-tile-part{font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase}.wf-tile-name{font-size:0.96rem;color:#e2e8f0;font-weight:600;line-height:1.5}.wf-tile-desc,.wf-tile-topics{font-size:0.74rem;color:var(--wf-muted);line-height:1.65}.wf-tile-action{margin-top:auto;font-size:0.68rem;letter-spacing:0.08em;text-transform:lowercase}.tone-cyan .wf-tile-part,.tone-cyan .wf-tile-action,.tone-cyan .wf-placeholder-title{color:var(--wf-cyan)}.tone-accent .wf-tile-part,.tone-accent .wf-tile-action,.tone-accent .wf-placeholder-title{color:var(--wf-accent)}.tone-gold .wf-tile-part,.tone-gold .wf-tile-action,.tone-gold .wf-placeholder-title{color:var(--wf-gold)}.tone-cyan{border-left:3px solid var(--wf-cyan)}.tone-accent{border-left:3px solid var(--wf-accent)}.tone-gold{border-left:3px solid var(--wf-gold)}.wf-article-head{margin-bottom:2rem}.wf-back{display:inline-flex;margin-bottom:1rem;font-size:0.78rem;color:var(--wf-cyan)}.wf-article-body{font-size:0.92rem;line-height:1.9;color:var(--bs-body-color)}.wf-article-body p{margin:0 0 1.05rem}.wf-article-body strong{color:#e2e8f0}.wf-callout,.wf-card,.wf-placeholder{padding:1rem 1.1rem;margin:1rem 0}.wf-callout{border-left:3px solid var(--wf-cyan)}.wf-callout.gold{border-left-color:var(--wf-gold)}.wf-callout.accent{border-left-color:var(--wf-accent)}.wf-code,.wf-math{margin:1rem 0 1.15rem;padding:1rem 1.15rem;border-radius:10px;border:1px solid var(--wf-border);background:rgba(14,14,22,0.72);overflow-x:auto;font-family:'JetBrains Mono',monospace;box-shadow:inset 0 1px 0 rgba(255,255,255,0.03)}.wf-code pre,.wf-math pre{margin:0;white-space:pre;line-height:1.7;color:#d9dee8;font-size:0.8rem}.wf-math pre{color:var(--wf-gold)}.wf-table-wrap{margin:1rem 0 1.35rem;overflow-x:auto;border-radius:12px;border:1px solid var(--wf-border);background:rgba(14,14,22,0.58)}table.wf-table{width:100%;border-collapse:collapse;min-width:720px}.wf-table th,.wf-table td{padding:0.78rem 0.85rem;border-bottom:1px solid rgba(99,102,241,0.12);text-align:left;vertical-align:top;font-size:0.78rem;line-height:1.65}.wf-table th{color:#e2e8f0;font-weight:600;background:rgba(6,182,212,0.06)}.wf-table td{color:var(--bs-body-color)}.wf-table tr:last-child td{border-bottom:none}.wf-inline-nav{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-top:2.3rem;padding-top:1.4rem;border-top:1px solid var(--wf-border)}.wf-inline-nav a{font-size:0.78rem;color:var(--wf-muted)}.wf-inline-nav a:last-child{color:var(--wf-cyan)}.wf-placeholder-title{margin:0 0 0.65rem;font-size:0.9rem;font-weight:600}.wf-placeholder ul{margin:0.5rem 0 0;padding-left:1.1rem;color:var(--wf-muted);font-size:0.82rem;line-height:1.8}.wf-note{color:var(--wf-muted);font-size:0.78rem}@keyframes gshift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.wf-tabs{margin:1.5rem 0;border:1px solid var(--wf-border);border-radius:12px;background:rgba(14,14,22,0.5);overflow:hidden}.wf-tab-bar{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--wf-border);background:rgba(14,14,22,0.7);padding:0.4rem 0.5rem 0}.wf-tab{padding:0.55rem 1rem;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--wf-muted);font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;border-radius:6px 6px 0 0}.wf-tab:hover{color:#e2e8f0;background:rgba(99,102,241,0.08)}.wf-tab.active{color:var(--wf-cyan);border-bottom-color:var(--wf-cyan);background:rgba(6,182,212,0.06)}.wf-tab-panel{display:none;padding:1.2rem 1.3rem;font-size:0.88rem;line-height:1.85;color:var(--bs-body-color)}.wf-tab-panel.active{display:block}.wf-tab-panel p{margin:0 0 0.9rem}.wf-tab-panel strong{color:#e2e8f0}.wf-tab-panel .wf-code,.wf-tab-panel .wf-math,.wf-tab-panel .wf-table-wrap{margin:0.8rem 0}#wtf-btn,#psi-btn,#duck-btn{position:fixed;right:1.5rem;z-index:10000;display:none;align-items:center;gap:0.35rem;padding:0.5rem 1rem;background:rgba(4,4,14,0.94);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);transition:box-shadow 0.25s,transform 0.12s,opacity 0.2s;user-select:none;border-style:solid;border-width:1px}#wtf-btn{bottom:1.5rem;color:#00c8ff;border-color:rgba(0,200,255,.55);box-shadow:0 0 14px rgba(0,200,255,.2),0 2px 10px rgba(0,0,0,.7)}#wtf-btn:hover{box-shadow:0 0 26px rgba(0,200,255,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}#psi-btn{bottom:4.5rem;color:#f0c040;border-color:rgba(240,192,64,.55);box-shadow:0 0 14px rgba(240,192,64,.2),0 2px 10px rgba(0,0,0,.7)}#psi-btn:hover{box-shadow:0 0 26px rgba(240,192,64,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}#duck-btn{bottom:7.5rem;color:#f97316;border-color:rgba(249,115,22,.55);box-shadow:0 0 14px rgba(249,115,22,.2),0 2px 10px rgba(0,0,0,.7)}#duck-btn:hover{box-shadow:0 0 26px rgba(249,115,22,.55),0 2px 14px rgba(0,0,0,.8);transform:translateY(-1px)}#wtf-btn:active,#psi-btn:active,#duck-btn:active{transform:translateY(0)}#wtf-btn.busy,#psi-btn.busy,#duck-btn.busy{opacity:0.45;cursor:wait;pointer-events:none}.wf-gloss-entry{padding:1rem 0;border-bottom:1px solid var(--wf-border)}.wf-gloss-entry:last-child{border-bottom:none}a.wf-gloss{color:var(--wf-cyan);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}a.wf-gloss:hover{color:#e2e8f0;text-decoration-style:solid}@media (max-width:760px){.wf-nav{align-items:flex-start;flex-direction:column}.wf-nav-links{width:100%}.wf-section{padding-top:2.4rem}.wf-code pre,.wf-math pre{font-size:0.73rem}.wf-tab{padding:0.4rem 0.7rem;font-size:0.68rem}#wtf-btn,#psi-btn,#duck-btn{right:0.8rem;padding:0.4rem 0.7rem;font-size:0.68rem}}</style></head><body>
-<nav class="wf-nav layer">
-    <a class="wf-nav-brand" href="index.html" aria-label="Transformer chapter index">Ψ</a>
-    <div class="wf-nav-links">
-        <a class="wf-site-back" href="/">← wavefunctionlabs.com</a>
-        <a href="index.html" class="active">chapters</a>
-        <a href="ch1.html">1. the big picture</a>
-        <a href="ch2.html">2. tokenization</a>
-        <a href="ch3.html">3. embeddings</a>
-        <a href="ch4.html">4. positional encoding</a>
-        <a href="ch5.html">5. the transformer layer</a>
-        <a href="ch6.html">6. attention</a>
-        <a href="ch7.html">7. rmsnorm</a>
-        <a href="ch8.html">8. feed-forward networks</a>
-        <a href="ch9.html">9. the language model head</a>
-        <a href="ch10.html">10. sampling</a>
-        <a href="ch11.html">11. building an inference engine</a>
-        <a href="ch12.html">12. the database lens</a>
-        <a href="ch13.html">13. model formats</a>
-        <a href="ch14.html">14. building a cpu transformer library</a>
-        <a href="ch15.html">15. database-optimized inference</a>
-        <a href="glossary.html">glossary</a>
-    </div>
-</nav>
-<main class="layer">
-    <div id="index" class="wf-section active">
-        <div class="wf-hero-card">
+<style>
+.wf-section { display: block !important; }
+.wf-tabs { margin: 1.5rem 0; border: 1px solid var(--wf-border); border-radius: 12px; background: rgba(14,14,22,0.5); overflow: hidden; }
+.wf-tab-bar { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--wf-border); background: rgba(14,14,22,0.7); padding: 0.4rem 0.5rem 0; }
+.wf-tab { padding: 0.55rem 1rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--wf-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; border-radius: 6px 6px 0 0; }
+.wf-tab:hover { color: #e2e8f0; background: rgba(99,102,241,0.08); }
+.wf-tab.active { color: var(--wf-cyan); border-bottom-color: var(--wf-cyan); background: rgba(6,182,212,0.06); }
+.wf-tab-panel { display: none; padding: 1.2rem 1.3rem; font-size: 0.88rem; line-height: 1.85; color: var(--bs-body-color); }
+.wf-tab-panel.active { display: block; }
+.wf-tab-panel p { margin: 0 0 0.9rem; }
+.wf-tab-panel strong { color: #e2e8f0; }
+.wf-tab-panel .wf-code, .wf-tab-panel .wf-math, .wf-tab-panel .wf-table-wrap { margin: 0.8rem 0; }
+#wtf-btn, #psi-btn, #duck-btn { position: fixed; right: 1.5rem; z-index: 10000; display: none; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; background: rgba(4,4,14,0.94); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); transition: box-shadow 0.25s, transform 0.12s, opacity 0.2s; user-select: none; border-style: solid; border-width: 1px; }
+#wtf-btn { bottom: 1.5rem; color: #00c8ff; border-color: rgba(0,200,255,.55); box-shadow: 0 0 14px rgba(0,200,255,.2), 0 2px 10px rgba(0,0,0,.7); }
+#wtf-btn:hover { box-shadow: 0 0 26px rgba(0,200,255,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#psi-btn { bottom: 4.5rem; color: #f0c040; border-color: rgba(240,192,64,.55); box-shadow: 0 0 14px rgba(240,192,64,.2), 0 2px 10px rgba(0,0,0,.7); }
+#psi-btn:hover { box-shadow: 0 0 26px rgba(240,192,64,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#duck-btn { bottom: 7.5rem; color: #f97316; border-color: rgba(249,115,22,.55); box-shadow: 0 0 14px rgba(249,115,22,.2), 0 2px 10px rgba(0,0,0,.7); }
+#duck-btn:hover { box-shadow: 0 0 26px rgba(249,115,22,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#wtf-btn:active, #psi-btn:active, #duck-btn:active { transform: translateY(0); }
+#wtf-btn.busy, #psi-btn.busy, #duck-btn.busy { opacity: 0.45; cursor: wait; pointer-events: none; }
+.wf-gloss-entry { padding: 1rem 0; border-bottom: 1px solid var(--wf-border); }
+.wf-gloss-entry:last-child { border-bottom: none; }
+a.wf-gloss { color: var(--wf-cyan); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+a.wf-gloss:hover { color: #e2e8f0; text-decoration-style: solid; }
+@media (max-width: 760px) {
+  .wf-tab { padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+  #wtf-btn, #psi-btn, #duck-btn { right: 0.8rem; padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+}
+</style>
+
+<div class="wf-hero-card">
             <div class="wf-kicker">technical book · llm inference · plain english</div>
             <h1 class="wf-section-hdr">Plain English: The Transformer Model (LLMs)</h1>
             <p class="wf-section-desc">A systems-level walkthrough of transformer inference for senior engineers. The running example for the entire book is the prompt <strong>"What is the capital of France?"</strong> and the goal is simple: explain, in precise engineering terms, how a static pile of matrices turns that prompt into the next token <strong>" Paris"</strong> and then keeps going.</p>
@@ -167,11 +172,11 @@
                 <div class="wf-tile-action">Read now</div>
             </a>
         </div>
-    </div>
-</main>
+
 <button id="wtf-btn"><span>⁇</span>&nbsp;wtf?</button>
 <button id="psi-btn"><span>ψ</span>&nbsp;deeper</button>
 <button id="duck-btn"><span>🦆</span>&nbsp;ducky</button>
+
 <script>
 function initTabs() {
     if (window.__wfTabsInit) return;
@@ -189,6 +194,9 @@ function initTabs() {
 }
 
 function initButtons() {
+    if (window.__wfButtonsInit) return;
+    window.__wfButtonsInit = 1;
+
     const plainEls = [...document.querySelectorAll('[data-plain]')];
     const psiEls = [...document.querySelectorAll('[data-psi]')];
     const duckEls = [...document.querySelectorAll('[data-duck]')];
@@ -217,7 +225,8 @@ function initButtons() {
             const locked = Math.floor(p * len);
             let out = '';
             for (let i = 0; i < len; i++) {
-                out += (i < locked || target[i] === ' ' || target[i] === '\n')
+                out += (i < locked || target[i] === ' ' || target[i] === '
+')
                     ? target[i]
                     : CHARS[Math.random() * CHARS.length | 0];
             }
@@ -306,4 +315,3 @@ function initButtons() {
 initTabs();
 initButtons();
 </script>
-</body></html>
