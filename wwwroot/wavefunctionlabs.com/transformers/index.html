@@ -51,7 +51,7 @@ row 4: [ 0.11, 0.56, -0.09, 0.38, …]  ← " is"</div>
 
     <div class="tf-arrow">↓</div>
     <div class="tf-step"><span class="tf-name tf-cyan">Position Stamp <span class="tf-tech">(RoPE — Rotary Position Embedding)</span></span><p>Rotate pairs of numbers based on position so the model knows word order.</p>
-    <details class="tf-math"><summary>🔢 the rotation</summary><div class="tf-math-body">Take two adjacent numbers, rotate them by an angle that depends on position:<br><strong>new_a = a·cos(θ) − b·sin(θ)</strong><br><strong>new_b = a·sin(θ) + b·cos(θ)</strong><br>θ increases with position. Different dimension pairs rotate at different speeds. This gives each position a unique fingerprint.</div></details>
+    <details class="tf-math"><summary>🔢 the rotation</summary><div class="tf-math-body">Take two adjacent numbers, rotate them by an angle that depends on position:<br><strong>new_a = a·cos(θ) − b·sin(θ)</strong><br><strong>new_b = a·sin(θ) + b·cos(θ)</strong><br>θ increases with position. Different dimension pairs rotate at different speeds.<br><br><strong>Why this matters:</strong> "The capital of France is" and "Is the capital of France" contain the same tokens — but the model must treat them differently. Position stamping means "capital" at position 1 and "capital" at position 3 produce different attention scores, so word order changes the output. Same tokens, different positions, different result.</div></details>
     <div class="tf-link"><a href="ch4.html">→ ch4</a></div></div>
     <div class="tf-state"><strong>state:</strong> same 5 × 4,096 grid, but each row now has a unique rotational fingerprint for positions 0–4</div>
   </div>
