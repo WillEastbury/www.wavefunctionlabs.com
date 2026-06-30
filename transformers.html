@@ -6971,7 +6971,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch1',
                 part: 'Part 1',
                 title: 'The Big Picture',
-                desc: 'overview of the full inference pipeline',
+                desc: 'What creates the magic? How do Language Models think? What types are there?',
                 topics: ['full pipeline', 'training vs inference', 'systems mental model'],
                 status: 'Read now'
             },
@@ -6979,7 +6979,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch2',
                 part: 'Part 2',
                 title: 'Tokenization',
-                desc: 'BPE, SentencePiece, byte-level',
+                desc: 'What is a token? How does the model encode meaning from text?',
                 topics: ['merge rules', 'unicode boundaries', 'why tokens are not words'],
                 status: 'Read now'
             },
@@ -6987,7 +6987,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch3',
                 part: 'Part 3',
                 title: 'Embeddings',
-                desc: 'lookup tables, vector spaces, quantisation',
+                desc: 'What does a token actually mean? What does a machine need to process meaning?',
                 topics: ['row lookup', 'semantic neighborhoods', 'embedding storage formats'],
                 status: 'Read now'
             },
@@ -6995,7 +6995,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch4',
                 part: 'Part 4',
                 title: 'Positional Encoding',
-                desc: 'RoPE, sinusoidal, ALiBi, YaRN',
+                desc: 'Why does position matter? What\\\'s the difference between "duck roast" and "roast duck"?',
                 topics: ['order injection', 'long-context scaling', 'rotary mechanics'],
                 status: 'Read now'
             },
@@ -7003,7 +7003,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch5',
                 part: 'Part 5',
                 title: 'The Transformer Layer',
-                desc: 'layer structure, projections',
+                desc: 'The repeating building block — one layer of the thinking stack',
                 topics: ['residual paths', 'pre-norm layout', 'weight shapes'],
                 status: 'Read now'
             },
@@ -7011,7 +7011,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch6',
                 part: 'Part 6',
                 title: 'Attention',
-                desc: 'QKV, multi-head, GQA, FlashAttention, KV cache',
+                desc: 'Pay attention! How each token decides what matters relative to it',
                 topics: ['score matrices', 'head sharing', 'decode-time caching'],
                 status: 'Read now'
             },
@@ -7019,7 +7019,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch7',
                 part: 'Part 7',
                 title: 'RMSNorm',
-                desc: 'normalisation, epsilon, hardware',
+                desc: 'Normalization — a quick calibration step that keeps the numbers well-behaved',
                 topics: ['magnitude control', 'numerical stability', 'kernel cost'],
                 status: 'Read now'
             },
@@ -7027,7 +7027,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch8',
                 part: 'Part 8',
                 title: 'Feed-Forward Networks',
-                desc: 'gate/up/down, activations, MoE',
+                desc: 'The per-word thinking step — where patterns become decisions',
                 topics: ['wide projections', 'gating', 'expert routing'],
                 status: 'Read now'
             },
@@ -7035,7 +7035,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch9',
                 part: 'Part 9',
                 title: 'The Language Model Head',
-                desc: 'vocabulary projection, logits',
+                desc: 'What next? Time to look forward to find the NEXT new token...',
                 topics: ['output embeddings', 'weight tying', 'score interpretation'],
                 status: 'Read now'
             },
@@ -7043,7 +7043,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch10',
                 part: 'Part 10',
                 title: 'Sampling',
-                desc: 'temperature, top-k, top-p, penalties',
+                desc: 'Choosing the next word — and why the same prompt can give different answers',
                 topics: ['distribution shaping', 'decoding policy', 'determinism boundaries'],
                 status: 'Read now'
             },
@@ -7051,7 +7051,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch11',
                 part: 'Part 11',
                 title: 'Building an Inference Engine',
-                desc: 'progressive assembly',
+                desc: 'Putting it all together into a working system, piece by piece',
                 topics: ['reference implementation', 'cache design', 'performance passes'],
                 status: 'Read now'
             },
@@ -7059,7 +7059,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch12',
                 part: 'Part 12',
                 title: 'The Database Lens',
-                desc: 'speculative: transformer as execution engine',
+                desc: 'What if you squinted and saw a query engine instead of a neural network?',
                 topics: ['soft joins', 'query plans', 'execution semantics'],
                 status: 'Read now'
             },
@@ -7067,7 +7067,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch13',
                 part: 'Part 13',
                 title: 'Model Formats',
-                desc: 'Huggingface, GGUF & SafeTensors',
+                desc: 'How models are stored on disk — and how to load them yourself',
                 topics: ['file structure', 'quantization formats', 'loading from disk'],
                 status: 'Read now'
             },
@@ -7075,7 +7075,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch14',
                 part: 'Part 14',
                 title: 'Building a CPU Transformer Library',
-                desc: 'implementation guides in C, C#, PowerShell, Bash',
+                desc: 'Write your own inference engine — in four different languages',
                 topics: ['GGUF loading', 'matmul kernels', 'full inference loop'],
                 status: 'Read now'
             },
@@ -7083,7 +7083,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'ch15',
                 part: 'Part 15',
                 title: 'Database-Optimized Inference',
-                desc: 'LLM as queries over bounded storage',
+                desc: 'Practical speed tricks borrowed from decades of database engineering',
                 topics: ['prefix caching', 'delta chains', 'query planning for attention'],
                 status: 'Read now'
             },
@@ -7091,7 +7091,7 @@ MHA(x) = Concat(head₁, …, head_H)W_O</pre></div>
                 id: 'glossary',
                 part: 'Reference',
                 title: 'Glossary',
-                desc: 'every term, symbol, and operation defined',
+                desc: 'We don\\\'t need a PhD in ML — every scary term explained in one line for us mere mortals',
                 topics: ['softmax', 'QKV', 'lm_head', 'temperature', 'epsilon'],
                 status: 'Read now'
             }
