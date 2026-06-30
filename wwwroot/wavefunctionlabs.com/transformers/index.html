@@ -9,7 +9,7 @@
 
 <div class="tf-wrap">
   <div style="max-width:520px;margin:0 auto 2rem;text-align:center;">
-    <h1 class="wf-section-hdr" style="font-size:clamp(1.6rem,3.5vw,2.4rem);">How a Transformer Produces One Word</h1>
+    <h1 class="wf-section-hdr" style="font-size:clamp(1.6rem,3.5vw,2.4rem);">How a Transformer Produces One Token</h1>
     <p style="color:var(--wf-muted);font-size:.85rem;line-height:1.7;margin-top:.6rem;">
       You type <strong style="color:#e2e8f0;">"The capital of France is"</strong> — the model runs this pipeline and out comes <strong style="color:var(--wf-cyan);">" Paris"</strong>.
     </p>
@@ -76,12 +76,12 @@ blended result: a new row that mixes in context from the whole sentence</div>
 
   <!-- SECTION 3: Choosing the word -->
   <div class="tf-sec">
-    <div class="tf-title">Choosing the next word</div>
+    <div class="tf-title">Choosing the next token</div>
     <div class="tf-arrow">↓</div>
     <div class="tf-step"><span class="tf-name tf-gold">Final Normalise</span><p>One last rescale before scoring.</p><div class="tf-link"><a href="ch7.html">→ ch7</a></div></div>
 
     <div class="tf-arrow">↓</div>
-    <div class="tf-step"><span class="tf-name tf-cyan">Score Every Word in the Dictionary</span><p>Compare the finished row against all ~128,000 known words. Each word gets one score — higher means "better fit here."</p><div class="tf-link"><a href="ch9.html">→ ch9</a></div></div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Score Every Token in the Dictionary</span><p>Compare the finished row against all ~128,000 known words. Each word gets one score — higher means "better fit here."</p><div class="tf-link"><a href="ch9.html">→ ch9</a></div></div>
     <div class="tf-state"><strong>scores (top 5 of 128,000):</strong><br>
 " Paris"&nbsp;&nbsp;&nbsp;→ 18.4<br>
 " France"&nbsp;&nbsp;→ 15.8<br>
@@ -97,9 +97,9 @@ blended result: a new row that mixes in context from the whole sentence</div>
 <strong>sampled:</strong> " Paris" ✓</div>
 
     <div class="tf-arrow">↓</div>
-    <div class="tf-out"><strong style="color:var(--wf-cyan);font-size:1.1rem;">" Paris"</strong><br><span style="color:var(--wf-muted);font-size:.78rem;">Token emitted. One word done.</span></div>
+    <div class="tf-out"><strong style="color:var(--wf-cyan);font-size:1.1rem;">" Paris"</strong><br><span style="color:var(--wf-muted);font-size:.78rem;">Token emitted. One token done.</span></div>
     <div class="tf-arrow">↓</div>
-    <div class="tf-loopback">↩ Feed " Paris" back in → repeat for the next word</div>
+    <div class="tf-loopback">↩ Feed " Paris" back in → repeat for the next token</div>
   </div>
 
   <!-- SECTION 4: Prefill vs Decode -->
