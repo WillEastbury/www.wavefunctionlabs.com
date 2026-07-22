@@ -1,0 +1,85 @@
+<div class="wf-section">
+<a class="wf-back" href="/ai">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 2 OF 9</div>
+        <h1 class="wf-section-hdr">Attention Variants, LM Heads &amp; Tokenisation</h1>
+        <p class="wf-section-desc">The three components every Transformer implementation quietly customises.</p>
+
+        <div class="wf-article-body">
+            <p data-plain="Part 1 covered the standard version of attention. In practice, almost every real model tweaks how attention works, how it turns final numbers into a word, or how it splits text into tokens in the first place." data-psi="The general form of the transformer field is fixed, but every implementation tunes the specific substrate it runs on: how relevance is computed, how collapse is read out, and how the input is granularised." data-duck="Every pond runs the same basic quacking game, but each one has its own house rules for who's allowed to listen to whom, how the winning quack gets picked, and how big a 'word' of quacking even is.">Part 1 described the textbook version of self-attention, softmax, and next-token prediction. Real production models rarely use the textbook version unmodified. Three components in particular get swapped, compressed, or redesigned per-model: <strong style="color:var(--wf-cyan);">how attention is computed</strong>, <strong style="color:var(--wf-gold);">how the final hidden state becomes a token</strong> (the <code>lm_head</code>), and <strong style="color:var(--wf-accent);">how raw text is split into tokens</strong> in the first place. This page is a field guide to the variants.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">1. Attention Variants</h3>
+            <p data-plain="Standard attention lets every token compare itself with every other token, which is powerful but expensive to run and expensive to remember. Most variants trade some of that flexibility for speed or a smaller memory footprint.">Standard (multi-head) attention gives every token its own Q, K, and V projection per head. It's expressive, but the key/value cache it needs during generation grows linearly with both sequence length and head count — that's usually the actual memory bottleneck, not the model weights.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-cyan);line-height:2.2;">
+                <strong style="color:var(--wf-cyan);">Multi-Head Attention (MHA)</strong> — the Part 1 default. Each of the h heads gets its own K and V. Most expressive, largest KV cache.<br>
+                <strong style="color:var(--wf-cyan);">Multi-Query Attention (MQA)</strong> — all heads share a single K and V, only Q stays per-head. Shrinks the KV cache by a factor of h. Faster inference, small quality cost.<br>
+                <strong style="color:var(--wf-cyan);">Grouped-Query Attention (GQA)</strong> — a middle ground: heads are split into groups, each group shares one K/V pair. Used by LLaMA 2/3, Mistral, Gemini. Most of MHA's quality, most of MQA's speed.<br>
+                <strong style="color:var(--wf-cyan);">Multi-Head Latent Attention (MLA)</strong> — compresses K and V into a small shared latent vector before caching, then reconstructs them per-head on the fly. DeepSeek-V2/V3's approach to shrinking the KV cache further than GQA without giving up per-head expressivity.<br>
+                <strong style="color:var(--wf-cyan);">Sliding-window / local attention</strong> — each token only attends to a fixed-size window of nearby tokens instead of the whole sequence. O(n) instead of O(n²). Used by Mistral, Longformer for long-context efficiency.<br>
+                <strong style="color:var(--wf-cyan);">Sparse attention</strong> — a fixed pattern of far-apart tokens (strided, "global" anchor tokens, block-local) attend to each other, approximating full attention at a fraction of the cost. BigBird, Longformer.<br>
+                <strong style="color:var(--wf-cyan);">Linear attention</strong> — replaces the softmax similarity with a kernel trick so attention can be computed in O(n) instead of O(n²), at some cost to quality. Performer, linear Transformers.
+            </p>
+
+            <p data-plain="FlashAttention isn't a new kind of maths — it produces the exact same numbers, just computed in a way that's far kinder to GPU memory and speed." data-psi="FlashAttention doesn't change what is computed, only how the substrate arranges the computation — a re-tiling of the same field solution for a faster medium." data-duck="FlashAttention is the same quacking game, just played by ducks who remember to only write things down once instead of scribbling the same ripple to the pond floor five times." style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:1rem;">Worth separating from the list above: <strong style="color:var(--wf-gold);">FlashAttention</strong> isn't an approximation — it computes exactly the same Attention(Q,K,V) as the standard formula. It's a fused GPU kernel that avoids ever materialising the full n×n attention matrix in slow memory, tiling the computation to fit in fast on-chip SRAM instead. Same maths, same output, dramatically less memory traffic. It's an implementation detail, not a variant — but it's why most attention variants above are practical at all at long context lengths.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Positional variants ride along with attention</strong><br>
+                    <strong>RoPE</strong> (rotary position embedding) rotates Q and K vectors by an angle proportional to token position before the dot product, baking relative position directly into the similarity score. Used by LLaMA, Mistral, GPT-NeoX.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">ALiBi</strong> (attention with linear biases) skips positional embeddings entirely and instead subtracts a distance-proportional penalty straight from the attention scores. Cheaper, and generalises well to sequences longer than anything seen in training.</p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">2. LM Head Methods</h3>
+            <p data-plain="The lm_head is the final step: it turns the model's internal representation of a token into a score for every word in its vocabulary. How it does that is another place implementations diverge." data-psi="The lm_head is the collapse operator itself — the mapping from an internal state back into the discrete vocabulary basis the field was defined over." data-duck="The lm_head is the last duck in line who has to shout out one specific word from the whole dictionary, based on everything the pond just worked out.">After the final layer, each token has a dense hidden vector (often 2048–8192 numbers). The <strong style="color:var(--wf-gold);">lm_head</strong> is the linear layer that projects this vector into logits — one raw score per vocabulary entry, ready for softmax.</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-gold);font-size:.9rem;line-height:2;margin:0;">
+                    logits = h<sub>final</sub> · W<sub>lm_head</sub><sup>T</sup> &nbsp;&nbsp;<span style="color:var(--wf-muted);">// shape: [vocab_size]</span>
+                </p>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+                <strong style="color:var(--wf-gold);">Weight tying (tied embeddings)</strong> — reuse the input embedding matrix, transposed, as the output projection. Halves the parameter count spent on vocabulary (this matrix can be huge: vocab_size × d_model). Standard since GPT-2.<br>
+                <strong style="color:var(--wf-gold);">Untied heads</strong> — learn a separate output matrix instead of reusing embeddings. More parameters, occasionally better quality — some large models decouple input and output representations deliberately.<br>
+                <strong style="color:var(--wf-gold);">Adaptive / hierarchical softmax</strong> — clusters the vocabulary (frequent words get cheap direct lookup, rare words go through an extra step) so training and inference don't pay full cost for a huge vocabulary. Common before large-scale subword tokenisation made huge vocabularies less necessary.<br>
+                <strong style="color:var(--wf-gold);">Mixture of Softmaxes (MoS)</strong> — computes several separate softmax distributions and blends them, instead of one. A single softmax over a linear projection is provably limited in the distributions it can represent; mixing several increases expressivity at some extra compute cost.<br>
+                <strong style="color:var(--wf-gold);">Speculative-decoding / multi-token heads</strong> — extra lm_head-like modules (e.g. Medusa heads) predict several future tokens at once from the same hidden state. A larger model verifies them in parallel instead of generating strictly one token at a time, trading a bit of extra compute for much lower latency per accepted token.
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:.8rem;">Everything downstream of the lm_head — temperature, top-k, top-p, repetition penalties, banned-token lists — operates on these logits before softmax ever runs. See <a href="/ai/determinism-seeds" style="color:var(--wf-cyan);">Part 5: Determinism, Seeds &amp; Sampling</a> for how that stage introduces (and controls) randomness.</p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">3. Tokenisation Methods</h3>
+            <p data-plain="Before any maths happens, the model needs to chop raw text into a fixed set of 'tokens' it understands. Different tokenisers draw those boundaries differently, and that choice affects vocabulary size, sequence length, and how well the model handles rare words or other languages." data-psi="Tokenisation is the choice of basis the entire field is expressed in. Every subsequent computation inherits the granularity of that basis." data-duck="Before any quacking starts, someone has to decide what counts as one 'quack' — a whole word, a piece of a word, or a single letter. That choice changes how many quacks it takes to say anything.">Tokenisation happens before the model ever sees a number — it decides what counts as one indivisible unit of text. The choice trades off vocabulary size, sequence length, and how gracefully the model handles rare words, typos, code, or other languages.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-accent);line-height:2.2;">
+                <strong style="color:var(--wf-accent);">Word-level</strong> — one token per whitespace-separated word. Simple, but any word not seen during training is an unrepresentable "unknown" token. Mostly obsolete.<br>
+                <strong style="color:var(--wf-accent);">Character-level</strong> — one token per character. No out-of-vocabulary problem at all, but sequences get very long, which is expensive since attention cost grows with sequence length.<br>
+                <strong style="color:var(--wf-accent);">Byte-Pair Encoding (BPE)</strong> — start from individual characters, greedily merge the most frequent adjacent pair into a new token, repeat until the vocabulary hits a target size. Common words end up as single tokens; rare words fall back to smaller pieces. Used by GPT-2/3.<br>
+                <strong style="color:var(--wf-accent);">Byte-level BPE</strong> — the same merge algorithm, but starting from raw UTF-8 bytes instead of characters. Every possible input is representable — no "unknown" token can ever occur, even for emoji or malformed unicode. GPT-2/3/4's <code>tiktoken</code> uses this.<br>
+                <strong style="color:var(--wf-accent);">WordPiece</strong> — like BPE, but merges are chosen by which pair most increases the likelihood of the training corpus, not just raw frequency. Used by BERT.<br>
+                <strong style="color:var(--wf-accent);">Unigram LM tokenisation</strong> — the reverse approach: start from a large candidate vocabulary and iteratively remove the pieces that hurt overall corpus likelihood the least, until reaching the target size. One of the two algorithms offered by SentencePiece.<br>
+                <strong style="color:var(--wf-accent);">SentencePiece</strong> — not a merge algorithm itself, but a language-agnostic framework (supporting both BPE and Unigram) that treats input as a raw stream of unicode/bytes with no whitespace-based pre-tokenisation. This makes it work uniformly across languages that don't separate words with spaces. Used by LLaMA, T5.
+            </p>
+
+            <p data-plain="A bigger vocabulary means each token carries more meaning, so sentences turn into fewer tokens — but the tables that turn tokens into vectors, and turn final vectors back into tokens, both grow with it." data-psi="Vocabulary size is a trade between sequence length and the size of the boundary matrices — a shorter field description at the cost of a larger interface to it.">Vocabulary size is a direct trade-off: a bigger vocabulary means more common words get their own single token (shorter sequences, cheaper attention), but it also means bigger embedding and lm_head matrices, since both scale with vocab_size. Most production models settle somewhere between 32k and 128k+ tokens (GPT-4's <code>cl100k_base</code> uses roughly 100k, LLaMA 3 moved to ~128k).</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);">
+                <p style="color:var(--wf-muted);font-size:.85rem;line-height:2.2;margin:0;">
+                    <strong style="color:var(--wf-cyan);">Attention variant</strong> decides how expensive it is to look at context.<br>
+                    <strong style="color:var(--wf-gold);">LM head design</strong> decides how expensive — and how expressive — it is to read a decision back out.<br>
+                    <strong style="color:var(--wf-accent);">Tokeniser</strong> decides how big a "unit" of text even is before either of those stages runs.
+                </p>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">None of these choices change the core idea from Part 1 — Q, K, V, softmax, weighted blend. They change its cost curve: how it scales with context length, how big the model's parameter budget goes toward vocabulary versus reasoning, and how gracefully it handles text it wasn't trained on.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ai/transformers" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 1: The Transformer</a>
+                <a href="/ai" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ai/dense-sparse-moe" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 3: Dense vs. Sparse vs. Mixture-of-Experts →</a>
+            </div>
+        </div>
+</div>
