@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wavefunctionlabs.com/schema/concept-v2.schema.json",
+  "title": "WaveFunction canonical concept",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "slug",
+    "title",
+    "state",
+    "thesis",
+    "observation",
+    "problem",
+    "principle",
+    "interpretation",
+    "perspectives",
+    "evidence",
+    "experiments",
+    "tradeoffs",
+    "guidance",
+    "openQuestions",
+    "relationships",
+    "audiences",
+    "modes",
+    "channels",
+    "revisions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": ["draft", "pilot", "published", "revising"]
+    },
+    "canonicalHome": {
+      "type": "string",
+      "pattern": "^(https?://|/)"
+    },
+    "thesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "problem": {
+      "type": "string",
+      "minLength": 1
+    },
+    "principle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "interpretation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "perspectives": {
+      "type": "object",
+      "required": ["customers", "peers", "microsoft"],
+      "additionalProperties": {
+        "$ref": "#/$defs/perspective"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "experiments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/experiment"
+      }
+    },
+    "tradeoffs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "guidance": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    },
+    "audiences": {
+      "type": "object",
+      "required": ["family", "business", "scientist"],
+      "additionalProperties": {
+        "$ref": "#/$defs/projection"
+      }
+    },
+    "modes": {
+      "type": "object",
+      "required": ["wtf", "ducks", "tech", "psi"],
+      "additionalProperties": {
+        "$ref": "#/$defs/projection"
+      }
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/channel"
+      }
+    },
+    "revisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/revision"
+      }
+    }
+  },
+  "$defs": {
+    "projection": {
+      "type": "object",
+      "required": ["label", "question", "summary", "deeper"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deeper": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "perspective": {
+      "type": "object",
+      "required": ["status", "notes"],
+      "properties": {
+        "status": {
+          "enum": ["open", "captured", "validated"]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["kind", "label", "claim", "url"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(https?://|/)"
+        }
+      }
+    },
+    "experiment": {
+      "type": "object",
+      "required": ["title", "outcome", "capabilityUrl", "sourceUrl"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capabilityUrl": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(https?://|/)"
+        },
+        "sourceUrl": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(https?://|/)"
+        }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "required": ["type", "target", "reason"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "channel": {
+      "type": "object",
+      "required": ["id", "label", "role", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": ["live", "planned", "external"]
+        },
+        "url": {
+          "type": ["string", "null"],
+          "pattern": "^(https?://|/)"
+        }
+      }
+    },
+    "revision": {
+      "type": "object",
+      "required": ["date", "summary", "source"],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

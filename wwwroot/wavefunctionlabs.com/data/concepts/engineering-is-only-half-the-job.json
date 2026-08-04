@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "id": "concept.engineering-is-only-half-the-job",
+  "slug": "engineering-is-only-half-the-job",
+  "title": "Engineering Is Only Half the Job",
+  "state": "pilot",
+  "canonicalHome": "https://willeastbury.com/concepts/engineering-is-only-half-the-job",
+  "thesis": "Excellent engineering creates value once. Published understanding allows that value to travel, compound and improve the next build.",
+  "observation": "The strongest engineering work repeatedly produces transferable principles, but those principles are often left inside code, private conversations or the memory of the people who built the system.",
+  "problem": "When execution consumes the entire available window, the insight never becomes reusable guidance. The system improves, but the organisation and wider community do not gain the same understanding.",
+  "principle": "Build to understand. Publish to multiply understanding. Engage to improve the next build.",
+  "interpretation": "Thought leadership should not be a separate performance layered on top of engineering. It should be a designed output of the engineering loop: observe, generalise, validate, publish, discuss and refine.",
+  "perspectives": {
+    "customers": {
+      "status": "open",
+      "notes": [
+        "Capture recurring customer problems only in anonymised, reusable form.",
+        "Validate whether the published principle helps a customer make a clearer technical or organisational decision."
+      ]
+    },
+    "peers": {
+      "status": "open",
+      "notes": [
+        "Invite challenge on the principle, not just agreement with the implementation.",
+        "Record counterexamples and conditions where the loop creates overhead rather than leverage."
+      ]
+    },
+    "microsoft": {
+      "status": "open",
+      "notes": [
+        "Render validated lessons as reusable field guidance and community enablement.",
+        "Keep customer-specific and confidential material outside the public canonical object."
+      ]
+    }
+  },
+  "evidence": [
+    {
+      "kind": "published-manifesto",
+      "label": "Engineering Is Only Half the Job manifesto",
+      "claim": "The principle has been articulated as a public working rule rather than remaining an internal intention.",
+      "url": "/broadcast/engineering-is-only-half-the-job"
+    },
+    {
+      "kind": "source-history",
+      "label": "GitHub PR #46",
+      "claim": "The manifesto is inspectable as source and linked to the running capability.",
+      "url": "https://github.com/WillEastbury/www.wavefunctionlabs.com/pull/46"
+    },
+    {
+      "kind": "delivery-evidence",
+      "label": "Production release gate",
+      "claim": "The manifesto and Transformer book were built, staged, browser-tested, deployed and validated through the production gate.",
+      "url": "https://github.com/WillEastbury/www.wavefunctionlabs.com/pull/48"
+    }
+  ],
+  "experiments": [
+    {
+      "title": "Canonical concept renderer",
+      "outcome": "Demonstrate that one semantic object can produce audience, explanation-mode and depth-specific views without duplicating the underlying idea.",
+      "capabilityUrl": "/v2/concepts/engineering-is-only-half-the-job",
+      "sourceUrl": "https://github.com/WillEastbury/www.wavefunctionlabs.com/tree/pilot/content-architecture-v2"
+    }
+  ],
+  "tradeoffs": [
+    "A richer canonical object takes more discipline to maintain than a single article.",
+    "Automated renders can become generic if the source meaning is weak or the transform ignores channel conventions.",
+    "Customer and peer evidence must be attributable, anonymised or explicitly marked as not yet captured.",
+    "Not every concept needs every channel render on day one."
+  ],
+  "guidance": [
+    "Define the exact outcome, audience, done condition and stopping point before building.",
+    "After the outcome is reached, allow one fixed exploration window and then extract the principle.",
+    "Publish a minimum viable set: canonical concept, evidence or capability, source where applicable, one social render and one conversational or visual render.",
+    "Capture disagreement and feedback back into the canonical object instead of treating publication as the end.",
+    "Create additional channel renders only when they serve a distinct audience need."
+  ],
+  "openQuestions": [
+    "Which fields are genuinely universal across concepts, and which belong to specific concept types?",
+    "How should attributable customer and peer perspectives be consented, anonymised and versioned?",
+    "Which render transforms can be automated without flattening voice or nuance?",
+    "What revision signal should cause an already-published channel render to be regenerated?",
+    "How should concepts link across willeastbury.com, WaveFunctionLabs and GitHub without creating duplicate canonical sources?"
+  ],
+  "relationships": [
+    {
+      "type": "implements",
+      "target": "The Full Wave Function publishing loop",
+      "reason": "The concept turns the observe-build-publish-discuss loop into a repeatable working rule."
+    },
+    {
+      "type": "demonstrated-by",
+      "target": "Plain English Transformer technical book",
+      "reason": "One technical investigation became a running site, source history and multiple levels of explanation."
+    },
+    {
+      "type": "informs",
+      "target": "content architecture v2",
+      "reason": "The manifesto defines why the canonical graph and render transforms are needed."
+    }
+  ],
+  "audiences": {
+    "family": {
+      "label": "Family",
+      "question": "Why should a normal person care?",
+      "summary": "Doing good work is useful. Explaining what you learned helps more people benefit from it, even if they never read the code.",
+      "deeper": "It is like solving a difficult problem at home and then writing down the trick so the next person does not have to discover it from scratch. The build fixes one thing; the explanation helps many future decisions."
+    },
+    "business": {
+      "label": "Business",
+      "question": "Why does this matter to an organisation, and what should it do?",
+      "summary": "Engineering investment compounds when implementation lessons become reusable decisions, field guidance and shared organisational capability.",
+      "deeper": "Treat insight extraction as part of delivery. Fund a bounded publication and discussion window after significant builds, connect claims to evidence, and measure whether teams make faster or better decisions because the principle travelled."
+    },
+    "scientist": {
+      "label": "Scientist",
+      "question": "How does it work, and is the claim defensible?",
+      "summary": "The model treats each concept as a versioned semantic object and every article, demo or post as a projection selected by audience, explanation mode, depth and channel.",
+      "deeper": "The defensible unit is not the prose render but the graph of claims, evidence, assumptions, limitations and relationships. A transform is valid when it preserves the source claim, exposes its evidence boundary and makes no stronger assertion than the canonical object supports."
+    }
+  },
+  "modes": {
+    "wtf": {
+      "label": "WTF",
+      "question": "What the hell is actually going on?",
+      "summary": "You are learning valuable things while building, then throwing away most of the learning because you never package it for anyone else.",
+      "deeper": "The fix is not to become a content creator instead of an engineer. The fix is to stop treating explanation as optional cleanup. Reserve a bounded step that turns the lesson into something another person can use."
+    },
+    "ducks": {
+      "label": "DUCKS",
+      "question": "What intuitive shape explains the idea?",
+      "summary": "One duck finds the safe route across the pond. Publishing means leaving visible ripples so the rest of the flock does not repeat every wrong turn.",
+      "deeper": "The first duck still has to swim the hard route. The ripples are not a substitute for the journey; they are the reusable trace of it. Other ducks can follow, challenge the path or find a better one."
+    },
+    "tech": {
+      "label": "TECH",
+      "question": "What exists, and how is it implemented?",
+      "summary": "A canonical JSON concept object feeds a browser renderer that selects audience, explanation mode and depth without duplicating the concept.",
+      "deeper": "The pilot stores claims, evidence, guidance, trade-offs and relationships in one versioned object. Static PicoWeb pages fetch that object and materialise a selected projection. A validator enforces the minimum semantic contract before publication."
+    },
+    "psi": {
+      "label": "Ψ",
+      "question": "What deeper pattern connects the pieces?",
+      "summary": "The idea is the wave function. Articles, code, talks and posts are collapses into forms that a particular observer can use.",
+      "deeper": "No render is the whole idea. Each materialisation preserves some dimensions and suppresses others according to audience and channel constraints. Feedback changes the underlying state, so the next collapse can be better."
+    }
+  },
+  "channels": [
+    {
+      "id": "willeastbury",
+      "label": "willeastbury.com",
+      "role": "What the concept means",
+      "status": "planned",
+      "url": "https://willeastbury.com"
+    },
+    {
+      "id": "wavefunctionlabs",
+      "label": "WaveFunctionLabs",
+      "role": "The rendering capability running",
+      "status": "live",
+      "url": "/v2/concepts/engineering-is-only-half-the-job"
+    },
+    {
+      "id": "github",
+      "label": "GitHub",
+      "role": "The inspectable source and revision history",
+      "status": "live",
+      "url": "https://github.com/WillEastbury/www.wavefunctionlabs.com/tree/pilot/content-architecture-v2"
+    },
+    {
+      "id": "youtube",
+      "label": "YouTube",
+      "role": "The visual explanatory render",
+      "status": "planned",
+      "url": null
+    },
+    {
+      "id": "podcast",
+      "label": "Podcast",
+      "role": "The conversational render",
+      "status": "planned",
+      "url": null
+    },
+    {
+      "id": "linkedin",
+      "label": "LinkedIn",
+      "role": "The professional-social signal",
+      "status": "planned",
+      "url": "https://www.linkedin.com/in/willeastbury"
+    },
+    {
+      "id": "microsoft",
+      "label": "Microsoft and customers",
+      "role": "The organisational and practical application",
+      "status": "external",
+      "url": null
+    }
+  ],
+  "revisions": [
+    {
+      "date": "2026-08-04",
+      "summary": "Created the first canonical concept object and interactive audience/mode/depth renderer.",
+      "source": "pilot/content-architecture-v2"
+    }
+  ]
+}

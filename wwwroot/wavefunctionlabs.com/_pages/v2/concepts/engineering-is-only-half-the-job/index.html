@@ -1,0 +1,169 @@
+<style>
+.v2-controls{display:grid;gap:1rem;margin:1.5rem 0 2rem}.v2-control{padding:1rem;border:1px solid var(--wf-border);border-radius:8px;background:rgba(14,14,22,.65)}.v2-control-label{display:block;margin-bottom:.65rem;color:var(--wf-muted);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase}.v2-buttons{display:flex;flex-wrap:wrap;gap:.5rem}.v2-button{padding:.48rem .78rem;border:1px solid var(--wf-border);border-radius:999px;background:transparent;color:var(--wf-muted);font:inherit;font-size:.74rem;cursor:pointer;transition:border-color .2s,color .2s,background .2s}.v2-button:hover{color:#e2e8f0;border-color:var(--wf-cyan)}.v2-button[aria-pressed="true"]{color:#061018;background:var(--wf-cyan);border-color:var(--wf-cyan);font-weight:700}.v2-signature{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--wf-gold);line-height:1.7;margin-bottom:1.5rem}.v2-render{padding:1.3rem;border:1px solid var(--wf-border);border-radius:8px;background:rgba(7,7,12,.78)}.v2-render h2{font-size:1.2rem;color:#e2e8f0;margin-bottom:.35rem}.v2-render h3{font-size:.82rem;color:var(--wf-cyan);margin:1.6rem 0 .6rem;text-transform:uppercase;letter-spacing:.08em}.v2-render p,.v2-render li{font-size:.88rem;line-height:1.8;color:var(--bs-body-color);font-weight:300}.v2-render ul{padding-left:1.2rem}.v2-meta{color:var(--wf-muted)!important;font-size:.76rem!important}.v2-evidence{display:grid;gap:.65rem}.v2-evidence-item{padding:.8rem;border-left:2px solid var(--wf-gold);background:rgba(240,192,64,.04)}.v2-evidence-item a{color:var(--wf-gold)}.v2-channels{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.7rem}.v2-channel{padding:.8rem;border:1px solid var(--wf-border);border-radius:6px}.v2-channel strong{display:block;color:#e2e8f0;font-size:.8rem;margin-bottom:.3rem}.v2-channel span{color:var(--wf-muted);font-size:.74rem;line-height:1.5}.v2-error{padding:1rem;border:1px solid #ef4444;color:#fecaca;background:rgba(239,68,68,.08)}
+</style>
+
+<div class="wf-section">
+        <a class="wf-back" href="/v2">← content architecture v2</a>
+        <h1 class="wf-section-hdr" id="v2-title">Canonical concept renderer</h1>
+        <p class="wf-section-desc">One concept object. Multiple valid projections.</p>
+
+        <div class="wf-article-body" style="max-width:760px;">
+            <div class="v2-controls" aria-label="Concept render controls">
+                <div class="v2-control">
+                    <span class="v2-control-label">Audience</span>
+                    <div class="v2-buttons" data-control="audience">
+                        <button class="v2-button" type="button" data-value="family" aria-pressed="false">Family</button>
+                        <button class="v2-button" type="button" data-value="business" aria-pressed="true">Business</button>
+                        <button class="v2-button" type="button" data-value="scientist" aria-pressed="false">Scientist</button>
+                    </div>
+                </div>
+                <div class="v2-control">
+                    <span class="v2-control-label">Explanation mode</span>
+                    <div class="v2-buttons" data-control="mode">
+                        <button class="v2-button" type="button" data-value="wtf" aria-pressed="true">WTF</button>
+                        <button class="v2-button" type="button" data-value="ducks" aria-pressed="false">DUCKS</button>
+                        <button class="v2-button" type="button" data-value="tech" aria-pressed="false">TECH</button>
+                        <button class="v2-button" type="button" data-value="psi" aria-pressed="false">Ψ</button>
+                    </div>
+                </div>
+                <div class="v2-control">
+                    <span class="v2-control-label">Depth</span>
+                    <div class="v2-buttons" data-control="depth">
+                        <button class="v2-button" type="button" data-value="summary" aria-pressed="true">Summary</button>
+                        <button class="v2-button" type="button" data-value="deeper" aria-pressed="false">Deeper</button>
+                        <button class="v2-button" type="button" data-value="full" aria-pressed="false">Full evidence</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="v2-signature" id="v2-signature">Loading canonical concept…</div>
+            <div class="v2-render" id="v2-render" aria-live="polite"></div>
+        </div>
+    </div>
+
+<script>
+(function(){
+    'use strict';
+
+    var state={audience:'business',mode:'wtf',depth:'summary'};
+    var concept=null;
+    var renderRoot=document.getElementById('v2-render');
+    var signature=document.getElementById('v2-signature');
+
+    function node(tag,text,className){
+        var element=document.createElement(tag);
+        if(text!==undefined&&text!==null)element.textContent=text;
+        if(className)element.className=className;
+        return element;
+    }
+
+    function section(root,title,content){
+        root.appendChild(node('h3',title));
+        var values=Array.isArray(content)?content:[content];
+        values.forEach(function(value){root.appendChild(node('p',value));});
+    }
+
+    function list(root,title,items){
+        root.appendChild(node('h3',title));
+        var ul=node('ul');
+        items.forEach(function(item){ul.appendChild(node('li',item));});
+        root.appendChild(ul);
+    }
+
+    function evidence(root,items){
+        root.appendChild(node('h3','Evidence'));
+        var wrap=node('div',null,'v2-evidence');
+        items.forEach(function(item){
+            var card=node('div',null,'v2-evidence-item');
+            var link=node('a',item.label);
+            link.href=item.url;
+            card.appendChild(link);
+            card.appendChild(node('p',item.claim));
+            wrap.appendChild(card);
+        });
+        root.appendChild(wrap);
+    }
+
+    function channels(root,items){
+        root.appendChild(node('h3','Channel projections'));
+        var wrap=node('div',null,'v2-channels');
+        items.forEach(function(item){
+            var card=node('div',null,'v2-channel');
+            if(item.url){
+                var link=node('a',item.label);
+                link.href=item.url;
+                card.appendChild(link);
+            }else{
+                card.appendChild(node('strong',item.label));
+            }
+            card.appendChild(node('span',item.role+' · '+item.status));
+            wrap.appendChild(card);
+        });
+        root.appendChild(wrap);
+    }
+
+    function render(){
+        if(!concept)return;
+        var audience=concept.audiences[state.audience];
+        var mode=concept.modes[state.mode];
+        document.getElementById('v2-title').textContent=concept.title;
+        signature.textContent='Canonical concept → '+audience.label+' → '+mode.label+' → '+state.depth+' → Web';
+        renderRoot.replaceChildren();
+        renderRoot.appendChild(node('h2',concept.thesis));
+        renderRoot.appendChild(node('p',audience.question,'v2-meta'));
+        section(renderRoot,audience.label+' render',audience.summary);
+        section(renderRoot,mode.label+' explanation',mode.summary);
+
+        if(state.depth==='deeper'||state.depth==='full'){
+            section(renderRoot,'Audience depth',audience.deeper);
+            section(renderRoot,'Explanation depth',mode.deeper);
+            section(renderRoot,'Underlying principle',concept.principle);
+            list(renderRoot,'Practical guidance',concept.guidance);
+            list(renderRoot,'Relationships',concept.relationships.map(function(item){
+                return item.type+': '+item.target+' — '+item.reason;
+            }));
+        }
+
+        if(state.depth==='full'){
+            section(renderRoot,'Observation',concept.observation);
+            section(renderRoot,'Problem',concept.problem);
+            section(renderRoot,'Interpretation',concept.interpretation);
+            evidence(renderRoot,concept.evidence);
+            list(renderRoot,'Trade-offs and limitations',concept.tradeoffs);
+            list(renderRoot,'Open questions',concept.openQuestions);
+            section(renderRoot,'Customer perspective status',concept.perspectives.customers.notes);
+            section(renderRoot,'Peer perspective status',concept.perspectives.peers.notes);
+            section(renderRoot,'Microsoft context',concept.perspectives.microsoft.notes);
+            channels(renderRoot,concept.channels);
+        }
+    }
+
+    document.querySelectorAll('[data-control]').forEach(function(group){
+        group.addEventListener('click',function(event){
+            var button=event.target.closest('button[data-value]');
+            if(!button)return;
+            var control=group.getAttribute('data-control');
+            state[control]=button.getAttribute('data-value');
+            group.querySelectorAll('button').forEach(function(candidate){
+                candidate.setAttribute('aria-pressed',candidate===button?'true':'false');
+            });
+            render();
+        });
+    });
+
+    fetch('/data/concepts/engineering-is-only-half-the-job.json',{cache:'no-store'})
+        .then(function(response){
+            if(!response.ok)throw new Error('Concept request failed with HTTP '+response.status);
+            return response.json();
+        })
+        .then(function(data){
+            concept=data;
+            render();
+        })
+        .catch(function(error){
+            signature.textContent='Canonical concept unavailable';
+            renderRoot.replaceChildren(node('div','Unable to render the concept: '+error.message,'v2-error'));
+            console.error(error);
+        });
+})();
+</script>

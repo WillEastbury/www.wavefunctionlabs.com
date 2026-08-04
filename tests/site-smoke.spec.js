@@ -4,6 +4,7 @@ const topLevelRoutes = [
   ['/cognition', 'Cognition'],
   ['/ai', 'How AI Actually Works'],
   ['/transformers', 'How a Transformer Produces One Token'],
+  ['/v2', 'The New WaveFunction Content Architecture'],
   ['/ducks', 'Ducks All the Way Down'],
   ['/forge', 'Forge'],
   ['/swarm', 'Swarm'],
@@ -83,6 +84,32 @@ test('engineering manifesto renders from its clean URL', async ({ page }) => {
   await expect(page.locator('.wf-article-body')).toContainText('Build to understand.');
   await expect(page.locator('.wf-article-body')).toContainText('The best technical leaders create both.');
   expect(pageErrors, 'page JavaScript errors').toEqual([]);
+});
+
+test('content architecture pilot renders one concept through multiple transforms', async ({ page }) => {
+  const pageErrors = await gotoOk(page, '/v2/concepts/engineering-is-only-half-the-job');
+  const conceptResponse = await page.evaluate(async () => {
+    const response = await fetch('/data/concepts/engineering-is-only-half-the-job.json');
+    return { status: response.status, body: await response.json() };
+  });
+  expect(conceptResponse.status).toBe(200);
+  expect(conceptResponse.body.id).toBe('concept.engineering-is-only-half-the-job');
+
+  await expect(page.locator('h1.wf-section-hdr')).toContainText('Engineering Is Only Half the Job');
+  await expect(page.locator('#v2-signature')).toContainText('Business → WTF → summary → Web');
+  await expect(page.locator('#v2-render')).toContainText('Engineering investment compounds');
+
+  await page.getByRole('button', { name: 'Family' }).click();
+  await page.getByRole('button', { name: 'DUCKS' }).click();
+  await page.getByRole('button', { name: 'Deeper' }).click();
+  await expect(page.locator('#v2-signature')).toContainText('Family → DUCKS → deeper → Web');
+  await expect(page.locator('#v2-render')).toContainText('safe route across the pond');
+  await expect(page.locator('#v2-render')).toContainText('The first duck still has to swim');
+
+  await page.getByRole('button', { name: 'Full evidence' }).click();
+  await expect(page.locator('#v2-render')).toContainText('GitHub PR #46');
+  await expect(page.locator('#v2-render')).toContainText('Trade-offs and limitations');
+  expect(pageErrors, 'content architecture pilot JavaScript errors').toEqual([]);
 });
 
 test('wavefunction game page loads, starts, and shows high scores', async ({ page }) => {
