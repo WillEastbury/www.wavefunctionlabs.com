@@ -1,7 +1,10 @@
 # Release runbook
 
-Production runs picoweb directly on `:443` with embedded picowal storage. Do not
-insert a reverse proxy or TLS terminator as a release workaround.
+Production uses the cluster nginx ingress as the approved shared-IP public
+router. nginx terminates public TLS and proxies over HTTPS to picoweb, which
+remains the application server and owns the embedded picowal storage. Do not
+replace picoweb with nginx static serving or add another proxy layer as a
+release workaround.
 
 ## Build
 
@@ -27,9 +30,13 @@ Update `k8s/wfl-www.yaml` to `tileforgeacr.azurecr.io/wfl-www:${TAG}` and apply
 it:
 
 ```sh
+kubectl apply -f k8s/ingress-nginx-security.yaml
 kubectl apply -f k8s/wfl-www.yaml
 kubectl rollout status deployment/wfl-www -n wfl-www --timeout=180s
 ```
+
+`k8s/ingress-nginx-security.yaml` owns the shared ingress HSTS contract checked
+by the release smoke suite.
 
 ## Release gate
 
