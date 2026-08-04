@@ -40,7 +40,7 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:ai-series-9parts-20260722213254
+          image: tileforgeacr.azurecr.io/wfl-www:p47-content-20260804-124324
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
