@@ -60,6 +60,16 @@ test('deep article routes render directly from clean URLs', async ({ page }) => 
   expect(pageErrors, 'page JavaScript errors').toEqual([]);
 });
 
+test('engineering manifesto renders from its clean URL', async ({ page }) => {
+  const pageErrors = await gotoOk(page, '/broadcast/engineering-is-only-half-the-job');
+
+  await expect(page.locator('.wf-nav-links a[href="/broadcast"]')).toHaveClass(/active/);
+  await expect(page.locator('h1.wf-section-hdr')).toContainText('Engineering Is Only Half the Job');
+  await expect(page.locator('.wf-article-body')).toContainText('Build to understand.');
+  await expect(page.locator('.wf-article-body')).toContainText('The best technical leaders create both.');
+  expect(pageErrors, 'page JavaScript errors').toEqual([]);
+});
+
 test('wavefunction game page loads, starts, and shows high scores', async ({ page }) => {
   const pageErrors = await gotoOk(page, '/wavefunction.html');
 
