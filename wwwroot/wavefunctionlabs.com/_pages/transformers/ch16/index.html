@@ -1,0 +1,116 @@
+<style>
+.wf-section{display:block!important}
+.tf-wrap{max-width:720px;margin:0 auto;padding:0 0 1rem}
+.tf-sec{margin:0 auto 2rem}
+.tf-title{max-width:520px;margin:0 auto .85rem;color:#e2e8f0;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
+.tf-prompt,.tf-loopback,.tf-out{max-width:520px;margin:0 auto;text-align:center;color:#e2e8f0}
+.tf-prompt,.tf-out{padding:.9rem 1rem;border:1px solid var(--wf-border);border-radius:10px;background:rgba(255,255,255,.02);font-size:.95rem}
+.tf-arrow{text-align:center;color:var(--wf-muted);font-size:1.3rem;line-height:1;margin:.5rem auto}
+.tf-step{max-width:520px;margin:0 auto;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:10px;background:var(--wf-surface);box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.tf-name{display:block;margin:0 0 .45rem;font-size:.88rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.tf-cyan{color:var(--wf-cyan)}.tf-gold{color:var(--wf-gold)}.tf-accent{color:var(--wf-accent)}
+.tf-step p{margin:0;color:var(--wf-muted);font-size:.82rem;line-height:1.6}
+.tf-link{margin-top:.55rem;text-align:right}
+.tf-link a{color:var(--wf-cyan);font-size:.72rem;text-decoration:none}
+.tf-link a:hover{text-decoration:underline}
+.tf-loop{max-width:560px;margin:0 auto;padding:1rem;border:1px dashed rgba(6,182,212,.24);border-radius:12px;background:rgba(6,182,212,.05)}
+.tf-loop-label{margin:0 0 .7rem;text-align:center;color:var(--wf-accent);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase}
+.tf-loop .tf-step{max-width:500px}
+.tf-loopback{margin-top:.4rem;color:var(--wf-accent);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+.tf-state{max-width:520px;margin:.4rem auto .1rem;padding:.6rem .9rem;border-left:2px solid var(--wf-cyan);background:rgba(6,182,212,.04);border-radius:0 6px 6px 0;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.6;color:var(--wf-muted);overflow-x:auto}
+.tf-state strong{color:var(--wf-cyan);font-weight:600}
+.tf-state-gold{border-left-color:var(--wf-gold)}.tf-state-gold strong{color:var(--wf-gold)}
+.tf-state-accent{border-left-color:var(--wf-accent)}.tf-state-accent strong{color:var(--wf-accent)}
+.tf-tech{font-weight:400;font-size:.72rem;letter-spacing:.02em;text-transform:none;color:var(--wf-muted);opacity:.7}
+.tf-math{margin-top:.5rem;border:1px solid var(--wf-border);border-radius:8px;overflow:hidden}
+.tf-math summary{cursor:pointer;padding:.4rem .8rem;font-size:.7rem;color:var(--wf-gold);letter-spacing:.04em;background:rgba(240,192,64,.05);list-style:none;display:flex;align-items:center;gap:.4rem}
+.tf-math summary::-webkit-details-marker{display:none}
+.tf-math summary::before{content:'▸';font-size:.65rem;transition:transform .2s}
+.tf-math[open] summary::before{transform:rotate(90deg)}
+.tf-math .tf-math-body{padding:.5rem .8rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.7;color:var(--wf-muted);background:rgba(14,14,22,.5);border-top:1px solid var(--wf-border)}
+.tf-math .tf-math-body strong{color:var(--wf-gold)}
+.tf-compare{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.tf-card{border:1px solid var(--wf-border);border-radius:10px;background:var(--wf-surface);padding:1rem 1.1rem}
+.tf-card h3{margin:0 0 .45rem;color:#e2e8f0;font-size:.9rem}
+.tf-card p{margin:0;color:var(--wf-muted);font-size:.82rem;line-height:1.6}
+@media(max-width:640px){.tf-compare{grid-template-columns:1fr}.tf-wrap{padding:0}}
+</style>
+
+<div class="tf-wrap">
+  <div style="max-width:520px;margin:0 auto 2rem;text-align:center;">
+    <div class="tf-title">Chapter 16</div>
+    <h1 class="wf-section-hdr" style="font-size:clamp(1.6rem,3.5vw,2.4rem);">Build the Provider</h1>
+    <p style="color:var(--wf-muted);font-size:.85rem;line-height:1.7;margin-top:.6rem;">From POST request to streamed response — the serving infrastructure around the inference engine.</p>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">HTTP request to token stream</div>
+    <div class="tf-prompt"><div style="font-family:'JetBrains Mono',monospace;font-size:.73rem;line-height:1.65;overflow-x:auto;">POST /v1/chat/completions<br>{&quot;model&quot;:&quot;llama-7b&quot;,&quot;messages&quot;:[{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;The capital of France is&quot;}],&quot;stream&quot;:true,&quot;temperature&quot;:0.7,&quot;top_p&quot;:0.95}</div></div>
+    <div class="tf-state"><strong>state:</strong> one OpenAI-style request arrives and asks the provider to stream a reply.</div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Receive Request <span class="tf-tech">[HTTP POST / OpenAI-compatible API]</span></span><p>The server reads the body, parses JSON, validates the schema, and normalises options into an internal request object. Unknown models, malformed messages, or impossible sampling settings get rejected here before the runtime spends tokenizer, CPU, or GPU time.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Extracted fields:</strong> model, messages[], stream, temperature, top_p, plus defaults such as max_tokens or stop. This is also where auth, rate-limit keys, and request IDs are attached.</div></details></div>
+    <div class="tf-state"><strong>state:</strong> raw JSON → <strong>req{model:&quot;llama-7b&quot;,messages:1,stream:true,temp:0.7,top_p:0.95}</strong></div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-gold">Apply Chat Template <span class="tf-tech">[Jinja2 / model-specific formatting]</span></span><p>The model does not consume role/content arrays directly. The provider renders them into the prompt syntax that checkpoint expects, inserting role markers, separators, BOS tokens, and an assistant prefix so generation begins in the correct conversational state.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Example render:</strong><br>&lt;|user|&gt;\nThe capital of France is\n&lt;|assistant|&gt;\n<br><br>Different models want different wrappers, which is why template selection is part of serving, not an afterthought.</div></details></div>
+    <div class="tf-state tf-state-gold"><strong>state:</strong> messages[] → <strong>&quot;&lt;|user|&gt;\nThe capital of France is\n&lt;|assistant|&gt;\n&quot;</strong></div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-cyan">Tokenize <span class="tf-tech">[BPE]</span></span><p>The formatted prompt becomes token IDs. This is the same tokenizer logic from Chapter 2, but now applied to the template-expanded string. From this point onward the provider mostly tracks integer IDs, token counts, buffer lengths, and byte offsets.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Illustrative only:</strong> exact IDs depend on tokenizer build and chat template revision. Serving stacks care about length, special tokens, and byte-safe detokenization on the way back out.</div></details></div>
+    <div class="tf-state"><strong>state:</strong> prompt string → <strong>[1, 32001, 1045, 3382, 310, 3444, 338, 32002]</strong></div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-accent">Admit Request <span class="tf-tech">[Scheduler / Queue / Continuous Batching]</span></span><p>The scheduler decides whether this request can enter the live batch now. It checks queue depth, token budget, and available KV-cache pages. If capacity exists, it allocates slots; if not, it queues the request or applies backpressure such as HTTP 429.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Continuous batching:</strong> active requests do not all start together. Prefill and decode work from different requests are interleaved so finished requests can leave and new ones can join without draining the whole batch first.</div></details></div>
+    <div class="tf-state tf-state-accent"><strong>state:</strong> <strong>req#418 admitted</strong>; KV pages reserved; active batch now contains older decode jobs plus this new prefill job.</div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-gold">Prefill <span class="tf-tech">[First forward pass]</span></span><p>Prefill runs the entire prompt through the model in one wide pass. Every layer writes keys and values for all prompt positions into the KV cache, and the hidden state at the last prompt token produces the first logits for generation.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Prefill is compute-heavy:</strong> all prompt tokens are processed together, which is why time-to-first-token rises with prompt length even when later decode steps only add one token at a time.</div></details></div>
+    <div class="tf-state tf-state-gold"><strong>state:</strong> prompt_len=8; <strong>KV cache[layer][0..7]</strong> populated; first next-token logits ready.</div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-loop">
+      <div class="tf-loop-label">Decode loop — repeat until stop</div>
+      <div class="tf-step"><span class="tf-name tf-cyan">Decode Loop <span class="tf-tech">[One token at a time]</span></span><p>After prefill, generation becomes a tight one-token loop. The server feeds back the newest token, runs one-position decode, scores the vocabulary, samples with temperature and top-p, appends the winner, and checks whether EOS, max_tokens, or a stop sequence has been reached.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Hot-path sketch:</strong><br>forward(last_token) → logits → sample → append → test stop.<br><br>In real providers this loop is interleaved across many requests sharing the same accelerator.</div></details></div>
+      <div class="tf-state"><strong>state:</strong> generated IDs accumulate one by one → <strong>[..., 3681]</strong> then <strong>[..., 3681, 29889]</strong><br>detokenized so far → <strong>&quot; Paris.&quot;</strong></div>
+      <div class="tf-loopback">no stop yet? decode the next token and keep the request in the active batch</div>
+    </div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-accent">Stream Tokens <span class="tf-tech">[SSE / chunked response]</span></span><p>If <strong>stream=true</strong>, the provider serialises each sampled token into the OpenAI-compatible SSE wire format and flushes it immediately. That is why chat UIs appear to type word by word: the server is sending incremental deltas, not waiting for the full sentence.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Example event:</strong><br>data: {&quot;choices&quot;:[{&quot;delta&quot;:{&quot;content&quot;:&quot; Paris&quot;}}]}<br><br>The network path may be SSE framing over HTTP/1.1 chunked transfer or equivalent streaming behaviour over HTTP/2.</div></details></div>
+    <div class="tf-state tf-state-accent"><strong>state:</strong> client receives partial output immediately → <strong>&quot; Paris&quot;</strong>, then later <strong>&quot;.&quot;</strong></div>
+
+    <div class="tf-arrow">↓</div>
+    <div class="tf-step"><span class="tf-name tf-gold">Cleanup <span class="tf-tech">[Release resources]</span></span><p>When generation finishes or the client disconnects, the provider tears the request down. KV pages go back to the allocator, metrics are updated, cancellations are reconciled, and the stream closes cleanly so the scheduler can admit more waiting work.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Typical epilogue:</strong> emit <strong>data: [DONE]</strong>, record latency and tokens/sec, decrement active-request counters, and free the request context so memory is reusable for the next admission decision.</div></details></div>
+    <div class="tf-state tf-state-gold"><strong>state:</strong> <strong>req#418 complete</strong>; KV slots freed; metrics updated; connection closed with <strong>[DONE]</strong>.</div>
+    <div class="tf-out">Final effect: the provider turned one HTTP call into a streamed token sequence without rerunning the whole prompt on every step.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Hardening concerns</div>
+    <div class="tf-compare">
+      <div class="tf-card"><h3>Rate limiting / backpressure</h3><p>Protect the queue before GPU memory is the thing saying no.</p></div>
+      <div class="tf-card"><h3>Validation &amp; prompt limits</h3><p>Reject oversize or malformed requests before tokenization and admission.</p></div>
+      <div class="tf-card"><h3>KV budget &amp; eviction</h3><p>Track cache pages explicitly; reclaim aggressively when requests finish or cancel.</p></div>
+      <div class="tf-card"><h3>Graceful degradation</h3><p>Under load, prefer shorter queues, lower concurrency, or smaller models over collapse.</p></div>
+      <div class="tf-card"><h3>Health checks</h3><p>Separate liveness from readiness so a pod can be alive but not accepting work.</p></div>
+      <div class="tf-card"><h3>Speculative decoding</h3><p>Use a draft model to reduce latency when verification cost still nets a win.</p></div>
+      <div class="tf-card"><h3>Quantization</h3><p>Smaller weights can raise throughput if the accuracy trade-off is acceptable.</p></div>
+      <div class="tf-card"><h3>Tensor parallelism</h3><p>Shard big models across GPUs when one device cannot hold weights or bandwidth demand.</p></div>
+      <div class="tf-card"><h3>Continuous vs static batching</h3><p>Static batches are simpler; continuous batching usually keeps expensive devices busier.</p></div>
+      <div class="tf-card"><h3>Timeout &amp; cancellation</h3><p>Clients disappear. The provider must stop wasted decode work quickly and safely.</p></div>
+    </div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">The OpenAI-compatible API surface</div>
+    <div class="tf-step"><span class="tf-name tf-cyan">API Surface <span class="tf-tech">[Routes and wire format]</span></span><p>Most providers expose a small compatibility layer above the inference engine. Matching the request schema and streaming format matters because it lets existing SDKs, tools, and agents talk to the server without knowing whether the backend is vLLM, TGI, llama.cpp, or something custom.</p><details class="tf-math"><summary>🔎 provider detail</summary><div class="tf-math-body"><strong>Common endpoints:</strong><br>POST /v1/chat/completions → chat messages in, streamed deltas out<br>POST /v1/completions → raw prompt completion<br>GET /v1/models → available model list<br><br><strong>OpenAI-compatible</strong> mostly means the same JSON fields and the same SSE event shape.</div></details></div>
+    <div class="tf-state"><strong>state:</strong> compatibility lives at the HTTP boundary; behind it, providers can schedule, batch, quantize, and stream however they like.</div>
+  </div>
+
+  <div style="max-width:520px;margin:2rem auto 0;display:flex;justify-content:space-between;align-items:center;padding-top:1rem;border-top:1px solid var(--wf-border);">
+    <a href="/transformers/ch15" style="color:var(--wf-muted);font-size:.78rem;text-decoration:none;">← Ch15: Database-Optimized Inference</a>
+    <a href="/transformers" style="color:var(--wf-muted);font-size:.78rem;text-decoration:none;">chapter index</a>
+    <a href="/transformers/glossary" style="color:var(--wf-cyan);font-size:.78rem;text-decoration:none;">Glossary →</a>
+  </div>
+</div>

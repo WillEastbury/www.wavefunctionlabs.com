@@ -1,0 +1,234 @@
+<style>
+.wf-section { display: block !important; }
+.wf-tabs { margin: 1.5rem 0; border: 1px solid var(--wf-border); border-radius: 12px; background: rgba(14,14,22,0.5); overflow: hidden; }
+.wf-tab-bar { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--wf-border); background: rgba(14,14,22,0.7); padding: 0.4rem 0.5rem 0; }
+.wf-tab { padding: 0.55rem 1rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--wf-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; border-radius: 6px 6px 0 0; }
+.wf-tab:hover { color: #e2e8f0; background: rgba(99,102,241,0.08); }
+.wf-tab.active { color: var(--wf-cyan); border-bottom-color: var(--wf-cyan); background: rgba(6,182,212,0.06); }
+.wf-tab-panel { display: none; padding: 1.2rem 1.3rem; font-size: 0.88rem; line-height: 1.85; color: var(--bs-body-color); }
+.wf-tab-panel.active { display: block; }
+.wf-tab-panel p { margin: 0 0 0.9rem; }
+.wf-tab-panel strong { color: #e2e8f0; }
+.wf-tab-panel .wf-code, .wf-tab-panel .wf-math, .wf-tab-panel .wf-table-wrap { margin: 0.8rem 0; }
+#wtf-btn, #psi-btn, #duck-btn { position: fixed; right: 1.5rem; z-index: 10000; display: none; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; background: rgba(4,4,14,0.94); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); transition: box-shadow 0.25s, transform 0.12s, opacity 0.2s; user-select: none; border-style: solid; border-width: 1px; }
+#wtf-btn { bottom: 1.5rem; color: #00c8ff; border-color: rgba(0,200,255,.55); box-shadow: 0 0 14px rgba(0,200,255,.2), 0 2px 10px rgba(0,0,0,.7); }
+#wtf-btn:hover { box-shadow: 0 0 26px rgba(0,200,255,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#psi-btn { bottom: 4.5rem; color: #f0c040; border-color: rgba(240,192,64,.55); box-shadow: 0 0 14px rgba(240,192,64,.2), 0 2px 10px rgba(0,0,0,.7); }
+#psi-btn:hover { box-shadow: 0 0 26px rgba(240,192,64,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#duck-btn { bottom: 7.5rem; color: #f97316; border-color: rgba(249,115,22,.55); box-shadow: 0 0 14px rgba(249,115,22,.2), 0 2px 10px rgba(0,0,0,.7); }
+#duck-btn:hover { box-shadow: 0 0 26px rgba(249,115,22,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#wtf-btn:active, #psi-btn:active, #duck-btn:active { transform: translateY(0); }
+#wtf-btn.busy, #psi-btn.busy, #duck-btn.busy { opacity: 0.45; cursor: wait; pointer-events: none; }
+.wf-gloss-entry { padding: 1rem 0; border-bottom: 1px solid var(--wf-border); }
+.wf-gloss-entry:last-child { border-bottom: none; }
+a.wf-gloss { color: var(--wf-cyan); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+a.wf-gloss:hover { color: #e2e8f0; text-decoration-style: solid; }
+@media (max-width: 760px) {
+  .wf-tab { padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+  #wtf-btn, #psi-btn, #duck-btn { right: 0.8rem; padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+}
+</style>
+
+<div id="ch13" class="wf-section wf-article"><div class="wf-article-head"><a class="wf-back" href="/transformers">← chapter index</a><div class="wf-kicker">Part 13 — Model Formats: Hugging Face, GGUF &amp; SafeTensors</div><h1 class="wf-section-hdr">Model Formats: Hugging Face, GGUF &amp; SafeTensors</h1><p class="wf-section-desc">How model checkpoints are packaged, versioned, quantized, and loaded from disk before a single token is generated.</p></div><div class="wf-article-body"><p>When people say they “downloaded a model,” they usually mean they downloaded a small file collection that describes a transformer and stores its learned tensors. Inference begins long before the first <a href="/transformers/glossary" class="wf-gloss">logits</a> vector appears. It begins with bytes on disk: metadata, tokenizer state, tensor names, tensor shapes, data types, and sometimes quantized blocks laid out specifically to help a CPU or GPU stream weights efficiently.</p><p>That storage layer matters because it sets the rules for model startup. A good format tells you what the architecture is, where each tensor lives, how large it is, whether you can memory-map it, whether it is safe to load from untrusted sources, and whether the file is optimized for raw training checkpoints or for practical inference. A bad format makes every one of those steps more fragile.</p><p data-plain="A model file is not magic. It is a named pile of matrices plus the instructions needed to interpret them." data-psi="The checkpoint is a fossilized field of learned geometry. Loading is the act of rehydrating that geometry into a machine that can think one token at a time." data-duck="Imagine a warehouse full of labeled duck crates. One file tells you how many ducks belong in each crate, another tells you the duck alphabet, and the big heavy files contain the ducks themselves.">For transformer inference, the important idea is simple: the file format is the contract between training-time artifacts and runtime code. Your loader needs to reconstruct enough structure that the question <strong>"What is the capital of France?"</strong> can be turned into token IDs, projected through embeddings, passed across the layer stack, and finally mapped back into a word such as <strong>Paris</strong>. The storage format does not answer the question, but it determines how quickly and safely you can wake the model up so it can answer.</p><div class="wf-callout gold"><p><strong>Core idea:</strong> the same model can often exist in several packaging formats. The learned information is conceptually the same, but startup speed, memory behavior, portability, and security can differ dramatically depending on whether the weights are stored as SafeTensors, GGUF, legacy PyTorch pickle, or older GGML files.</p></div><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Why inference engineers care about file formats</h3><p>During training, checkpoint formats are often chosen for compatibility with a framework. During inference, the priorities shift. You care about fast load time, compact storage, predictable tensor naming, friendly memory access patterns, and safe distribution. A framework developer can afford a richer object model because they already live inside Python and PyTorch. An inference engine written in C, Rust, C#, Java, or even a shell script would much rather see explicit tensor metadata and raw bytes.</p><p>That is why so many format conversations sound like systems conversations. Can the runtime <a href="/transformers/glossary" class="wf-gloss">mmap</a> the file instead of copying it? Can it stream just the tensors it needs? Can it verify shapes before allocating big buffers? Can it avoid deserializing arbitrary Python objects? Can it place quantized blocks directly into a kernel that dequantizes on the fly? The answers determine cold-start behavior and often determine whether a model is pleasant or miserable to deploy.</p><p>There is also a trust boundary. Many model files are downloaded from public registries, mirrors, or community forks. If the format lets arbitrary code execute while loading, the loader is not merely reading data. It is running whatever the file author encoded. That is acceptable inside a trusted training workflow and unacceptable for general-purpose checkpoint distribution. One reason SafeTensors gained traction so quickly is that it replaced “load and hope” with “parse declared metadata and then read raw tensor bytes.”</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The Hugging Face ecosystem</h3><p>The modern default distribution point for open model checkpoints is the Hugging Face Hub. Conceptually it is a model registry: the machine-learning equivalent of Docker Hub or a Git hosting service specialized for datasets, tokenizers, checkpoints, configs, and model documentation. A model lives in a repository, that repository has revisions, and clients can download a pinned snapshot by tag, branch, or immutable commit hash.</p><p>That repository usually contains more than “the weights.” It contains the descriptive envelope around the weights. A model card explains what the model is, how it was trained, what license applies, what prompt format it expects, whether it has known safety or quality limitations, and sometimes which downstream tasks it was tuned for. A <strong>config.json</strong> file describes architecture parameters such as hidden width, layer count, number of attention heads, rotary settings, vocabulary size, and special token IDs. Tokenizer files describe how raw text becomes token IDs and back again.</p><p data-plain="Hugging Face stores the whole kit: docs, config, tokenizer, and weights, not just one giant blob." data-psi="A checkpoint repository is not a monolith but a small ecology. The tensor field is only one organism inside it." data-duck="It is not just a sack of ducks. It is the duck manual, the duck label maker, the duck census, and the duck crates all living in one depot.">This packaging model is extremely practical. An inference engine can grab exactly the files it needs, and a human can inspect the rest. You can read the model card before trusting the checkpoint. You can compare config revisions across releases. You can see whether a repo offers FP16 SafeTensors, GGUF quantizations, or both. You can pin your deployment to a known-good revision instead of “whatever the author pushed last night.”</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Hub concept</th><th>What it means in practice</th><th>Why inference cares</th></tr></thead><tbody><tr><td><strong>Repository</strong></td><td>A versioned container for model artifacts</td><td>Keeps config, tokenizer, and weights aligned</td></tr><tr><td><strong>Model card</strong></td><td>Human-readable metadata and usage notes</td><td>Explains prompt format, license, and caveats</td></tr><tr><td><strong>Revision</strong></td><td>Branch, tag, or immutable commit hash</td><td>Lets production pin exact artifacts for reproducibility</td></tr><tr><td><strong>LFS-backed files</strong></td><td>Large binary artifacts stored efficiently</td><td>Common for multi-gigabyte tensor shards</td></tr><tr><td><strong>Download client</strong></td><td>CLI, Git, HTTP, or library integration</td><td>Supports automated deployment and caching</td></tr></tbody></table></div><p>Versioning is more important than it first appears. If your engine loads <strong>config.json</strong> from one revision and weights from another, you can end up with mismatched tensor names, incompatible shapes, or a tokenizer that encodes prompts differently from the model that was fine-tuned. Mature inference stacks therefore pin a full snapshot. “Model X at commit Y” is a safer deployment unit than “latest files in repo Z.”</p><p>The <strong>transformers</strong> Python library is Hugging Face’s main framework-facing interface, but for this chapter it is background context rather than the star. Its value here is that it popularized a clean repo layout: config, tokenizer, and checkpoint artifacts with stable names. Even if you are building a tiny custom engine and never import the library, you are still benefiting from that ecosystem standardization.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">A typical model download: what files you actually get</h3><p>A real model directory is usually a small inventory rather than a single file. Some repos stay minimal; others include several tokenizer variants, generation defaults, chat templates, quantized derivatives, conversion notes, or multiple checkpoint families. Still, a common baseline pattern appears often enough to memorize.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>File</th><th>Purpose</th><th>Inference relevance</th></tr></thead><tbody><tr><td><strong>config.json</strong></td><td>Architecture description</td><td>Tells the loader expected tensor shapes and runtime limits</td></tr><tr><td><strong>generation_config.json</strong></td><td>Suggested decoding defaults</td><td>Optional; useful for sample settings but not core model math</td></tr><tr><td><strong>tokenizer.json</strong></td><td>Full tokenizer graph, vocab, merges, normalizer rules</td><td>Often enough to implement text encoding/decoding alone</td></tr><tr><td><strong>tokenizer.model</strong></td><td>SentencePiece or equivalent serialized tokenizer model</td><td>Common in LLaMA-family checkpoints</td></tr><tr><td><strong>tokenizer_config.json</strong></td><td>Tokenizer settings and conventions</td><td>Special tokens, cleanup, truncation behavior</td></tr><tr><td><strong>special_tokens_map.json</strong></td><td>BOS/EOS/PAD and related token IDs</td><td>Needed for correct prompt framing and stopping</td></tr><tr><td><strong>model.safetensors</strong> or shards</td><td>Raw learned tensors</td><td>The main weight payload</td></tr><tr><td><strong>model.safetensors.index.json</strong></td><td>Shard map for large checkpoints</td><td>Maps tensor names to shard files</td></tr><tr><td><strong>*.gguf</strong></td><td>Self-contained inference-oriented package</td><td>Popular for CPU and quantized deployment</td></tr></tbody></table></div><p>The most important small file is usually <strong>config.json</strong>. It tells your loader what kind of transformer it is about to reconstruct. A LLaMA-like config might declare the hidden dimension, intermediate FFN size, number of decoder layers, number of attention heads, number of key/value heads, maximum context length, RoPE base settings, vocabulary size, RMSNorm epsilon, and whether the model ties input embeddings to the output projection.</p><div class="wf-code"><pre>{
+  "architectures": ["LlamaForCausalLM"],
+  "hidden_size": 4096,
+  "intermediate_size": 11008,
+  "num_hidden_layers": 32,
+  "num_attention_heads": 32,
+  "num_key_value_heads": 8,
+  "vocab_size": 32000,
+  "max_position_embeddings": 4096,
+  "rms_norm_eps": 1e-5,
+  "rope_theta": 10000.0,
+  "tie_word_embeddings": false
+}</pre></div><p>Those fields are not decorative. They are the blueprint your runtime uses to interpret tensor shapes. If <strong>hidden_size</strong> is 4096, then the token embedding matrix probably has 4096 columns, each RMSNorm gain vector probably has length 4096, and each attention projection must eventually map between widths derived from that value. The file does not store the matrices themselves, but it tells you what matrices the loader should expect to find in the checkpoint.</p><p data-plain="Tokenizer files describe the text-to-token alphabet and the merge rules that turn words into subword IDs." data-psi="Before the model can reason, language must be broken into the discrete glyphs its embedding table understands." data-duck="The tokenizer is the duck clerk who decides whether “France” gets one tag, two tags, or a tag plus punctuation before the ducks enter the machine.">Depending on the model family, tokenization metadata may live in a single <strong>tokenizer.json</strong> file or be split across a SentencePiece <strong>tokenizer.model</strong> plus extra JSON settings. For BPE-style systems, the important ingredients are the vocabulary and the merge table: the ordered rules that say which adjacent symbol pairs can be fused into larger units. Inference code does not need the training history of the tokenizer, but it absolutely needs the final ruleset.</p><p>The heavyweight files are the tensors. In a full-precision Hugging Face-style release, they often appear as one or more SafeTensors shards. In a CPU-focused deployment release, they may appear as one or more GGUF files. Either way, the payload is conceptually the same: named arrays such as token embeddings, query/key/value projection matrices, output projections, FFN matrices, normalization gains, and sometimes the final <a href="/transformers/glossary" class="wf-gloss">lm_head</a> if it is not tied to embeddings.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Weight file formats</h3><div class="wf-tabs" data-group="ch13-weight-formats"><div class="wf-tab-bar"><button class="wf-tab active" data-tab="generic">Generic</button><button class="wf-tab" data-tab="safetensors">SafeTensors</button><button class="wf-tab" data-tab="gguf">GGUF</button><button class="wf-tab" data-tab="pytorch-bin">PyTorch .bin</button><button class="wf-tab" data-tab="ggml-legacy">GGML legacy</button></div><div class="wf-tab-panel active" data-tab="generic"><p>A model weight file is, at bottom, a serialized collection of named tensors with their shapes and data types. The format determines how tensor names are encoded, where the metadata lives, whether the data can be memory-mapped, whether loading is safe from arbitrary code execution, and how easy it is to shard or stream the checkpoint. The runtime goal is always the same: build a map from tensor name to <strong>(dtype, shape, byte range)</strong> and then expose the raw tensor bytes to the inference kernels.</p><p>Think of the format as the warehouse schema. Two warehouses may contain the same crates, but one may have a searchable index, explicit shelf coordinates, and forklift-friendly aisles, while another stores the crates in a pile that only a specific Python program knows how to unpack. Inference engines prefer the first kind of warehouse.</p></div><div class="wf-tab-panel" data-tab="safetensors"><p>SafeTensors was created by Hugging Face as a safer alternative to pickle-based PyTorch checkpoint files. The key security property is negative rather than positive: loading the file does <strong>not</strong> require evaluating arbitrary Python objects. The loader reads explicit metadata, validates it, and then treats the payload as raw tensor bytes. That alone makes it attractive for public checkpoint distribution.</p><p>The on-disk layout is intentionally simple. The first 8 bytes store the header length as an unsigned little-endian integer. Next comes a JSON header whose keys are tensor names and whose values declare the tensor <strong>dtype</strong>, <strong>shape</strong>, and <strong>data_offsets</strong>. After that header, the file contains a flat blob of raw tensor bytes. Because the byte ranges are explicit, a runtime can jump directly to a tensor without deserializing everything before it.</p><div class="wf-code"><pre>{
+  "model.embed_tokens.weight": {
+    "dtype": "F16",
+    "shape": [32000, 4096],
+    "data_offsets": [0, 262144000]
+  },
+  "model.layers.0.self_attn.q_proj.weight": {
+    "dtype": "F16",
+    "shape": [4096, 4096],
+    "data_offsets": [262144000, 295698432]
+  }
+}</pre></div><p>That layout is naturally memory-mappable. A loader can map the file once, parse the header, and then hand later code a pointer or slice corresponding to the requested tensor region. On machines where virtual memory behaves well, that means the operating system only pages in the parts you touch. For very large checkpoints, that is much nicer than eagerly reading tens of gigabytes into heap memory.</p><p>Large models are usually sharded across multiple files such as <strong>model-00001-of-00004.safetensors</strong>, <strong>model-00002-of-00004.safetensors</strong>, and so on, accompanied by an index JSON file that maps each tensor name to its shard. Sharding is a distribution convenience and sometimes a filesystem necessity; from the runtime’s perspective it just means the tensor map spans several files instead of one.</p><div class="wf-code"><pre>u64 header_len = read_u64_le(file);
+string header_json = read_bytes(file, header_len);
+map meta = parse_json(header_json);
+
+for each (name, info) in meta {
+    dtype = info["dtype"];
+    shape = info["shape"];
+    start = info["data_offsets"][0];
+    end   = info["data_offsets"][1];
+    tensor_table[name] = {
+        .dtype = dtype,
+        .shape = shape,
+        .file_offset = 8 + header_len + start,
+        .nbytes = end - start
+    };
+}</pre></div><p>The practical advantage is that the format is boring in exactly the right way. A non-Python runtime can implement a SafeTensors loader in an afternoon, and a security-conscious deployment can accept public model files without granting them code execution privileges.</p></div><div class="wf-tab-panel" data-tab="gguf"><p>GGUF, the GPT-Generated Unified Format created by ggerganov for <strong>llama.cpp</strong>, is designed around inference rather than framework checkpoints. The big idea is self-containment: weights, tokenizer assets, and model metadata can all live inside one file. That means a CPU inference runtime can often open a single GGUF file and immediately know the architecture type, vocabulary size, context length, RoPE parameters, quantization layout, and tensor inventory without reaching for sidecar JSON files.</p><p>The file structure is more binary and more specialized than SafeTensors. A typical GGUF file begins with magic bytes and a version, followed by counts for metadata entries and tensors. Then come metadata key/value pairs, tensor descriptors, alignment padding, and finally the tensor data region. Metadata can include values such as architecture name, block size, tokenizer model, BOS/EOS IDs, maximum context length, and per-tensor quantization types.</p><p>GGUF is particularly important because it embraces quantized inference as a first-class use case. Different tensors can use different formats inside the same file: for example some may be Q4_0, some Q6_K, some Q8_0, and a few sensitive tensors may remain F16 or F32. That flexibility lets conversion pipelines preserve precision where it matters and save memory where it does not.</p><div class="wf-math"><pre>dequantized_value = (quantized_int - zero_point) × scale</pre></div><p>That formula is the simplest mental model for dequantization. In many GGUF schemes the exact packing is more involved than one integer plus one zero-point for each scalar. Instead, values are grouped into blocks, often 32 weights at a time, and the block shares scale metadata. The runtime reads a compressed block, reconstructs approximate real-valued weights for that block, and immediately uses them inside a dot product instead of expanding the entire matrix up front.</p><p>The format names reflect those block schemes. You will encounter families such as <strong>Q4_0</strong>, <strong>Q4_1</strong>, <strong>Q5_0</strong>, <strong>Q5_1</strong>, <strong>Q8_0</strong>, <strong>Q6_K</strong>, <strong>Q4_K_M</strong>, <strong>Q4_K_S</strong>, <strong>Q2_K</strong>, and newer <strong>IQ</strong> variants. The exact math varies, but the engineering pattern is consistent: pack several low-bit values together, store scales and sometimes minima or zero-points alongside them, and design the layout so CPU kernels can stream through blocks predictably.</p><p data-plain="GGUF wins on CPUs because one file contains everything and its quantized blocks are shaped for streaming math." data-psi="It treats the checkpoint not as passive storage but as a choreography for the loader and the kernel." data-duck="Instead of making you fetch ducks from five warehouses, GGUF puts the ducks, labels, and feeding instructions in one truck and arranges the crates so the conveyor can unpack them in order.">That is why GGUF dominates CPU inference. It is self-describing, single-file friendly, mmap-friendly, and explicitly optimized for quantized reads. A lightweight engine can open it, inspect metadata, wire up tokenizer state, and start generating without a framework-specific stack. On consumer hardware where bandwidth and RAM are the real constraints, that design is a major practical advantage.</p></div><div class="wf-tab-panel" data-tab="pytorch-bin"><p>Legacy PyTorch <strong>.bin</strong> checkpoint files are usually pickle containers wrapped around tensor objects. They are still common on older models and in historical tutorials, but they are an awkward fit for general inference distribution. The file can carry not just tensors but arbitrary Python object graphs, and unpickling may execute attacker-controlled code.</p><p>That does not make the format useless. Inside a trusted PyTorch workflow it was convenient and deeply integrated. But as the ecosystem matured, the drawbacks became harder to justify. Today the general direction is clear: SafeTensors for mainstream framework checkpoints, GGUF for self-contained quantized inference, and legacy pickle only when compatibility with older releases forces your hand.</p></div><div class="wf-tab-panel" data-tab="ggml-legacy"><p>GGML was the predecessor format in the <strong>llama.cpp</strong> ecosystem. You still encounter it in old model downloads, forum posts, and conversion scripts, but it has largely been superseded by GGUF. The reason is not fashion. GGUF adds richer metadata and a cleaner, more extensible structure.</p><p>Legacy GGML files often depended on external configuration knowledge. The runtime might need to know out-of-band which architecture the file represented, what tokenizer to pair with it, or how to interpret some model-specific details. GGUF closed that gap by bundling the descriptive context alongside the weights. If you are building a new inference stack today, treat GGML as historical baggage rather than a target format.</p></div></div><p>The summary is straightforward. If you are staying close to the Hugging Face framework ecosystem and want a safe checkpoint format, SafeTensors is the default answer. If you want an inference-oriented package, especially for CPU-friendly quantized deployment, GGUF is usually the better answer. If you see PyTorch <strong>.bin</strong> or GGML, assume you are dealing with history, compatibility, or both.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Quantization formats in detail</h3><p>Quantization means representing weights with fewer bits than their original training precision. Instead of storing every weight as FP16, BF16, or FP32, you compress them into lower-bit integers plus enough scale metadata to reconstruct an approximate real value during inference. The motivation is bluntly physical: smaller weights consume less disk, less RAM, and less memory bandwidth. Since large-model inference is often bandwidth-bound, that can translate directly into more tokens per second.</p><p data-plain="Quantization trades exactness for smaller, faster weights." data-psi="You keep the shape of the learned landscape while sketching it with fewer marks." data-duck="You stop writing every duck’s weight to six decimal places and instead bucket them with a ruler and a few labels.">The trade-off is approximation error. When you drop from FP16 to INT8, INT4, or even INT2-style encodings, you are admitting that a weight does not need its full original precision to remain useful. Some weights survive that compression gracefully; others are more fragile. Good quantization schemes spend extra metadata or extra bits where the model is sensitive and compress harder where redundancy is abundant.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Granularity</th><th>How scales are assigned</th><th>Strength</th><th>Weakness</th></tr></thead><tbody><tr><td><strong>Per-tensor</strong></td><td>One scale for an entire tensor</td><td>Very compact metadata</td><td>Often too coarse for large matrices with varied ranges</td></tr><tr><td><strong>Per-channel</strong></td><td>One scale per output channel or row</td><td>Better accuracy for structured matrices</td><td>More metadata and slightly more loader complexity</td></tr><tr><td><strong>Per-block</strong></td><td>One scale per small block of values</td><td>Good balance of accuracy and compression</td><td>Requires block-aware kernels</td></tr></tbody></table></div><p>Scale and zero-point are the standard reconstruction tools. In a symmetric scheme, quantized integers are centered around zero and a scale converts integer magnitude back into approximate real magnitude. In an asymmetric scheme, a nonzero offset or minimum value is also stored so the integer range can better cover skewed distributions. The exact representation changes by format, but the conceptual contract stays the same: encode many real numbers using a small set of integers plus a little side information.</p><div class="wf-math"><pre>q = round(x / scale)                symmetric case
+x ≈ q × scale
+
+q = round(x / scale) + zero_point  asymmetric case
+x ≈ (q - zero_point) × scale</pre></div><p>GGUF’s block quantization schemes take that idea and tune it for transformer weight matrices. Instead of dequantizing an entire matrix into FP16 before multiplication, the kernel reads a block, reconstructs a short vector of approximate values, multiplies it against the activation fragment, and accumulates into a higher-precision sum. That keeps the compressed representation resident for as long as possible.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>GGUF family</th><th>Rough intent</th><th>Typical trade-off</th></tr></thead><tbody><tr><td><strong>Q8_0</strong></td><td>8-bit block quantization</td><td>Near-full quality with modest savings</td></tr><tr><td><strong>Q5_0 / Q5_1</strong></td><td>5-bit schemes with block metadata</td><td>Good compromise between RAM and quality</td></tr><tr><td><strong>Q4_0 / Q4_1</strong></td><td>Classic 4-bit formats</td><td>Popular for fitting larger models onto consumer CPUs</td></tr><tr><td><strong>Q4_K_M / Q4_K_S</strong></td><td>K-quant family with more sophisticated block handling</td><td>Often better quality per byte than older simple Q4</td></tr><tr><td><strong>Q6_K</strong></td><td>Higher-accuracy K-quant variant</td><td>More memory than Q4 but often noticeably stronger</td></tr><tr><td><strong>Q2_K</strong> and <strong>IQ</strong></td><td>Aggressive low-bit options</td><td>Tiny footprint, but quality loss is more likely</td></tr></tbody></table></div><p>The accuracy curve is not linear. Going from FP16 to INT8 is often mild. Going from INT8 to good 4-bit block quantization can still be surprisingly usable. Going beyond that becomes much more model- and task-dependent. Attention projections, embeddings, and output heads may react differently from FFN weights. That is why mixed strategies are common: keep a few critical tensors in higher precision and quantize the rest more aggressively.</p><p>For inference engineers, the right question is not “what is the smallest file?” but “what is the smallest file that still behaves acceptably on my workload?” The answer depends on prompt style, domain specificity, model family, and hardware. A chat demo may tolerate more degradation than a code model or a summarizer evaluated against a reference set. The file format needs to expose enough metadata that your runtime can tell which quantization path each tensor requires.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Loading a model from disk</h3><p>Once you have the files, the loading flow is conceptually mechanical. Open the metadata source. Parse the architecture description. Build a tensor map from names to offsets, shapes, and data types. Allocate or map storage. Validate that every expected tensor exists and that every discovered tensor is compatible with the config. Then wire the results into the inference structures your runtime expects.</p><div class="wf-code"><pre>open checkpoint
+parse config / metadata
+for each tensor descriptor:
+    record name, dtype, shape, byte_offset, byte_length
+
+for each required tensor in architecture:
+    assert tensor exists
+    assert shape matches expected dimensions
+    assert dtype is supported by this backend
+
+if eager:
+    read tensor bytes into runtime-owned memory
+else if mmap:
+    keep file mapped and store views into tensor regions
+
+build layer structs
+attach tokenizer
+ready for prefill and decode</pre></div><p>Lazy loading and eager loading are the first major choice. Eager loading copies tensors into memory immediately. That is simple and sometimes necessary, especially if you want to transform layouts or upload weights into GPU memory. Lazy loading keeps the file mapped and only touches pages when the operating system faults them in. For large CPU inference workloads, lazy loading can drastically reduce startup cost and peak RAM pressure.</p><p data-plain="Memory mapping means the OS treats file bytes like an array in memory and loads pages on demand." data-psi="The checkpoint stops being a thing you copy and becomes a landscape you traverse." data-duck="Instead of unloading every duck crate into the barn at once, you leave the truck at the dock and fetch crates only when the conveyor reaches them.">Memory mapping is especially friendly to formats with explicit offsets such as SafeTensors and GGUF. A loader can parse small metadata up front and leave the bulk tensor data in place. The runtime still pays for page faults and disk I/O eventually, but it avoids one extra copy and lets the operating system manage caching. On repeated runs, the page cache may even make the second load feel almost instant.</p><p>Sharded loading adds one more layer. In a Hugging Face SafeTensors checkpoint, the sharding may simply be file-level packaging: tensor A lives in shard 1, tensor B in shard 2. In a multi-GPU runtime, sharding can become an execution decision as well. You might place half the transformer layers on one GPU and half on another, or split especially large matrices using <a href="/transformers/glossary" class="wf-gloss">tensor parallelism</a>. In both cases, the loader must know not just <em>what</em> the tensor is, but <em>where</em> the bytes live and which device or process should own them.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Validation step</th><th>What to check</th><th>Why it matters</th></tr></thead><tbody><tr><td><strong>Tensor presence</strong></td><td>All required names exist</td><td>Missing norms or projections cause immediate runtime failure</td></tr><tr><td><strong>Shape agreement</strong></td><td>Config-derived dimensions match stored shapes</td><td>Prevents silent misalignment in matmuls</td></tr><tr><td><strong>Dtype support</strong></td><td>Backend can handle F16, BF16, Q4, etc.</td><td>Avoids discovering unsupported quantization mid-generation</td></tr><tr><td><strong>Tokenizer consistency</strong></td><td>Vocab size and special tokens line up</td><td>Prevents broken prompt encoding and EOS handling</td></tr><tr><td><strong>Metadata sanity</strong></td><td>Context length, RoPE settings, architecture type</td><td>Wrong metadata can produce subtle but severe output drift</td></tr></tbody></table></div><p>Notice how much of loading is really verification. The files do not merely need to be readable; they need to agree with each other. A model can fail long before any arithmetic if the loader pairs the wrong tokenizer with the wrong weights, assumes a tied output head when the checkpoint stores a separate one, or misreads a quantized tensor as raw FP16. Good inference code treats “parse” and “validate” as separate stages.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">The running example: “What is the capital of France?” as a file-loading story</h3><p>The prompt itself is tiny, but it touches every piece of model packaging. First the loader reads <strong>config.json</strong> or GGUF metadata and learns, for example, that this is a 32-layer decoder with hidden width 4096, 32 attention heads, 8 key/value heads, a vocabulary of 32,000 items, and a RoPE-based attention scheme. Those numbers tell the runtime what tensor shapes it should expect and what kernels it will need.</p><p>Next the tokenizer assets are loaded. The text <strong>"What is the capital of France?"</strong> is normalized and segmented according to the model’s exact tokenization rules. Depending on the model, <strong>France</strong> may be one token, several subword pieces, or a token that changes if a leading space is present. The question mark may be its own token. None of this is optional trivia. If your tokenizer encoding differs from the training-time tokenizer, the model is being asked a subtly different question.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Artifact</th><th>Role in the France example</th></tr></thead><tbody><tr><td><strong>config.json</strong> or GGUF metadata</td><td>Tells the runtime the model dimensions and attention geometry</td></tr><tr><td><strong>tokenizer.json</strong> / <strong>tokenizer.model</strong></td><td>Encodes the prompt into token IDs and later decodes output IDs back to text</td></tr><tr><td><strong>embedding matrix</strong></td><td>Turns each token ID into the first hidden vector</td></tr><tr><td><strong>layer weights</strong></td><td>Provide the Q/K/V, output, and FFN matrices used throughout the forward pass</td></tr><tr><td><strong>lm_head</strong></td><td>Projects the final hidden state into vocabulary logits so <strong>Paris</strong> can win</td></tr></tbody></table></div><p data-plain="The question is small, but answering it still requires config, tokenizer, and weights to agree perfectly." data-psi="A single generated token stands on a pyramid of prior coordination: naming, layout, geometry, and learned memory all have to interlock." data-duck="Even a simple duck question still needs the right duck dictionary, the right duck warehouse map, and the right duck crates.">Finally, the weight files provide the actual matrices multiplied during inference. The embedding rows corresponding to the prompt tokens are fetched. Every layer’s attention and feed-forward weights are applied. The final normalized hidden state is compared against the vocabulary projection, and the output distribution peaks around tokens associated with <strong>Paris</strong>. Change the file format and you have changed the loading machinery, but not the conceptual path from prompt to answer.</p><p>That is the durable lesson of this chapter. Model formats are not mere packaging trivia. They define how trustworthy, portable, and efficient the checkpoint is as an artifact. If you understand how Hugging Face repos, SafeTensors, GGUF, tokenizer files, and quantization metadata fit together, you are much closer to understanding what an inference engine really does before any actual inference begins.</p><div class="wf-inline-nav"><a href="/transformers/ch12">← Part 12</a><a href="/transformers/ch14">Part 14 →</a></div></div></div>
+
+<button id="wtf-btn"><span>⁇</span>&nbsp;wtf?</button>
+<button id="psi-btn"><span>ψ</span>&nbsp;deeper</button>
+<button id="duck-btn"><span>🦆</span>&nbsp;ducky</button>
+
+<script>
+function initTabs() {
+    if (window.__wfTabsInit) return;
+    window.__wfTabsInit = 1;
+    document.addEventListener('click', e => {
+        const tab = e.target.closest('.wf-tab');
+        if (!tab) return;
+        const bar = tab.closest('.wf-tab-bar');
+        const tabs = bar.parentElement;
+        const target = tab.dataset.tab;
+        bar.querySelectorAll('.wf-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        tabs.querySelectorAll('.wf-tab-panel').forEach(panel => panel.classList.toggle('active', panel.dataset.tab === target));
+    });
+}
+
+function initButtons() {
+    if (window.__wfButtonsInit) return;
+    window.__wfButtonsInit = 1;
+
+    const plainEls = [...document.querySelectorAll('[data-plain]')];
+    const psiEls = [...document.querySelectorAll('[data-psi]')];
+    const duckEls = [...document.querySelectorAll('[data-duck]')];
+    if (!plainEls.length && !psiEls.length && !duckEls.length) return;
+
+    let mode = 'tech';
+    let busy = false;
+    let activeEls = [];
+    const wtfBtn = document.getElementById('wtf-btn');
+    const psiBtn = document.getElementById('psi-btn');
+    const duckBtn = document.getElementById('duck-btn');
+
+    if (plainEls.length && wtfBtn) wtfBtn.style.display = 'inline-flex';
+    if (psiEls.length && psiBtn) psiBtn.style.display = 'inline-flex';
+    if (duckEls.length && duckBtn) duckBtn.style.display = 'inline-flex';
+
+    const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモラリルレロABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+=-|<>[]{}';
+
+    function decode(el, target, dur, hue, done) {
+        let start = null;
+        const len = target.length;
+
+        function frame(ts) {
+            if (!start) start = ts;
+            const p = Math.min((ts - start) / dur, 1);
+            const locked = Math.floor(p * len);
+            let out = '';
+            for (let i = 0; i < len; i++) {
+                out += (i < locked || target[i] === ' ' || target[i] === '
+')
+                    ? target[i]
+                    : CHARS[Math.random() * CHARS.length | 0];
+            }
+            el.textContent = out;
+            el.style.filter = p < 1 ? `blur(${((1 - p) * 4).toFixed(1)}px)` : '';
+            el.style.color = p < 1 ? `hsl(${hue + Math.round(p * 8)},85%,${42 + Math.round(p * 30)}%)` : '';
+            if (p < 1) {
+                requestAnimationFrame(frame);
+            } else {
+                el.style.filter = '';
+                el.style.color = '';
+                done && done();
+            }
+        }
+
+        requestAnimationFrame(frame);
+    }
+
+    function setLabels(nextMode) {
+        if (wtfBtn) {
+            wtfBtn.innerHTML = nextMode === 'plain' ? '<span>◎</span>&nbsp;tech' : '<span>⁇</span>&nbsp;wtf?';
+            wtfBtn.title = nextMode === 'plain' ? 'Back to technical' : 'Translate to plain English';
+        }
+        if (psiBtn) {
+            psiBtn.innerHTML = nextMode === 'psi' ? '<span>ψ</span>&nbsp;back' : '<span>ψ</span>&nbsp;deeper';
+            psiBtn.title = nextMode === 'psi' ? 'Back to technical' : 'Amplify the metaphor';
+        }
+        if (duckBtn) {
+            duckBtn.innerHTML = nextMode === 'duck' ? '<span>🦆</span>&nbsp;back' : '<span>🦆</span>&nbsp;ducky';
+            duckBtn.title = nextMode === 'duck' ? 'Back to technical' : 'Explain it in duck terms';
+        }
+    }
+
+    function restoreTech() {
+        activeEls.forEach(el => {
+            if (el.dataset.techHtml) el.innerHTML = el.dataset.techHtml;
+        });
+        activeEls = [];
+    }
+
+    function finish() {
+        busy = false;
+        wtfBtn && wtfBtn.classList.remove('busy');
+        psiBtn && psiBtn.classList.remove('busy');
+        duckBtn && duckBtn.classList.remove('busy');
+    }
+
+    function switchTo(newMode) {
+        if (busy) return;
+        busy = true;
+        wtfBtn && wtfBtn.classList.add('busy');
+        psiBtn && psiBtn.classList.add('busy');
+        duckBtn && duckBtn.classList.add('busy');
+
+        if (mode !== 'tech') restoreTech();
+        mode = newMode;
+        setLabels(mode);
+
+        if (mode === 'tech') {
+            finish();
+            return;
+        }
+
+        const els = mode === 'plain' ? plainEls : mode === 'psi' ? psiEls : duckEls;
+        const attr = mode === 'plain' ? 'data-plain' : mode === 'psi' ? 'data-psi' : 'data-duck';
+        const hue = mode === 'plain' ? 182 : mode === 'psi' ? 42 : 22;
+        activeEls = els.slice();
+        let done = 0;
+
+        els.forEach((el, i) => {
+            if (!el.dataset.techHtml) el.dataset.techHtml = el.innerHTML;
+            const target = el.getAttribute(attr);
+            const dur = Math.max(480, Math.min(target.length * 3.8, 1500));
+            setTimeout(() => decode(el, target, dur, hue, () => {
+                if (++done === els.length) finish();
+            }), i * 110);
+        });
+    }
+
+    wtfBtn && wtfBtn.addEventListener('click', () => switchTo(mode === 'plain' ? 'tech' : 'plain'));
+    psiBtn && psiBtn.addEventListener('click', () => switchTo(mode === 'psi' ? 'tech' : 'psi'));
+    duckBtn && duckBtn.addEventListener('click', () => switchTo(mode === 'duck' ? 'tech' : 'duck'));
+    setLabels(mode);
+}
+
+initTabs();
+initButtons();
+</script>

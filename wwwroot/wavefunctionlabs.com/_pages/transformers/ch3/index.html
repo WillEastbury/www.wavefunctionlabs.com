@@ -1,0 +1,200 @@
+<style>
+.wf-section { display: block !important; }
+.wf-tabs { margin: 1.5rem 0; border: 1px solid var(--wf-border); border-radius: 12px; background: rgba(14,14,22,0.5); overflow: hidden; }
+.wf-tab-bar { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--wf-border); background: rgba(14,14,22,0.7); padding: 0.4rem 0.5rem 0; }
+.wf-tab { padding: 0.55rem 1rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--wf-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; border-radius: 6px 6px 0 0; }
+.wf-tab:hover { color: #e2e8f0; background: rgba(99,102,241,0.08); }
+.wf-tab.active { color: var(--wf-cyan); border-bottom-color: var(--wf-cyan); background: rgba(6,182,212,0.06); }
+.wf-tab-panel { display: none; padding: 1.2rem 1.3rem; font-size: 0.88rem; line-height: 1.85; color: var(--bs-body-color); }
+.wf-tab-panel.active { display: block; }
+.wf-tab-panel p { margin: 0 0 0.9rem; }
+.wf-tab-panel strong { color: #e2e8f0; }
+.wf-tab-panel .wf-code, .wf-tab-panel .wf-math, .wf-tab-panel .wf-table-wrap { margin: 0.8rem 0; }
+#wtf-btn, #psi-btn, #duck-btn { position: fixed; right: 1.5rem; z-index: 10000; display: none; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; background: rgba(4,4,14,0.94); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); transition: box-shadow 0.25s, transform 0.12s, opacity 0.2s; user-select: none; border-style: solid; border-width: 1px; }
+#wtf-btn { bottom: 1.5rem; color: #00c8ff; border-color: rgba(0,200,255,.55); box-shadow: 0 0 14px rgba(0,200,255,.2), 0 2px 10px rgba(0,0,0,.7); }
+#wtf-btn:hover { box-shadow: 0 0 26px rgba(0,200,255,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#psi-btn { bottom: 4.5rem; color: #f0c040; border-color: rgba(240,192,64,.55); box-shadow: 0 0 14px rgba(240,192,64,.2), 0 2px 10px rgba(0,0,0,.7); }
+#psi-btn:hover { box-shadow: 0 0 26px rgba(240,192,64,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#duck-btn { bottom: 7.5rem; color: #f97316; border-color: rgba(249,115,22,.55); box-shadow: 0 0 14px rgba(249,115,22,.2), 0 2px 10px rgba(0,0,0,.7); }
+#duck-btn:hover { box-shadow: 0 0 26px rgba(249,115,22,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#wtf-btn:active, #psi-btn:active, #duck-btn:active { transform: translateY(0); }
+#wtf-btn.busy, #psi-btn.busy, #duck-btn.busy { opacity: 0.45; cursor: wait; pointer-events: none; }
+.wf-gloss-entry { padding: 1rem 0; border-bottom: 1px solid var(--wf-border); }
+.wf-gloss-entry:last-child { border-bottom: none; }
+a.wf-gloss { color: var(--wf-cyan); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+a.wf-gloss:hover { color: #e2e8f0; text-decoration-style: solid; }
+@media (max-width: 760px) {
+  .wf-tab { padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+  #wtf-btn, #psi-btn, #duck-btn { right: 0.8rem; padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+}
+</style>
+
+<div id="ch3" class="wf-section wf-article"><div class="wf-article-head"><a class="wf-back" href="/transformers">← chapter index</a><div class="wf-kicker">Part 3 — Embeddings</div><h1 class="wf-section-hdr">Integer IDs Into Dense Vectors</h1><p class="wf-section-desc">Why embeddings are table lookups, how they are learned, and why this simple stage shapes everything downstream</p></div><div class="wf-article-body"><p data-plain="An embedding is a row of numbers picked by token ID. Each token gets a learned vector, and the model starts from those vectors instead of from raw integers." data-psi="An embedding is the first lift from discrete symbol identity into continuous geometry: the point where a finite alphabet becomes a field of directions, distances, and dot products." data-duck="Imagine every duck shelf number opens a drawer full of colored weights. The ID says which drawer to pull, and the weights are what the rest of the machine actually works with.">The tokenizer in the previous chapter produced the integer vector for our running example: <strong>[2061, 318, 262, 3139, 286, 4881, 30]</strong>. Those integers are still not useful to the transformer by themselves. An ID has identity but no geometry. It tells you which token occurred, but it provides no notion of similarity, no continuous features for matrix multiplications, and no learned coordinates the network can combine. The embedding stage solves that by mapping each token ID to a dense floating-point vector.</p><p>The key reason this stage exists is that neural networks want dense numeric state, not categorical labels. You can think of a token ID as a compressed pointer into a vocabulary. The embedding table turns that pointer into a row of <strong>d_model</strong> learned coefficients. If the vocabulary has <strong>V</strong> entries, the embedding matrix has shape <strong>[V, d_model]</strong>. At inference time, every token in the sequence performs the same operation: use its ID as a row index, fetch that row, and place the row into the sequence activation buffer that the first transformer layer will consume.</p><div class="wf-callout"><p><strong>No magic here:</strong> the embedding stage is primarily a lookup, not a big projection kernel. The cleverness is in what the table learned during training, not in the runtime control flow. Runtime is closer to array indexing than to abstract reasoning.</p></div><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Following the running example exactly</h3><p>Take our seven token IDs and consult the embedding table <strong>E</strong>. If the model width is 4096, each row contains 4096 learned numbers. The visible implementation does not need to inspect meaning, grammar, or prompt intent. It simply fetches row 2061 for <strong>What</strong>, row 318 for <strong> is</strong>, row 262 for <strong> the</strong>, and so on. Those seven fetched rows are stacked in order to form a matrix <strong>X</strong> with shape <strong>[7, 4096]</strong>. That matrix is the real input to the rest of the network.</p><div class="wf-code"><pre>Token IDs from Chapter 2
+    [2061, 318, 262, 3139, 286, 4881, 30]
+
+Embedding table shape
+    E: [V, d_model] = [50257, 4096]   // representative GPT-style example
+
+void embed_tokens(float* out, const float* table, const int* token_ids,
+                  int T, int d_model) {
+    for (int i = 0; i &lt; T; ++i) {
+        const float* row = table + ((size_t)token_ids[i] * d_model);
+        memcpy(out + ((size_t)i * d_model), row, d_model * sizeof(float));
+    }
+}
+
+Lookup result
+    X[0] = E[2061]   // "What"
+    X[1] = E[318]    // " is"
+    X[2] = E[262]    // " the"
+    X[3] = E[3139]   // " capital"
+    X[4] = E[286]    // " of"
+    X[5] = E[4881]   // " France"
+    X[6] = E[30]     // "?"
+
+Output activation
+    X: [7, 4096]</pre></div><p data-plain="The embedding stage literally says output[i] equals the table row at token_id[i]." data-psi="This is the first geometric interpretation of the prompt: the sentence becomes an ordered stack of learned points in a shared vector space." data-duck="Each duck ticket sends a worker to one numbered drawer. The worker copies the drawer contents into a conveyor tray. Seven tickets, seven drawers, seven trays in a row.">If you were writing the reference implementation, the loop would be almost embarrassing in its simplicity. For every position <strong>i</strong> in the token sequence, assign <strong>output[i] = table[token_id[i]]</strong>. That is the stage. The complexity comes from table size, precision format, memory layout, device placement, and what the vectors encode statistically—not from the algorithm itself.</p><div class="wf-math"><pre>E ∈ ℝ^(V × d_model),  X = E[token_ids],  X ∈ ℝ^(T × d_model)</pre></div><p>In English: the embedding table <strong>E</strong> contains <strong>V</strong> rows, one per vocabulary item, and each row has <strong>d_model</strong> components. Indexing <strong>E</strong> with a token sequence of length <strong>T</strong> returns <strong>T</strong> rows, so the output is a matrix of shape <strong>[T, d_model]</strong>.</p><p>There is a mathematically equivalent but operationally misleading way to describe the same thing. You can imagine converting each token ID into a one-hot vector of length <strong>V</strong> and then multiplying that vector by <strong>E</strong>. That produces the same result, because a one-hot row selects exactly one embedding row. But no serious inference engine materializes one-hot vectors here. That would waste memory bandwidth and arithmetic. The correct systems view is direct indexed row fetch.</p><div class="wf-math"><pre>x_i = one_hot(token_i) · E</pre></div><p>In English: if you insist on matrix notation, a one-hot token vector multiplied by the embedding matrix selects one row. The runtime implementation skips the pointless multiply and performs the selection directly.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Why embeddings encode semantic relationships</h3><p>Embeddings become useful because training pushes tokens that play similar predictive roles into related regions of vector space. A token that often appears in contexts similar to another token tends to acquire a vector that the network can process similarly. That does not mean the embedding space is a clean human ontology. It means the space is shaped by gradient descent to make downstream next-token prediction easier. Similar neighborhoods often emerge for country names, verbs, punctuation, or common syntactic function words because those distinctions matter to the loss.</p><p data-plain="When people say king minus man plus woman is about queen, they mean some directions in embedding space line up with shared relationships. It is approximate, not a hard rule." data-psi="Linear analogies in embedding space are evidence that relational structure has been partially flattened into directions, where difference vectors act like coarse semantic fields rather than symbolic facts." data-duck="If duck drawers for king and queen differ mainly by one royal-hat weight while man and woman differ by a similar hat swap, then subtracting one drawer and adding another roughly lands near the right royal drawer.">The famous slogan <strong>king - man + woman ≈ queen</strong> is best understood geometrically, not mystically. It says that in some trained spaces, the displacement vector between <strong>man</strong> and <strong>woman</strong> resembles part of the displacement between <strong>king</strong> and <strong>queen</strong>. So adding one difference to another can move you near a related token. This is an empirical regularity, not a guaranteed algebraic law, and it depends heavily on the training corpus, objective, and tokenizer boundaries.</p><div class="wf-math"><pre>v_king - v_man + v_woman ≈ v_queen</pre></div><p>In English: some relationships are represented as directions in the vector space. If two conceptual contrasts use similar directions, vector arithmetic can sometimes recover a nearby token that shares the same structural change.</p><p>For the running example, the useful part is less dramatic. The token vector for <strong> France</strong> tends to live near other geography-related tokens and far from punctuation or numeric fragments. The token vector for <strong> capital</strong> tends to live near other government, city, and relation-bearing contexts. When those vectors enter attention and feed-forward layers later, the model is not starting from arbitrary points. It is starting from learned coordinates that already preserve a great deal of corpus structure.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Subword composition and the missing notion of order</h3><p>Because modern tokenizers often emit subwords, embedding semantics are compositional by necessity. If <strong>unbelievable</strong> tokenizes as <strong>[\"un\", \"believ\", \"able\"]</strong>, the model never receives one dedicated <strong>unbelievable</strong> vector at the embedding stage. It receives three subword vectors. Later layers must combine them into a contextual representation of the full word in its sentence. That is a strength, because it lets the model generalize to unseen combinations, but it also means surface words are often distributed across multiple token positions.</p><p data-plain="Embeddings alone do not know order. If you shuffle the rows, the lookup stage by itself cannot tell the difference." data-psi="At the embedding stage, identity exists but chronology does not; the vectors know what arrived, not yet where it sits in the sentence-time lattice." data-duck="Seven duck drawers can be laid on the table in any order. The drawers themselves do not know whether France came before or after capital.">This is the right moment to state a crucial negative fact: embeddings by themselves do not encode position. If you fetch the same seven rows and permute them, the lookup operation has no built-in awareness that the sentence changed. Order is injected later through positional encoding or rotary position logic inside attention. So the embedding stage solves identity and geometry, but not sequence order. That separation is architecturally useful because it keeps token meaning and token position as distinct concerns.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">How embeddings are learned during training</h3><p>The runtime lookup is simple because the hard work already happened during training. Each row in the embedding table starts from random or lightly structured initialization. During training, the model predicts next tokens, computes loss, and backpropagates gradients. Those gradients flow into the embedding rows that were actually used in the batch. Over many updates, rows that help prediction move toward more useful coordinates. The embedding table is therefore not hand-authored knowledge. It is an optimized parameter matrix shaped by repeated error correction.</p><div class="wf-math"><pre>∂L/∂E[j] = Σ_i 1[token_i = j] · ∂L/∂x_i</pre></div><p>In English: the gradient for embedding row <strong>j</strong> is the sum of the output gradients from every position <strong>i</strong> whose token ID equals <strong>j</strong>. Only rows that were actually referenced by tokens in the batch receive direct lookup-stage gradient contributions for that batch.</p><p data-plain="Training updates the rows that were used. Common tokens get updated often, rare tokens less often." data-psi="Embedding learning is sparse local sculpting: each batch touches only the coordinates corresponding to the symbols it invoked, yet global geometry emerges through many repeated contextual interactions." data-duck="If ducks keep pulling the France drawer during practice runs, that drawer gets adjusted a lot. A rarely used drawer in the back gets tuned much less often.">That sparsity matters operationally. An embedding gradient is not a dense update over the whole vocabulary table every time a single token appears. It is a row-selective update pattern, even though the optimizer state may still allocate full tensors. Rare tokens can therefore have noisier or less polished embeddings, especially in smaller datasets. Frequent tokens accumulate more training signal, which is one reason very common function words and punctuation often become stable anchors in the space.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Tied versus untied embeddings</h3><p>Many language models reuse the embedding table as the output projection weights for the language-model head, a practice called <strong>weight tying</strong>. In that design, the same learned geometry used to map IDs into hidden space is also reused, transposed, to score hidden states back against the vocabulary. Other models keep the input embedding table and output head separate. Tying saves memory and often improves efficiency and regularization, but it also constrains the input and output vocab geometry to share one parameterization.</p><div class="wf-math"><pre>logits = h · E^T    // tied
+logits = h · W_vocab^T    // untied</pre></div><p>In English: with tied weights, the final hidden state is compared directly against the embedding rows. With untied weights, a separate vocabulary matrix performs that scoring. Tied designs reduce parameters; untied designs offer more freedom.</p><p data-plain="Tying means one big table does double duty. Untied means one table for input lookup and another for output scoring." data-psi="Weight tying collapses input identity and output choice into one shared geometry, making perception and emission reflections of the same lexical manifold." data-duck="A duck warehouse can use one master catalog both to look up incoming parts and to decide which labeled box to ship out, or it can keep separate inbound and outbound catalogs.">For inference, the choice mostly changes memory footprint and cache behavior. A tied table can remain hot for both the first lookup stage and the final vocabulary projection, especially in smaller deployments. An untied design doubles the number of large vocabulary-sized parameter tensors involved in these boundary stages. The middle of the transformer still dominates compute, but vocabulary-sized matrices are expensive enough that tying is not a cosmetic decision.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Quantised embeddings and storage layout</h3><p>Embedding tables are large enough that precision format matters. In FP16, a table with vocabulary size 50,257 and width 4,096 requires roughly 50,257 × 4,096 × 2 bytes, which is a bit over 392 MiB for that table alone. Move to INT8 and you roughly halve that. Move to INT4 and you halve it again, though now you need scales, zero-points, or blockwise dequantization metadata depending on the format. Whether that trade is worthwhile depends on quality loss tolerance and whether the lookup path can fuse dequantization cheaply.</p><div class="wf-math"><pre>embedding_memory_bytes = V · d_model · bytes_per_element</pre></div><p>In English: embedding memory grows linearly with vocabulary size, model width, and numeric precision. Double any one of those, and you double the raw table size before metadata.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Format</th><th>Approx bytes per weight</th><th>Advantage</th><th>Cost</th></tr></thead><tbody><tr><td><strong>FP16 / BF16</strong></td><td>2</td><td>Simple lookup, high quality, common accelerator support</td><td>Larger memory footprint and bandwidth</td></tr><tr><td><strong>INT8</strong></td><td>1</td><td>Lower bandwidth, easier cache residency</td><td>Requires dequantization path and scale metadata</td></tr><tr><td><strong>INT4</strong></td><td>0.5 nominal</td><td>Very compact vocabulary table</td><td>Higher decode complexity, more aggressive approximation</td></tr></tbody></table></div><p data-plain="Embeddings should usually be stored so one token row is contiguous in memory, because lookup fetches whole rows." data-psi="Lookup efficiency depends on aligning memory layout with semantic access shape: the row is the atomic meaning unit, so storage should honor row contiguity." data-duck="If ducks always pull full drawer contents, do not scatter one drawer across ten hallways. Keep each drawer together so one reach gets the whole set.">Because the access pattern is row-oriented, row-major storage is usually the natural choice. You want <strong>E[token_id]</strong> to land on a mostly contiguous memory region so that prefetchers, cache lines, and DMA engines can move a whole vector efficiently. A column-major layout can be defensible if later kernels expect it and a transpose is avoided elsewhere, but for the pure lookup stage it tends to be less cache-friendly. Real systems therefore care about alignment, row stride, packing for quantized blocks, and whether the dequantized destination buffer is contiguous for later kernels.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Cache locality, batching, and what can actually be cached</h3><p>The embedding table itself is immutable during inference, so the useful cache question is not whether the stage has logical state; it does not. The useful question is where the table lives and how often the same rows are reused closely enough in time for hardware caches to help. Common tokens like spaces, articles, punctuation, and frequent control tokens often hit repeatedly across requests. That means CPU L3 caches, GPU L2 caches, or on-chip SRAM can provide real acceleration even though the software is not explicitly memoizing anything.</p><p data-plain="Software-level caching of token-to-vector results is usually unnecessary because the table is static and hardware caches already handle repeated rows." data-psi="The embedding stage is stateless at the algorithmic level; reuse emerges as temporal locality in memory systems, not as evolving semantic cache state." data-duck="If many ducks ask for the same popular drawer, the smart move is to keep that drawer near the front desk, not to rewrite the contents onto sticky notes every time.">Per-request memoization of <strong>token_id → vector</strong> is usually a bad trade. It duplicates data already stored in the model weights, adds hash-map overhead, and often loses to simply reading the row again from a warm cache. The exceptions are specialized deployments: extremely quantized CPU inference that wants a tiny dequantized hot-row cache, or batched serving where many sequences share a small set of prompt-template tokens and a fused gather kernel can exploit that repetition explicitly.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Cache target</th><th>Worth caching?</th><th>Reason</th></tr></thead><tbody><tr><td><strong>Embedding weights in device memory</strong></td><td>Yes</td><td>Always keep resident if possible; reloading from disk is fatal for latency</td></tr><tr><td><strong>Per-token software memo table</strong></td><td>Usually no</td><td>Direct row fetch plus hardware cache is normally cheaper</td></tr><tr><td><strong>Dequantized hot rows</strong></td><td>Sometimes</td><td>Can help heavily quantized CPU paths with repeated frequent tokens</td></tr><tr><td><strong>Batch-shared prompt templates</strong></td><td>Sometimes</td><td>Repeated system prompts may justify fused gather reuse at serving level</td></tr></tbody></table></div><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Tensor shapes, cost, and bound types</h3><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Symbol</th><th>Shape</th><th>Description</th></tr></thead><tbody><tr><td><strong>V</strong></td><td>scalar</td><td>Vocabulary size</td></tr><tr><td><strong>d_model</strong></td><td>scalar</td><td>Hidden width of the transformer</td></tr><tr><td><strong>T</strong></td><td>scalar</td><td>Token count of the current sequence</td></tr><tr><td><strong>E</strong></td><td>[V, d_model]</td><td>Input embedding matrix</td></tr><tr><td><strong>token_ids</strong></td><td>[T]</td><td>Integer output from tokenization</td></tr><tr><td><strong>X</strong></td><td>[T, d_model]</td><td>Stack of looked-up token vectors</td></tr><tr><td><strong>batch_X</strong></td><td>[B, T, d_model]</td><td>Batched embedding activations before positional logic</td></tr></tbody></table></div><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Aspect</th><th>Classification</th><th>Why</th></tr></thead><tbody><tr><td><strong>Primary operation type</strong></td><td>Lookup</td><td>The core stage is indexed row gather from a parameter table</td></tr><tr><td><strong>Secondary operation type</strong></td><td>Projection only in the one-hot view</td><td>Mathematically equivalent to one-hot × E, but not implemented that way</td></tr><tr><td><strong>Typical bound type</strong></td><td>Memory / bandwidth-bound</td><td>Few arithmetic operations per byte compared with the amount of table data moved</td></tr><tr><td><strong>Additional bound when quantized</strong></td><td>Memory + latency</td><td>Blockwise dequantization adds extra scalar work and control overhead</td></tr></tbody></table></div><p>The raw computational cost is modest compared with attention or feed-forward blocks: one indexed read and one row copy per token. The memory cost is the real story. A single large embedding table can consume hundreds of megabytes even before optimizer states or tied output logic are considered. During decode, the batch dimension is often small, so the stage can become dominated by irregular memory access and cache behavior rather than arithmetic throughput.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">CPU, GPU, and FPGA behavior</h3><p>Embedding lookup maps differently to hardware than the big matrix multiplies do. On CPUs, gathers are straightforward and benefit from large last-level caches if the working set is favorable, but the table is usually too large to fit entirely in cache, so memory bandwidth still matters. On GPUs, lookup can be fast when rows are contiguous and batches are large enough to keep many threads busy, but random access to a huge vocabulary table can reduce coalescing efficiency. On FPGAs, deterministic gather plus optional dequantization can be pipelined nicely, yet the table size usually forces careful external-memory design.</p><div class="wf-table-wrap"><table class="wf-table"><thead><tr><th>Hardware</th><th>Behavior</th><th>Typical optimisation focus</th></tr></thead><tbody><tr><td><strong>CPU</strong></td><td>Simple control flow, sensitive to cache misses</td><td>NUMA placement, huge pages, prefetch, row alignment, hot-token locality</td></tr><tr><td><strong>GPU</strong></td><td>High bandwidth but gather efficiency depends on access pattern</td><td>Coalesced loads, fused dequant-gather kernels, keeping table resident in HBM</td></tr><tr><td><strong>FPGA</strong></td><td>Deterministic streaming possible, but off-chip memory dominates</td><td>Block packing, on-chip caches for hot rows, fused fixed-point dequantization</td></tr></tbody></table></div><p data-plain="Embedding optimisation is mostly memory engineering: layout, precision, prefetching, and avoiding extra copies." data-psi="The bottleneck is not conceptual difficulty but data motion; performance comes from making lexical geometry cheap to fetch rather than clever to compute." data-duck="The ducks are not doing hard math. They are hauling heavy drawers around. Faster work comes from shorter paths and lighter drawers.">Common optimisations include fusing gather with dequantization, storing rows in the exact order later kernels expect, aligning row starts to cache-friendly boundaries, sharding the table across devices for large vocabularies, reusing one tied table instead of two untied ones, staging frequently used prompt-template tokens in faster memory, and avoiding accidental transposes between disk format and runtime format. The stage is simple enough that extra copies often cost more than the lookup itself.</p><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Storage formats on disk</h3><p>When the model is loaded, the embedding table comes from a model file format such as <strong>safetensors</strong>, <strong>GGUF</strong>, or a framework-native checkpoint. The important thing at inference time is not the brand name of the file format but whether it preserves tensor shape, dtype, alignment metadata, and quantization parameters without forcing expensive conversion during load. A file format that lets you memory-map or stream directly into the runtime layout can save startup time and temporary peak memory.</p><div class="wf-callout gold"><p><strong>Storage-format rule of thumb:</strong> on-disk convenience and runtime convenience are not always the same. A format that is easy to inspect may still require repacking before lookup is fast. The embedding stage exposes that immediately because every token touches the table.</p></div><p data-plain="If the file stores rows in a format that the runtime can use directly, loading is cheap. If not, you pay a repacking cost before the first request." data-psi="Persistence and execution meet here: the lexical geometry learned in training must survive serialization without losing the physical layout properties that make online retrieval efficient." data-duck="A duck warehouse wants crates to arrive already sorted by aisle. If every delivery truck dumps mixed parts on the floor, opening day starts with a lot of unnecessary shuffling.">GGUF, for example, is popular in edge and local-inference deployments partly because it packages quantized tensors and metadata in a way runtimes can consume directly. Safetensors is attractive because it is simple, explicit, and safe to parse, but a runtime may still choose to repack some tensors after load for performance. None of that changes the mathematics of embeddings; it only changes how quickly and efficiently the rows become accessible.</p><h3 style="color:var(--wf-gold);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Database analogy and systems analogy</h3><p>The database analogy is a primary-key lookup into a dense feature table. The token ID is the key. The embedding matrix is the table. The output is the full feature row for that key. If several tokens repeat, the same key is requested several times. Weight tying later makes the same table participate again as part of vocabulary scoring, which is a nice echo of using the same relation both for lookup and for similarity search.</p><p data-plain="From a systems perspective, an embedding lookup is indirect addressing into a large immutable array of structs or rows." data-psi="It is lexical indirection made physical: symbolic identity dereferences into continuous state, much like a virtual name resolving into a concrete memory-resident payload." data-duck="A duck gets a ticket number, walks to that numbered drawer, and copies the entire drawer into a cart. The ticket is not the cargo; it only points to the cargo.">The systems-programming analogy is a read-only array indexed by IDs, with all the familiar concerns that implies: pointer arithmetic, stride, alignment, page locality, NUMA placement, and minimizing extra copies. The reason this analogy is useful is that it strips away mystique. Embedding lookup is not a thought process. It is indirect memory access over learned numeric payloads.</p><h3 style="color:var(--wf-accent);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">Common implementation mistakes</h3><p>Embedding bugs are mostly contract and layout bugs. Teams transpose the table accidentally and silently swap <strong>[V, d_model]</strong> with <strong>[d_model, V]</strong>. They forget that the tokenizer vocabulary size must match the number of embedding rows. They load a quantized table but ignore per-block scales. They assume embeddings encode position and then become confused when a shuffled sequence still looks valid numerically. They tie weights in the checkpoint but instantiate separate untied tensors at runtime, or the reverse. And they underestimate how often a hidden extra copy between host memory and device memory dominates this supposedly tiny stage.</p><div class="wf-callout accent"><p><strong>Checklist of easy mistakes:</strong> wrong table orientation, mismatch between tokenizer IDs and embedding rows, forgotten padding-row policy, incorrect dtype conversion during load, quantization metadata dropped on the floor, and recomputing or copying rows when direct indexed access would suffice.</p></div><h3 style="color:var(--wf-cyan);font-size:.95rem;margin-top:2.4rem;margin-bottom:.85rem;">If you were implementing this yourself…</h3><p data-plain="Start with a tiny model and verify that each token ID fetches the correct row, shape, and dtype. Then optimise layout and precision." data-psi="Treat embeddings as a memory-contract problem first and a semantic problem second: the geometry only matters if the physical retrieval path is exact." data-duck="First make sure every duck ticket opens the right drawer and that the drawer contents have the right length. Only then start repainting the warehouse for speed.">Begin with the smallest honest implementation possible. Load one embedding matrix from disk. Print its shape. Fetch a few known token rows for the running example and compare them with a trusted framework. Verify padding behavior, BOS handling, and dtype conversion. Then benchmark lookup latency before and after any quantization or repacking change. Embeddings are simple enough that you should be able to isolate mistakes quickly if you keep the stage pure.</p><p>The running example should now feel mechanical. Chapter 2 gave us <strong>[2061, 318, 262, 3139, 286, 4881, 30]</strong>. This chapter transforms that into a matrix of seven learned vectors. The transformer has not answered anything yet, but it finally has something numerically rich enough to process. In the next chapter, order enters the picture. The model will stop seeing seven unrelated lexical rows and start seeing seven rows anchored to positions in a sequence.</p><div class="wf-inline-nav"><a href="/transformers/ch2">← Part 2: Tokenization</a><a href="/transformers/ch4">Part 4: Positional Encoding →</a></div></div></div>
+
+<button id="wtf-btn"><span>⁇</span>&nbsp;wtf?</button>
+<button id="psi-btn"><span>ψ</span>&nbsp;deeper</button>
+<button id="duck-btn"><span>🦆</span>&nbsp;ducky</button>
+
+<script>
+function initTabs() {
+    if (window.__wfTabsInit) return;
+    window.__wfTabsInit = 1;
+    document.addEventListener('click', e => {
+        const tab = e.target.closest('.wf-tab');
+        if (!tab) return;
+        const bar = tab.closest('.wf-tab-bar');
+        const tabs = bar.parentElement;
+        const target = tab.dataset.tab;
+        bar.querySelectorAll('.wf-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        tabs.querySelectorAll('.wf-tab-panel').forEach(panel => panel.classList.toggle('active', panel.dataset.tab === target));
+    });
+}
+
+function initButtons() {
+    if (window.__wfButtonsInit) return;
+    window.__wfButtonsInit = 1;
+
+    const plainEls = [...document.querySelectorAll('[data-plain]')];
+    const psiEls = [...document.querySelectorAll('[data-psi]')];
+    const duckEls = [...document.querySelectorAll('[data-duck]')];
+    if (!plainEls.length && !psiEls.length && !duckEls.length) return;
+
+    let mode = 'tech';
+    let busy = false;
+    let activeEls = [];
+    const wtfBtn = document.getElementById('wtf-btn');
+    const psiBtn = document.getElementById('psi-btn');
+    const duckBtn = document.getElementById('duck-btn');
+
+    if (plainEls.length && wtfBtn) wtfBtn.style.display = 'inline-flex';
+    if (psiEls.length && psiBtn) psiBtn.style.display = 'inline-flex';
+    if (duckEls.length && duckBtn) duckBtn.style.display = 'inline-flex';
+
+    const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモラリルレロABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+=-|<>[]{}';
+
+    function decode(el, target, dur, hue, done) {
+        let start = null;
+        const len = target.length;
+
+        function frame(ts) {
+            if (!start) start = ts;
+            const p = Math.min((ts - start) / dur, 1);
+            const locked = Math.floor(p * len);
+            let out = '';
+            for (let i = 0; i < len; i++) {
+                out += (i < locked || target[i] === ' ' || target[i] === '
+')
+                    ? target[i]
+                    : CHARS[Math.random() * CHARS.length | 0];
+            }
+            el.textContent = out;
+            el.style.filter = p < 1 ? `blur(${((1 - p) * 4).toFixed(1)}px)` : '';
+            el.style.color = p < 1 ? `hsl(${hue + Math.round(p * 8)},85%,${42 + Math.round(p * 30)}%)` : '';
+            if (p < 1) {
+                requestAnimationFrame(frame);
+            } else {
+                el.style.filter = '';
+                el.style.color = '';
+                done && done();
+            }
+        }
+
+        requestAnimationFrame(frame);
+    }
+
+    function setLabels(nextMode) {
+        if (wtfBtn) {
+            wtfBtn.innerHTML = nextMode === 'plain' ? '<span>◎</span>&nbsp;tech' : '<span>⁇</span>&nbsp;wtf?';
+            wtfBtn.title = nextMode === 'plain' ? 'Back to technical' : 'Translate to plain English';
+        }
+        if (psiBtn) {
+            psiBtn.innerHTML = nextMode === 'psi' ? '<span>ψ</span>&nbsp;back' : '<span>ψ</span>&nbsp;deeper';
+            psiBtn.title = nextMode === 'psi' ? 'Back to technical' : 'Amplify the metaphor';
+        }
+        if (duckBtn) {
+            duckBtn.innerHTML = nextMode === 'duck' ? '<span>🦆</span>&nbsp;back' : '<span>🦆</span>&nbsp;ducky';
+            duckBtn.title = nextMode === 'duck' ? 'Back to technical' : 'Explain it in duck terms';
+        }
+    }
+
+    function restoreTech() {
+        activeEls.forEach(el => {
+            if (el.dataset.techHtml) el.innerHTML = el.dataset.techHtml;
+        });
+        activeEls = [];
+    }
+
+    function finish() {
+        busy = false;
+        wtfBtn && wtfBtn.classList.remove('busy');
+        psiBtn && psiBtn.classList.remove('busy');
+        duckBtn && duckBtn.classList.remove('busy');
+    }
+
+    function switchTo(newMode) {
+        if (busy) return;
+        busy = true;
+        wtfBtn && wtfBtn.classList.add('busy');
+        psiBtn && psiBtn.classList.add('busy');
+        duckBtn && duckBtn.classList.add('busy');
+
+        if (mode !== 'tech') restoreTech();
+        mode = newMode;
+        setLabels(mode);
+
+        if (mode === 'tech') {
+            finish();
+            return;
+        }
+
+        const els = mode === 'plain' ? plainEls : mode === 'psi' ? psiEls : duckEls;
+        const attr = mode === 'plain' ? 'data-plain' : mode === 'psi' ? 'data-psi' : 'data-duck';
+        const hue = mode === 'plain' ? 182 : mode === 'psi' ? 42 : 22;
+        activeEls = els.slice();
+        let done = 0;
+
+        els.forEach((el, i) => {
+            if (!el.dataset.techHtml) el.dataset.techHtml = el.innerHTML;
+            const target = el.getAttribute(attr);
+            const dur = Math.max(480, Math.min(target.length * 3.8, 1500));
+            setTimeout(() => decode(el, target, dur, hue, () => {
+                if (++done === els.length) finish();
+            }), i * 110);
+        });
+    }
+
+    wtfBtn && wtfBtn.addEventListener('click', () => switchTo(mode === 'plain' ? 'tech' : 'plain'));
+    psiBtn && psiBtn.addEventListener('click', () => switchTo(mode === 'psi' ? 'tech' : 'psi'));
+    duckBtn && duckBtn.addEventListener('click', () => switchTo(mode === 'duck' ? 'tech' : 'duck'));
+    setLabels(mode);
+}
+
+initTabs();
+initButtons();
+</script>

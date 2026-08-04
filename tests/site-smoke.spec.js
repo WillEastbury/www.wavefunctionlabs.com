@@ -3,6 +3,7 @@ const { test, expect } = require('@playwright/test');
 const topLevelRoutes = [
   ['/cognition', 'Cognition'],
   ['/ai', 'How AI Actually Works'],
+  ['/transformers', 'How a Transformer Produces One Token'],
   ['/ducks', 'Ducks All the Way Down'],
   ['/forge', 'Forge'],
   ['/swarm', 'Swarm'],
@@ -58,6 +59,20 @@ test('deep article routes render directly from clean URLs', async ({ page }) => 
   await expect(page.locator('h1.wf-section-hdr')).toContainText('PicoWAL');
   await expect(page.locator('main, .wf-section').first()).toContainText('write-ahead log');
   expect(pageErrors, 'page JavaScript errors').toEqual([]);
+});
+
+test('Transformer technical book and chapters render from clean URLs', async ({ page }) => {
+  let pageErrors = await gotoOk(page, '/transformers');
+
+  await expect(page.locator('.wf-nav-links a[href="/transformers"]')).toHaveClass(/active/);
+  await expect(page.locator('h1.wf-section-hdr')).toContainText('How a Transformer Produces One Token');
+  await expect(page.locator('a[href="/transformers/ch1"]').first()).toBeVisible();
+  expect(pageErrors, 'Transformer landing page JavaScript errors').toEqual([]);
+
+  pageErrors = await gotoOk(page, '/transformers/ch1');
+  await expect(page.locator('h1.wf-section-hdr')).toContainText("A Single Token's Journey");
+  await expect(page.locator('.wf-article-body')).toContainText('Five integers');
+  expect(pageErrors, 'Transformer chapter JavaScript errors').toEqual([]);
 });
 
 test('wavefunction game page loads, starts, and shows high scores', async ({ page }) => {

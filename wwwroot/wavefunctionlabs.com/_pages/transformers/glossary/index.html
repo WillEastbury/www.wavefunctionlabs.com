@@ -1,0 +1,177 @@
+<style>
+.wf-section { display: block !important; }
+.wf-tabs { margin: 1.5rem 0; border: 1px solid var(--wf-border); border-radius: 12px; background: rgba(14,14,22,0.5); overflow: hidden; }
+.wf-tab-bar { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--wf-border); background: rgba(14,14,22,0.7); padding: 0.4rem 0.5rem 0; }
+.wf-tab { padding: 0.55rem 1rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--wf-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s; border-radius: 6px 6px 0 0; }
+.wf-tab:hover { color: #e2e8f0; background: rgba(99,102,241,0.08); }
+.wf-tab.active { color: var(--wf-cyan); border-bottom-color: var(--wf-cyan); background: rgba(6,182,212,0.06); }
+.wf-tab-panel { display: none; padding: 1.2rem 1.3rem; font-size: 0.88rem; line-height: 1.85; color: var(--bs-body-color); }
+.wf-tab-panel.active { display: block; }
+.wf-tab-panel p { margin: 0 0 0.9rem; }
+.wf-tab-panel strong { color: #e2e8f0; }
+.wf-tab-panel .wf-code, .wf-tab-panel .wf-math, .wf-tab-panel .wf-table-wrap { margin: 0.8rem 0; }
+#wtf-btn, #psi-btn, #duck-btn { position: fixed; right: 1.5rem; z-index: 10000; display: none; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; background: rgba(4,4,14,0.94); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); transition: box-shadow 0.25s, transform 0.12s, opacity 0.2s; user-select: none; border-style: solid; border-width: 1px; }
+#wtf-btn { bottom: 1.5rem; color: #00c8ff; border-color: rgba(0,200,255,.55); box-shadow: 0 0 14px rgba(0,200,255,.2), 0 2px 10px rgba(0,0,0,.7); }
+#wtf-btn:hover { box-shadow: 0 0 26px rgba(0,200,255,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#psi-btn { bottom: 4.5rem; color: #f0c040; border-color: rgba(240,192,64,.55); box-shadow: 0 0 14px rgba(240,192,64,.2), 0 2px 10px rgba(0,0,0,.7); }
+#psi-btn:hover { box-shadow: 0 0 26px rgba(240,192,64,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#duck-btn { bottom: 7.5rem; color: #f97316; border-color: rgba(249,115,22,.55); box-shadow: 0 0 14px rgba(249,115,22,.2), 0 2px 10px rgba(0,0,0,.7); }
+#duck-btn:hover { box-shadow: 0 0 26px rgba(249,115,22,.55), 0 2px 14px rgba(0,0,0,.8); transform: translateY(-1px); }
+#wtf-btn:active, #psi-btn:active, #duck-btn:active { transform: translateY(0); }
+#wtf-btn.busy, #psi-btn.busy, #duck-btn.busy { opacity: 0.45; cursor: wait; pointer-events: none; }
+.wf-gloss-entry { padding: 1rem 0; border-bottom: 1px solid var(--wf-border); }
+.wf-gloss-entry:last-child { border-bottom: none; }
+a.wf-gloss { color: var(--wf-cyan); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+a.wf-gloss:hover { color: #e2e8f0; text-decoration-style: solid; }
+@media (max-width: 760px) {
+  .wf-tab { padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+  #wtf-btn, #psi-btn, #duck-btn { right: 0.8rem; padding: 0.4rem 0.7rem; font-size: 0.68rem; }
+}
+</style>
+
+<div id="glossary" class="wf-section wf-article"><div class="wf-article-head"><a class="wf-back" href="/transformers">← chapter index</a><div class="wf-kicker">Reference</div><h1 class="wf-section-hdr">Glossary</h1><p class="wf-section-desc">Every term, symbol, and operation used in this book — defined in one place.</p></div><div class="wf-article-body"><div id="gloss-attention" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:0 0 .3rem;font-size:.88rem;">Attention (self-attention mechanism)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Lets each token build a weighted summary of other tokens so its representation becomes context-aware.</p><div class="wf-math"><pre>Attention(Q, K, V) = softmax((QKᵀ / √d_head) + M) V</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-autoregressive" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Autoregressive</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Generating one token at a time, feeding each chosen token back into the next step.</p><div class="wf-math"><pre>p(x₁, …, xₙ) = Π_t p(x_t | x₁, …, x_{t-1})</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch1">Part 1</a></p></div><div id="gloss-bpe" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">BPE (Byte Pair Encoding)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A tokenizer family that builds larger tokens by repeatedly merging frequent byte or character pairs.</p><div class="wf-math"><pre>merge* (bytes(text)) → token_ids</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch2">Part 2</a></p></div><div id="gloss-causal-mask" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Causal Mask</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The rule that stops a token from attending to future tokens during generation.</p><div class="wf-math"><pre>M_{ij} = 0 if j ≤ i, else -∞</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-continuous-batching" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Continuous Batching</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A serving strategy that lets requests join and leave an active decode batch instead of waiting for full batch boundaries.</p><div class="wf-math"><pre>active_batch(t + 1) = active_batch(t) - finished + admitted</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a>, <a href="/transformers/ch12">Part 12</a></p></div><div id="gloss-d-model" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">d_model (model hidden dimension)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The width of the model’s main hidden vectors.</p><div class="wf-math"><pre>X ∈ ℝ^{T × d_model}</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch5">Part 5</a></p></div><div id="gloss-d-head" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">d_head (per-head dimension)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The width of one attention head’s query, key, and value vectors.</p><div class="wf-math"><pre>d_head = d_model / H</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-d-ff" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">d_ff (feed-forward intermediate dimension)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The expanded width used inside the feed-forward network before projecting back down.</p><div class="wf-math"><pre>FFN: ℝ^{d_model} → ℝ^{d_ff} → ℝ^{d_model}</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch8">Part 8</a></p></div><div id="gloss-decode" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Decode</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The autoregressive phase after prefill where the model generates new tokens one step at a time.</p><div class="wf-math"><pre>state_t → logits_t → token_{t+1} → state_{t+1}</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a></p></div><div id="gloss-dot-product" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Dot Product</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A multiply-and-sum operation that measures alignment between two vectors.</p><div class="wf-math"><pre>a · b = Σ_i a_i b_i</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-embedding" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Embedding</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A learned vector looked up from the token ID that gives the model its starting representation for that token.</p><div class="wf-math"><pre>x_t = E[token_id_t]</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch3">Part 3</a></p></div><div id="gloss-epsilon" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Epsilon (ε)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A tiny constant added for numerical stability so divisions do not blow up near zero.</p><div class="wf-math"><pre>y = x / √(mean(x²) + ε)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch7">Part 7</a></p></div><div id="gloss-ffn" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Feed-Forward Network (FFN)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The per-token MLP inside each transformer block that expands, transforms, and projects features back down.</p><div class="wf-math"><pre>FFN(x) = W_down(σ(W_gate x) ⊙ W_up x)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch8">Part 8</a></p></div><div id="gloss-flop" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">FLOP / FLOPS</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A floating-point operation, and the rate of floating-point operations per second.</p><div class="wf-math"><pre>FLOPS = total_FLOPs / seconds</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a></p></div><div id="gloss-gelu" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">GeLU</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A smooth activation function often used in older transformer feed-forward networks.</p><div class="wf-math"><pre>GeLU(x) ≈ 0.5x(1 + tanh(√(2/π)(x + 0.044715x³)))</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch8">Part 8</a></p></div><div id="gloss-gguf" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">GGUF (file format)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A model file format popular in local inference tooling that stores weights, metadata, tokenizer data, and often quantized blocks.</p><div class="wf-math"><pre>GGUF = weights + metadata + tokenizer + quantisation descriptors</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a></p></div><div id="gloss-greedy-decoding" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Greedy Decoding</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Always choosing the single highest-scoring next token.</p><div class="wf-math"><pre>token_{t+1} = argmax_i logits_i</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch10">Part 10</a></p></div><div id="gloss-hidden-state" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Hidden State</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The model’s current internal vector representation for a token position at a given layer.</p><div class="wf-math"><pre>h_t^{(ℓ)} ∈ ℝ^{d_model}</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch5">Part 5</a></p></div><div id="gloss-kv-cache" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">KV Cache</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Stored past keys and values that let decode reuse old attention state instead of recomputing it.</p><div class="wf-math"><pre>K_cache^{(ℓ)}, V_cache^{(ℓ)} = append over time positions</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a>, <a href="/transformers/ch11">Part 11</a></p></div><div id="gloss-key" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Key (K)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The vector a token exposes so other tokens can measure how relevant it is.</p><div class="wf-math"><pre>K = XW_K</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-layer" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Layer / Transformer Block</h4><p style="margin:0 0 .4rem;font-size:.85rem;">One repeated unit of attention, feed-forward computation, normalization, and residual addition.</p><div class="wf-math"><pre>x' = x + Attention(Norm(x))
+y  = x' + FFN(Norm(x'))</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch5">Part 5</a></p></div><div id="gloss-lm-head" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">lm_head (vocabulary projection)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The final projection that turns the last hidden state into one score per vocabulary token.</p><div class="wf-math"><pre>logits = hW_vocabᵀ</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch9">Part 9</a></p></div><div id="gloss-logits" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Logits</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Unnormalized scores produced before softmax or decoding policy chooses the next token.</p><div class="wf-math"><pre>z_i = h · w_i</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch9">Part 9</a></p></div><div id="gloss-moe" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">MoE (Mixture of Experts)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A model design where a router activates only a subset of expert FFNs for each token.</p><div class="wf-math"><pre>y = Σ_{e ∈ TopM(g(x))} g_e(x) · Expert_e(x)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch8">Part 8</a></p></div><div id="gloss-multi-head-attention" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Multi-Head Attention</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Running several attention heads in parallel so the model can attend through multiple learned subspaces at once.</p><div class="wf-math"><pre>head_h = Attention(Q_h, K_h, V_h)
+MHA(x) = Concat(head₁, …, head_H)W_O</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-rmsnorm" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Normalisation (RMSNorm)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A scaling layer that normalizes by root-mean-square magnitude and then applies a learned gain.</p><div class="wf-math"><pre>RMSNorm(x) = γ ⊙ x / √(mean(x²) + ε)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch7">Part 7</a></p></div><div id="gloss-paged-attention" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Paged Attention</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A cache-management approach that stores KV state in page-like chunks so long sequences and many sessions are easier to manage.</p><div class="wf-math"><pre>KV_cache = {page₀, page₁, …, page_n}</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a>, <a href="/transformers/ch12">Part 12</a></p></div><div id="gloss-prefill" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Prefill</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The initial forward pass over the prompt that builds the first hidden states and KV cache before autoregressive decode begins.</p><div class="wf-math"><pre>prompt_tokens → hidden states + initial KV cache</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a></p></div><div id="gloss-query" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Query (Q)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The vector a token uses to ask which other tokens matter right now.</p><div class="wf-math"><pre>Q = XW_Q</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-quantisation" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Quantisation</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Storing weights or activations in fewer bits to save memory and bandwidth, usually with some controlled error.</p><div class="wf-math"><pre>q = round(w / s),   w ≈ s · q</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a></p></div><div id="gloss-residual-connection" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Residual Connection</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A skip path that adds the input of a sublayer back to its output so information and gradients have a short route through depth.</p><div class="wf-math"><pre>y = x + F(x)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch5">Part 5</a></p></div><div id="gloss-rope" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">RoPE (Rotary Position Embedding)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A way of encoding position by rotating paired vector components as a function of token position.</p><div class="wf-math"><pre>RoPE(x, θ) = [x₁ cosθ - x₂ sinθ, x₁ sinθ + x₂ cosθ, …]</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch4">Part 4</a></p></div><div id="gloss-safetensors" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">SafeTensors (file format)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A simple tensor-serialization format designed to load model weights safely without arbitrary code execution.</p><div class="wf-math"><pre>SafeTensors = named_tensors + metadata (no executable pickle payload)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch11">Part 11</a></p></div><div id="gloss-sampling" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Sampling</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The policy that turns logits into an actual next-token choice.</p><div class="wf-math"><pre>x_{t+1} ~ P(. | x_{≤t})</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch10">Part 10</a></p></div><div id="gloss-silu" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">SiLU / Swish</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A smooth activation used in many modern LLM FFNs.</p><div class="wf-math"><pre>SiLU(x) = xσ(x)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch8">Part 8</a></p></div><div id="gloss-softmax" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Softmax</h4><p style="margin:0 0 .4rem;font-size:.85rem;">Turns a vector of raw scores into a normalized probability-like distribution.</p><div class="wf-math"><pre>softmax(z)_i = exp(z_i) / Σ_j exp(z_j)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a>, <a href="/transformers/ch10">Part 10</a></p></div><div id="gloss-speculative-decoding" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Speculative Decoding</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A serving technique where a cheaper draft path proposes future tokens and the full model verifies them.</p><div class="wf-math"><pre>draft_tokens → verify_with_target_model → accept/reject prefix</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch12">Part 12</a></p></div><div id="gloss-swiglu" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">SwiGLU</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A gated FFN pattern that multiplies an SiLU-activated branch with an ungated branch before projecting down.</p><div class="wf-math"><pre>SwiGLU(x) = W_down(SiLU(W_gate x) ⊙ W_up x)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch8">Part 8</a></p></div><div id="gloss-temperature" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Temperature (τ)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A scaling factor that sharpens or flattens the sampling distribution before choosing the next token.</p><div class="wf-math"><pre>p_i ∝ exp(logit_i / τ)</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch10">Part 10</a></p></div><div id="gloss-token" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Token / Tokenizer</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A token is one vocabulary unit; the tokenizer is the front-end that turns raw text into token IDs and back.</p><div class="wf-math"><pre>tokenizer(text) → [id₁, id₂, …, id_T]</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch2">Part 2</a></p></div><div id="gloss-top-k" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Top-K</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A decoding filter that keeps only the K highest-scoring candidate tokens before sampling.</p><div class="wf-math"><pre>S = arg top-K_i logits_i</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch10">Part 10</a></p></div><div id="gloss-top-p" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Top-P (Nucleus)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">A decoding filter that keeps the smallest set of tokens whose cumulative probability reaches a threshold <strong>p</strong>.</p><div class="wf-math"><pre>find smallest S such that Σ_{i ∈ S} p_i ≥ p</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch10">Part 10</a></p></div><div id="gloss-value" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Value (V)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The vector content attention mixes together after the query-key scores decide which positions matter.</p><div class="wf-math"><pre>V = XW_V</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div><div id="gloss-vocabulary" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Vocabulary (V)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The full set of token IDs the model can read and emit.</p><div class="wf-math"><pre>|Vocabulary| = V</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch2">Part 2</a>, <a href="/transformers/ch9">Part 9</a></p></div><div id="gloss-wo" class="wf-gloss-entry"><h4 style="color:var(--wf-cyan);margin:1.2rem 0 .3rem;font-size:.88rem;">Wo (attention output projection)</h4><p style="margin:0 0 .4rem;font-size:.85rem;">The matrix that mixes concatenated head outputs back into the model hidden width.</p><div class="wf-math"><pre>y = Concat(head₁, …, head_H)W_O</pre></div><p class="wf-note">Covered in: <a href="/transformers/ch6">Part 6</a></p></div></div></div>
+
+<button id="wtf-btn"><span>⁇</span>&nbsp;wtf?</button>
+<button id="psi-btn"><span>ψ</span>&nbsp;deeper</button>
+<button id="duck-btn"><span>🦆</span>&nbsp;ducky</button>
+
+<script>
+function initTabs() {
+    if (window.__wfTabsInit) return;
+    window.__wfTabsInit = 1;
+    document.addEventListener('click', e => {
+        const tab = e.target.closest('.wf-tab');
+        if (!tab) return;
+        const bar = tab.closest('.wf-tab-bar');
+        const tabs = bar.parentElement;
+        const target = tab.dataset.tab;
+        bar.querySelectorAll('.wf-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        tabs.querySelectorAll('.wf-tab-panel').forEach(panel => panel.classList.toggle('active', panel.dataset.tab === target));
+    });
+}
+
+function initButtons() {
+    if (window.__wfButtonsInit) return;
+    window.__wfButtonsInit = 1;
+
+    const plainEls = [...document.querySelectorAll('[data-plain]')];
+    const psiEls = [...document.querySelectorAll('[data-psi]')];
+    const duckEls = [...document.querySelectorAll('[data-duck]')];
+    if (!plainEls.length && !psiEls.length && !duckEls.length) return;
+
+    let mode = 'tech';
+    let busy = false;
+    let activeEls = [];
+    const wtfBtn = document.getElementById('wtf-btn');
+    const psiBtn = document.getElementById('psi-btn');
+    const duckBtn = document.getElementById('duck-btn');
+
+    if (plainEls.length && wtfBtn) wtfBtn.style.display = 'inline-flex';
+    if (psiEls.length && psiBtn) psiBtn.style.display = 'inline-flex';
+    if (duckEls.length && duckBtn) duckBtn.style.display = 'inline-flex';
+
+    const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモラリルレロABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+=-|<>[]{}';
+
+    function decode(el, target, dur, hue, done) {
+        let start = null;
+        const len = target.length;
+
+        function frame(ts) {
+            if (!start) start = ts;
+            const p = Math.min((ts - start) / dur, 1);
+            const locked = Math.floor(p * len);
+            let out = '';
+            for (let i = 0; i < len; i++) {
+                out += (i < locked || target[i] === ' ' || target[i] === '
+')
+                    ? target[i]
+                    : CHARS[Math.random() * CHARS.length | 0];
+            }
+            el.textContent = out;
+            el.style.filter = p < 1 ? `blur(${((1 - p) * 4).toFixed(1)}px)` : '';
+            el.style.color = p < 1 ? `hsl(${hue + Math.round(p * 8)},85%,${42 + Math.round(p * 30)}%)` : '';
+            if (p < 1) {
+                requestAnimationFrame(frame);
+            } else {
+                el.style.filter = '';
+                el.style.color = '';
+                done && done();
+            }
+        }
+
+        requestAnimationFrame(frame);
+    }
+
+    function setLabels(nextMode) {
+        if (wtfBtn) {
+            wtfBtn.innerHTML = nextMode === 'plain' ? '<span>◎</span>&nbsp;tech' : '<span>⁇</span>&nbsp;wtf?';
+            wtfBtn.title = nextMode === 'plain' ? 'Back to technical' : 'Translate to plain English';
+        }
+        if (psiBtn) {
+            psiBtn.innerHTML = nextMode === 'psi' ? '<span>ψ</span>&nbsp;back' : '<span>ψ</span>&nbsp;deeper';
+            psiBtn.title = nextMode === 'psi' ? 'Back to technical' : 'Amplify the metaphor';
+        }
+        if (duckBtn) {
+            duckBtn.innerHTML = nextMode === 'duck' ? '<span>🦆</span>&nbsp;back' : '<span>🦆</span>&nbsp;ducky';
+            duckBtn.title = nextMode === 'duck' ? 'Back to technical' : 'Explain it in duck terms';
+        }
+    }
+
+    function restoreTech() {
+        activeEls.forEach(el => {
+            if (el.dataset.techHtml) el.innerHTML = el.dataset.techHtml;
+        });
+        activeEls = [];
+    }
+
+    function finish() {
+        busy = false;
+        wtfBtn && wtfBtn.classList.remove('busy');
+        psiBtn && psiBtn.classList.remove('busy');
+        duckBtn && duckBtn.classList.remove('busy');
+    }
+
+    function switchTo(newMode) {
+        if (busy) return;
+        busy = true;
+        wtfBtn && wtfBtn.classList.add('busy');
+        psiBtn && psiBtn.classList.add('busy');
+        duckBtn && duckBtn.classList.add('busy');
+
+        if (mode !== 'tech') restoreTech();
+        mode = newMode;
+        setLabels(mode);
+
+        if (mode === 'tech') {
+            finish();
+            return;
+        }
+
+        const els = mode === 'plain' ? plainEls : mode === 'psi' ? psiEls : duckEls;
+        const attr = mode === 'plain' ? 'data-plain' : mode === 'psi' ? 'data-psi' : 'data-duck';
+        const hue = mode === 'plain' ? 182 : mode === 'psi' ? 42 : 22;
+        activeEls = els.slice();
+        let done = 0;
+
+        els.forEach((el, i) => {
+            if (!el.dataset.techHtml) el.dataset.techHtml = el.innerHTML;
+            const target = el.getAttribute(attr);
+            const dur = Math.max(480, Math.min(target.length * 3.8, 1500));
+            setTimeout(() => decode(el, target, dur, hue, () => {
+                if (++done === els.length) finish();
+            }), i * 110);
+        });
+    }
+
+    wtfBtn && wtfBtn.addEventListener('click', () => switchTo(mode === 'plain' ? 'tech' : 'plain'));
+    psiBtn && psiBtn.addEventListener('click', () => switchTo(mode === 'psi' ? 'tech' : 'psi'));
+    duckBtn && duckBtn.addEventListener('click', () => switchTo(mode === 'duck' ? 'tech' : 'duck'));
+    setLabels(mode);
+}
+
+initTabs();
+initButtons();
+</script>
