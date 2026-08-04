@@ -1,0 +1,222 @@
+<style>
+.wf-section{display:block!important}
+.tf-wrap{max-width:720px;margin:0 auto;padding:0 0 1rem}
+.tf-sec{margin:0 auto 2rem}
+.tf-title{max-width:520px;margin:0 auto .85rem;color:#e2e8f0;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
+.tf-prompt,.tf-loopback,.tf-out{max-width:520px;margin:0 auto;text-align:center;color:#e2e8f0}
+.tf-prompt,.tf-out{padding:.9rem 1rem;border:1px solid var(--wf-border);border-radius:10px;background:rgba(255,255,255,.02);font-size:.95rem}
+.tf-arrow{text-align:center;color:var(--wf-muted);font-size:1.3rem;line-height:1;margin:.5rem auto}
+.tf-step{max-width:520px;margin:0 auto;padding:1rem 1.2rem;border:1px solid var(--wf-border);border-radius:10px;background:var(--wf-surface);box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.tf-name{display:block;margin:0 0 .45rem;font-size:.88rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.tf-cyan{color:var(--wf-cyan)}.tf-gold{color:var(--wf-gold)}.tf-accent{color:var(--wf-accent)}
+.tf-step p{margin:0;color:var(--wf-muted);font-size:.82rem;line-height:1.6}
+.tf-link{margin-top:.55rem;text-align:right}
+.tf-link a{color:var(--wf-cyan);font-size:.72rem;text-decoration:none}
+.tf-link a:hover{text-decoration:underline}
+.tf-loop{max-width:560px;margin:0 auto;padding:1rem;border:1px dashed rgba(6,182,212,.24);border-radius:12px;background:rgba(6,182,212,.05)}
+.tf-loop-label{margin:0 0 .7rem;text-align:center;color:var(--wf-accent);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase}
+.tf-loop .tf-step{max-width:500px}
+.tf-loopback{margin-top:.4rem;color:var(--wf-accent);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+.tf-state{max-width:520px;margin:.4rem auto .1rem;padding:.6rem .9rem;border-left:2px solid var(--wf-cyan);background:rgba(6,182,212,.04);border-radius:0 6px 6px 0;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.6;color:var(--wf-muted);overflow-x:auto}
+.tf-state strong{color:var(--wf-cyan);font-weight:600}
+.tf-state-gold{border-left-color:var(--wf-gold)}.tf-state-gold strong{color:var(--wf-gold)}
+.tf-state-accent{border-left-color:var(--wf-accent)}.tf-state-accent strong{color:var(--wf-accent)}
+.tf-tech{font-weight:400;font-size:.72rem;letter-spacing:.02em;text-transform:none;color:var(--wf-muted);opacity:.7}
+.tf-math{margin-top:.5rem;border:1px solid var(--wf-border);border-radius:8px;overflow:hidden}
+.tf-math summary{cursor:pointer;padding:.4rem .8rem;font-size:.7rem;color:var(--wf-gold);letter-spacing:.04em;background:rgba(240,192,64,.05);list-style:none;display:flex;align-items:center;gap:.4rem}
+.tf-math summary::-webkit-details-marker{display:none}
+.tf-math summary::before{content:'▸';font-size:.65rem;transition:transform .2s}
+.tf-math[open] summary::before{transform:rotate(90deg)}
+.tf-math .tf-math-body{padding:.5rem .8rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.7;color:var(--wf-muted);background:rgba(14,14,22,.5);border-top:1px solid var(--wf-border)}
+.tf-math .tf-math-body strong{color:var(--wf-gold)}
+.tf-compare{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.tf-card{border:1px solid var(--wf-border);border-radius:10px;background:var(--wf-surface);padding:1rem 1.1rem}
+.tf-card h3{margin:0 0 .45rem;color:#e2e8f0;font-size:.9rem}
+.tf-card p{margin:0;color:var(--wf-muted);font-size:.82rem;line-height:1.6}
+.tf-list{margin:.2rem 0 0 1rem;padding:0;color:var(--wf-muted);font-size:.82rem;line-height:1.6}
+.tf-list li{margin:.16rem 0}
+.wf-code{max-width:520px;margin:.55rem auto 0;padding:.85rem 1rem;border:1px solid var(--wf-border);border-radius:10px;background:rgba(14,14,22,.78);overflow:auto}
+.wf-code pre{margin:0;font-family:'JetBrains Mono',monospace;font-size:.74rem;line-height:1.55;color:#d7dee8;white-space:pre}
+.wf-code-wide{max-width:720px}
+@media(max-width:640px){.tf-compare{grid-template-columns:1fr}.tf-wrap{padding:0}.wf-code pre{font-size:.7rem}}
+</style>
+
+<div class="tf-wrap">
+  <div style="max-width:520px;margin:0 auto 2rem;text-align:center;">
+    <div class="tf-title">Chapter 17</div>
+    <h1 class="wf-section-hdr" style="font-size:clamp(1.6rem,3.5vw,2.4rem);">Implementation Reference</h1>
+    <p style="color:var(--wf-muted);font-size:.85rem;line-height:1.7;margin-top:.6rem;">The exact shapes, layouts, and gotchas that matter when you stop reading and start building.</p>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Weights / file format</div>
+    <div class="tf-step"><h3 class="tf-name tf-cyan">Model Loading <span class="tf-tech">[GGUF format]</span></h3><ul class="tf-list"><li>Find tensors by <strong>name</strong>, not file order: common patterns are <strong>attn_q</strong>, <strong>attn_k</strong>, <strong>attn_v</strong>, <strong>attn_output</strong>, <strong>ffn_gate</strong>, <strong>ffn_up</strong>, <strong>ffn_down</strong>.</li><li>Tensor shapes are stored in GGUF tensor info; read dimensions exactly as listed and keep row-major ordering intact.</li><li>All modern GGUF files are little-endian.</li><li>Tensor payloads are aligned to 32-byte boundaries; trust the recorded offset.</li><li>Core metadata such as <strong>d_model</strong>, <strong>n_layers</strong>, <strong>n_heads</strong>, and <strong>vocab_size</strong> lives in header KV pairs.</li></ul></div>
+    <div class="wf-code"><pre>┌─────────────────────────────────────┐
+│ Magic: "GGUF"                       │
+│ Version: 3                          │
+│ Metadata KV pairs (architecture,    │
+│   n_layers, n_heads, d_model, ...)  │
+│ Tensor info (name, shape, offset)   │
+│ ─────────────────────────────────── │
+│ Tensor data (aligned, contiguous)   │
+└─────────────────────────────────────┘</pre></div>
+    <div class="tf-state"><strong>time-saver:</strong> Parse metadata and tensor info first, then map tensors by name. Never hardcode offsets.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Text in / token IDs out</div>
+    <div class="tf-step"><h3 class="tf-name tf-gold">Tokenizer</h3><ul class="tf-list"><li>Byte fallback means unknown characters decompose into raw byte tokens instead of crashing the pipeline.</li><li>Handle <strong>BOS</strong> and <strong>EOS</strong> explicitly; some models require BOS on every prompt.</li><li>Special tokens cover padding, role markers, tool markers, or chat-template sentinels.</li><li>The merge table comes from GGUF metadata or a paired <strong>tokenizer.json</strong>.</li></ul></div>
+    <div class="wf-code"><pre>prompt text
+  ↓ normalize / template
+subwords from merge table
+  ↓ if unknown span appears
+byte fallback tokens 0x00..0xFF
+  ↓
+token IDs + special IDs (BOS / EOS / PAD / &lt;|system|&gt; ...)</pre></div>
+    <div class="tf-state tf-state-gold"><strong>time-saver:</strong> Most “broken tokenizer” bugs are really missing BOS/EOS rules or missing byte fallback.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Vocabulary table</div>
+    <div class="tf-step"><h3 class="tf-name tf-cyan">Embeddings</h3><ul class="tf-list"><li>Prefill should gather <strong>N</strong> token rows in one batch, not one token at a time.</li><li>Check whether embeddings are <strong>tied</strong> to <strong>lm_head</strong> or stored as a separate output matrix.</li></ul></div>
+    <div class="wf-code"><pre>token_ids [5]  →  E[128000 × 4096]  →  X[5 × 4096]
+                  (copy 5 rows)</pre></div>
+    <div class="tf-state"><strong>time-saver:</strong> Embedding lookup is a gather, not a matrix multiply.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Critical execution order</div>
+    <div class="tf-step"><h3 class="tf-name tf-accent">One Transformer Layer <span class="tf-tech">[the exact execution order]</span></h3><ul class="tf-list"><li>Pre-norm block: RMSNorm happens before attention and before the FFN.</li><li>RoPE is applied to <strong>Q</strong> and <strong>K</strong> only.</li><li>Residuals happen after attention output and after FFN output.</li></ul></div>
+    <div class="wf-code wf-code-wide"><pre>Input [batch × 4096]
+    ↓
+RMSNorm
+    ↓
+Q = x × W_Q    [4096 × 4096]
+K = x × W_K    [4096 × 1024]  (GQA: fewer K heads)
+V = x × W_V    [4096 × 1024]  (GQA: fewer V heads)
+    ↓
+Split Heads
+  Q: [batch × 32 heads × seq × 128]
+  K: [batch × 8 heads × seq × 128]
+  V: [batch × 8 heads × seq × 128]
+    ↓
+RoPE (applied to Q and K only)
+    ↓
+Attention (per head)
+    ↓
+Merge Heads (concatenate back)
+  [batch × seq × 4096]
+    ↓
+Wo = attn_out × W_O    [4096 × 4096]
+    ↓
++ Residual (add input back)
+    ↓
+RMSNorm
+    ↓
+Gate = x × W_gate   [4096 × 11008]
+Up   = x × W_up     [4096 × 11008]
+    ↓
+SiLU(Gate) × Up      (element-wise)
+    ↓
+Down = result × W_down  [11008 × 4096]
+    ↓
++ Residual (add input back)
+    ↓
+Output [batch × 4096]</pre></div>
+    <div class="tf-state tf-state-accent"><strong>time-saver:</strong> If outputs diverge, verify execution order before debugging math kernels.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Shape changes, not extra math</div>
+    <div class="tf-step"><h3 class="tf-name tf-gold">Attention <span class="tf-tech">[head reshaping]</span></h3><ul class="tf-list"><li><strong>Reshape:</strong> reinterpret flat <strong>[4096]</strong> as <strong>[32 × 128]</strong> for Q.</li><li><strong>Transpose:</strong> rearrange to <strong>[heads, sequence, head_dim]</strong> before dot products.</li><li><strong>Concat:</strong> join all head outputs back into one <strong>[4096]</strong> vector.</li></ul></div>
+    <div class="wf-code"><pre>4096 hidden dimension
+    ↓
+32 Q heads × 128 dims/head = 4096  ✓
+ 8 K heads × 128 dims/head = 1024  (GQA)
+ 8 V heads × 128 dims/head = 1024  (GQA)</pre></div>
+    <div class="tf-state tf-state-gold"><strong>critical insight:</strong> These are not multiplications. They're just changing how you interpret the same block of memory.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">The memory bill</div>
+    <div class="tf-step"><h3 class="tf-name tf-cyan">KV Cache <span class="tf-tech">[the exact memory layout]</span></h3><ul class="tf-list"><li>Store keys and values per <strong>layer</strong>, <strong>KV head</strong>, <strong>position</strong>, and <strong>dimension</strong>.</li><li>Allocate for <strong>max_seq</strong> up front or page it explicitly.</li><li>Decode appends one position per token; old positions stay live until eviction or teardown.</li></ul></div>
+    <div class="wf-code wf-code-wide"><pre>cache[layer][head][position][dimension]
+
+Example for Llama-7B:
+  32 layers × 8 KV heads × max_seq × 128 floats
+
+At position 5 with 2048 max context:
+  Total cache per sequence:
+    32 × 8 × 2048 × 128 × 2 (K+V) × 2 bytes (FP16)
+  = 256 MB
+  ≈ 2 GB at batch size 8</pre></div>
+    <div class="tf-state"><strong>critical insight:</strong> The KV cache is why long conversations use more memory. Every token you've ever generated stays cached until the conversation ends or you evict it.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Decode is not prefill</div>
+    <div class="tf-step"><h3 class="tf-name tf-accent">Decode <span class="tf-tech">[the one thing that saves weeks of confusion]</span></h3><ul class="tf-list"><li>For token <strong>N+1</strong>, recompute <strong>Q</strong> for the new token only.</li><li>Read historical <strong>K</strong> and <strong>V</strong> from cache for all previous positions.</li><li>Attention work is now “one query row against the whole cached history.”</li></ul></div>
+    <div class="wf-code wf-code-wide"><pre>During decode (generating token N+1):
+
+  Only Q is recomputed for the new token.
+  K and V come from cache.
+
+That's it. That's why decode is fast per-token
+but slow in wall-clock: you're only computing
+one row of Q, but reading ALL cached K and V
+for the attention comparison.
+
+New token → Q_new [1 × 32 × 128]
+Cache     → K_all [32 × 8 × (N) × 128]   (all previous)
+Cache     → V_all [32 × 8 × (N) × 128]   (all previous)
+
+Attention: score Q_new against all K_all
+           blend V_all by those scores
+           → one new output row</pre></div>
+    <div class="tf-state tf-state-accent"><strong>time-saver:</strong> Decode latency is dominated by reading the cache and weights, not by recomputing the whole prompt.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Vocabulary projection</div>
+    <div class="tf-step"><h3 class="tf-name tf-gold">lm_head <span class="tf-tech">[vocabulary scoring]</span></h3><ul class="tf-list"><li>Use the final hidden state row only.</li><li>Conceptually it is one dot product per vocabulary row.</li><li>In practice this is a GEMV or small GEMM, but the loop mental model is correct.</li></ul></div>
+    <div class="wf-code"><pre>for each token_id in 0..131071:
+    score[token_id] = dot(hidden_state, vocab_row[token_id])
+
+That's literally it.
+131,072 dot products of length 4,096.
+The highest score wins.</pre></div>
+    <div class="tf-state tf-state-gold"><strong>time-saver:</strong> Think “scan the dictionary” first; optimise to GEMV after the reference path works.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">From logits to one token</div>
+    <div class="tf-step"><h3 class="tf-name tf-cyan">Sampling</h3><ul class="tf-list"><li>Mask banned or structurally illegal tokens before softmax.</li><li>Temperature, top-k, and top-p all operate on the candidate set before the final pick.</li><li>Greedy decode is just “skip randomness and take argmax.”</li></ul></div>
+    <div class="wf-code"><pre>1. logits       — the raw scores from lm_head (131,072 numbers)
+2. masking      — set banned tokens to -infinity
+3. ÷ temperature — divide scores to sharpen or flatten
+4. top-k        — keep only the K highest, zero the rest
+5. softmax      — convert to probabilities (0–1, sum to 1)
+6. top-p        — keep tokens until cumulative prob ≥ p
+7. sample       — pick one randomly, weighted by probability
+   (or greedy: just take the highest)</pre></div>
+    <div class="tf-state"><strong>time-saver:</strong> Probabilities do not exist until softmax. Everything before that is logit surgery.</div>
+  </div>
+
+  <div class="tf-sec">
+    <div class="tf-title">Whole engine lifecycle</div>
+    <div class="tf-step"><h3 class="tf-name tf-accent">Runtime <span class="tf-tech">[the complete lifecycle]</span></h3><ul class="tf-list"><li><strong>load</strong> owns weights and tokenizer state.</li><li><strong>prefill</strong> fills the KV cache for the entire prompt.</li><li><strong>decode</strong> loops token-by-token until a stop condition triggers teardown.</li></ul></div>
+    <div class="wf-code"><pre>load     — read GGUF, allocate weight memory, parse tokenizer
+prefill  — forward pass on all prompt tokens, fill KV cache
+decode   — loop: forward 1 token, score vocab, sample, emit
+stream   — send each token to the client as it's produced
+stop     — EOS token, max_tokens, or stop sequence hit
+destroy  — free KV cache, free weight memory, close connection</pre></div>
+    <div class="tf-state tf-state-accent"><strong>time-saver:</strong> Treat load, prefill, and decode as separate phases in code and profiling; they bottleneck for different reasons.</div>
+  </div>
+
+  <div style="max-width:520px;margin:2rem auto 0;display:flex;justify-content:space-between;align-items:center;padding-top:1rem;border-top:1px solid var(--wf-border);">
+    <a href="/transformers/ch16" style="color:var(--wf-muted);font-size:.78rem;text-decoration:none;">← Ch16: Build the Provider</a>
+    <a href="/transformers" style="color:var(--wf-muted);font-size:.78rem;text-decoration:none;">chapter index</a>
+    <a href="/transformers/glossary" style="color:var(--wf-cyan);font-size:.78rem;text-decoration:none;">Glossary →</a>
+  </div>
+</div>
