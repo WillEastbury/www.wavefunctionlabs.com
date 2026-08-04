@@ -843,6 +843,26 @@ static void build_304_variant(arena_t* arena, resource_compress_t* rc,
 /* Build phase                                                    */
 /* ============================================================== */
 
+static size_t count_site_alias_candidates(const char* wwwroot) {
+    char aliases_path[4096];
+    int n = snprintf(aliases_path, sizeof(aliases_path), "%s/_aliases", wwwroot);
+    if (n <= 0 || (size_t)n >= sizeof(aliases_path)) return 0;
+
+    FILE* af = fopen(aliases_path, "r");
+    if (!af) return 0;
+
+    size_t count = 0;
+    char line[1024];
+    while (fgets(line, sizeof(line), af)) {
+        char* p = line;
+        while (*p == ' ' || *p == '\t') p++;
+        if (*p == '\0' || *p == '\r' || *p == '\n' || *p == '#') continue;
+        if (strchr(p, '=') != NULL) count++;
+    }
+    fclose(af);
+    return count;
+}
+
 __attribute__((cold))
 bool jumptable_build(jumptable_t* jt, const char* wwwroot) {
     memset(jt, 0, sizeof(*jt));
@@ -870,6 +890,19 @@ bool jumptable_build(jumptable_t* jt, const char* wwwroot) {
     /* Plus 2 special endpoints (/health, /stats) per host. */
     size_t metric_entries = total_hosts * 2;
     total_entries += metric_entries;
+    /* Every site alias duplicates all entries for one target host. We use
+     * the whole pre-alias table as a safe upper bound per candidate so both
+     * the flat table and arena remain correctly sized with multiple hosts. */
+    size_t site_aliases = count_site_alias_candidates(wwwroot);
+    if (site_aliases > 0) {
+        if (site_aliases == SIZE_MAX ||
+            total_entries > SIZE_MAX / (site_aliases + 1)) {
+            metal_log("error: too many site aliases for table sizing");
+            build_free(hosts);
+            return false;
+        }
+        total_entries *= site_aliases + 1;
+    }
     /* Slot count → flat table size. Load factor ~0.5 means cap = 2x.
      * Each slot is 40B; 4x oversize is still trivial for typical sites. */
     size_t slot_count = metal_next_pow2(total_entries * 2 + 1);
@@ -916,9 +949,10 @@ bool jumptable_build(jumptable_t* jt, const char* wwwroot) {
         return false;
     }
     metal_log("picoweb: arena %zu B for %zu host(s) / %zu dir(s) / "
-              "%zu file(s) (+%zu aliases) / %zu body B / %zu slots",
+              "%zu file(s) (+%zu index aliases, %zu host aliases) / "
+              "%zu body B / %zu slots",
               arena_cap, total_hosts, total_dirs, total_files,
-              total_aliases, total_bytes, slot_count);
+              total_aliases, site_aliases, total_bytes, slot_count);
 
     flat_init(jt, total_entries);
 
@@ -1200,18 +1234,19 @@ bool jumptable_build(jumptable_t* jt, const char* wwwroot) {
                     /* Strip newline. */
                     size_t ll = strlen(line);
                     while (ll > 0 && (line[ll-1] == '\n' || line[ll-1] == '\r')) line[--ll] = '\0';
-                    if (ll == 0 || line[0] == '#') continue;
+                    char* content = line;
+                    while (*content == ' ' || *content == '\t') content++;
+                    if (*content == '\0' || *content == '#') continue;
 
                     /* Parse "alias = target" */
-                    char* eq = strchr(line, '=');
+                    char* eq = strchr(content, '=');
                     if (!eq) {
-                        metal_log("warn: _aliases: bad line (no '='): %s", line);
+                        metal_log("warn: _aliases: bad line (no '='): %s", content);
                         continue;
                     }
                     *eq = '\0';
                     /* Trim whitespace from alias (left side) */
-                    char* alias = line;
-                    while (*alias == ' ' || *alias == '\t') alias++;
+                    char* alias = content;
                     char* ae = eq - 1;
                     while (ae > alias && (*ae == ' ' || *ae == '\t')) *ae-- = '\0';
                     /* Trim whitespace from target (right side) */

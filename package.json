@@ -4,6 +4,7 @@
   "private": true,
   "description": "WaveFunctionLabs static site smoke tests",
   "scripts": {
+    "validate:content-v2": "node scripts/validate-content-v2.mjs",
     "smoke:playwright": "playwright test"
   },
   "devDependencies": {
