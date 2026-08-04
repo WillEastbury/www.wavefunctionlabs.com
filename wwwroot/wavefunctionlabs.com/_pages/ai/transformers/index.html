@@ -1,6 +1,6 @@
 <div class="wf-section">
 <a class="wf-back" href="/ai">← how ai works</a>
-        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 1 OF 7</div>
+        <div style="font-size:.75rem;color:var(--wf-cyan);letter-spacing:.06em;margin-bottom:.4rem;">PART 1 OF 9</div>
         <h1 class="wf-section-hdr">The Transformer</h1>
         <p class="wf-section-desc">GPT, Claude, Gemini, LLaMA — all built on this.</p>
 
@@ -99,6 +99,13 @@
 
             <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Softmax is the collapse mechanism. It takes a field of raw relevance scores and forces a decision: which tokens matter right now? The sharper the scores, the more decisive the collapse.</p>
 
+            <div style="margin:1.5rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-left:3px solid var(--wf-gold);border-radius:6px;background:rgba(20,16,8,.35);">
+                <p style="color:var(--wf-gold);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .7rem;">Breakout — "Deterministic" Doesn't Mean Reproducible</p>
+                <p data-plain="Even if the model always picks the single highest-scoring word, two runs can still give different answers, because the underlying number-crunching hardware doesn't always add things up in the exact same order." data-psi="Even a fully collapsed choice depends on the substrate that computed it. Two identical fields, run through different hardware, can settle into different states." data-duck="Even if every duck agrees on the loudest quack, two different ponds — or the same pond on a different day — might hear the ripples arrive in a slightly different order and pick a different winner." style="color:#cbd5e1;font-size:.85rem;line-height:1.9;margin:0 0 .8rem;">Set temperature to 0 and always take the highest-probability token (greedy decoding) and the <em>maths</em> is deterministic — same input should give the same logits every time. In practice it often doesn't. GPUs sum millions of floating-point products across thousands of parallel threads, and floating-point addition isn't associative: <strong style="color:var(--wf-gold);">(a + b) + c ≠ a + (b + c)</strong>. The order those threads finish in depends on low-level scheduling that isn't fully fixed.</p>
+                <p style="color:#cbd5e1;font-size:.85rem;line-height:1.9;margin:0 0 .8rem;">And that order can shift for reasons far below "changed the prompt": a GPU <strong>firmware/VBIOS update</strong>, a new <strong>driver or CUDA/cuDNN release</strong>, a different thermal or power state changing which streaming multiprocessor finishes first, or simply routing the same request to a different card in the same data-centre fleet. None of that touches the model weights — but it can flip a near-tied logit (23.1% vs 22.9%), and in an autoregressive model that single flipped token changes every token after it.</p>
+                <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin:0;">Bit-for-bit reproducibility isn't a property of the model — it's a property of the entire stack: same weights, same precision, same kernels, same GPU model, same driver, same firmware. Change any layer of that stack and "deterministic" only means "deterministic given hardware we don't fully control." See <a href="/ai/determinism-seeds" style="color:var(--wf-cyan);">Part 5: Determinism, Seeds &amp; Sampling</a> for the full breakdown of intentional vs. accidental randomness.</p>
+            </div>
+
             <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Putting It Together: One Step of Attention</h3>
             <p>Here's the full flow for one token, in plain operations:</p>
 
@@ -154,7 +161,7 @@
 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
                 <span></span>
                 <a href="/ai" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
-                <a href="/ai/diffusion" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 2: Diffusion Models →</a>
+                <a href="/ai/attention-tokenisation" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 2: Attention Variants, LM Heads &amp; Tokenisation →</a>
             </div>
         </div>
 </div>

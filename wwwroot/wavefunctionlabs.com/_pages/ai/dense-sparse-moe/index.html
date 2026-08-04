@@ -1,0 +1,90 @@
+<div class="wf-section">
+<a class="wf-back" href="/ai">← how ai works</a>
+        <div style="font-size:.75rem;color:var(--wf-gold);letter-spacing:.06em;margin-bottom:.4rem;">PART 3 OF 9</div>
+        <h1 class="wf-section-hdr">Dense vs. Sparse vs. Mixture-of-Experts</h1>
+        <p class="wf-section-desc">Same Transformer skeleton, three very different answers to "which parameters run?"</p>
+
+        <div class="wf-article-body">
+            <p data-plain="So far every model described used all of its parameters for every single token. That's the 'dense' default. Some models instead only wake up a small fraction of their parameters per token — those are sparse, and the most common version of that idea is called Mixture-of-Experts." data-psi="Density is a question of how much of the field participates in every collapse. A dense model integrates its whole parameter space per token; a sparse one lets most of it stay dormant, activating only the region a router selects." data-duck="So far every duck in the pond has had to paddle for every single quack. A dense pond works that way. Some ponds instead only wake up a handful of ducks per quack and let the rest keep sleeping — that's Mixture-of-Experts.">Every model discussed in Parts 1–2 was implicitly <strong style="color:var(--wf-cyan);">dense</strong>: every parameter — every attention weight, every FFN weight — participates in every forward pass, for every token. That's the default, and it's simple to reason about. It's not the only option. <strong style="color:var(--wf-gold);">Mixture-of-Experts (MoE)</strong> models replace the single FFN in each Transformer block with many FFNs ("experts") and a small router that picks a handful to run per token — everything else in that layer sits idle.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Dense: The Default</h3>
+            <p data-plain="A dense model has one feed-forward network per layer, and every token passes through the whole thing every time.">Recap from Part 1: each Transformer block has one feed-forward network (FFN), and every token's hidden vector passes through the entire thing:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-cyan);font-size:.88rem;line-height:2;margin:0;">
+                    FFN(x) = W<sub>2</sub> · GeLU(W<sub>1</sub> · x + b<sub>1</sub>) + b<sub>2</sub> &nbsp;&nbsp;<span style="color:var(--wf-muted);">// one FFN, every token, every layer</span>
+                </p>
+            </div>
+
+            <p>Total parameters = active parameters. Every weight you pay to store, you also pay to compute against, for every token. Model size and inference compute cost are locked together — the only way to add capacity is to make the whole thing bigger, and every token pays for it.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Sparse: Not All Weights Have To Fire</h3>
+            <p data-plain="'Sparse' just means: most of the model's parameters (or most of a calculation) don't get used for a given input. There's more than one way to do that." data-psi="Sparsity is any structural refusal to let the whole field interact at once — some connections, some weights, or some subnetworks are simply excluded from a given collapse." data-duck="'Sparse' just means most of the pond doesn't bother paddling for a given quack — whether that's most of the ripples being ignored, most of the ducks being asleep, or most of the pond's history being irrelevant.">"Sparse" is an overloaded word worth disambiguating — Part 2 already introduced one form of it:</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+                <strong style="color:var(--wf-gold);">Sparse attention</strong> — covered in Part 2. Each token only attends to a subset of other tokens (a window, a fixed pattern), not the whole sequence. Reduces the O(n²) cost of the attention <em>calculation</em>. All weights still exist and still run.<br>
+                <strong style="color:var(--wf-gold);">Sparse weights (pruning)</strong> — a trained dense model has some fraction of its individual weights zeroed out post-hoc (or during training) because they contribute little. Same architecture, fewer non-zero numbers to store or multiply.<br>
+                <strong style="color:var(--wf-gold);">Sparse activation (conditional computation)</strong> — entire <em>subnetworks</em> are skipped for a given token, decided dynamically per input rather than fixed in advance. This is what Mixture-of-Experts does, and it's the focus of the rest of this page.
+            </p>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Sparse attention shrinks the cost of looking at context. Sparse activation shrinks the cost of processing what you found. MoE is squarely the second kind.</p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Mixture-of-Experts: Many FFNs, Few Awake</h3>
+            <p data-plain="MoE replaces the single feed-forward network in a layer with several separate ones ('experts'). For each token, a small router decides which one or two experts should handle it — the rest don't run at all for that token." data-psi="An MoE layer partitions the FFN's parameter space into distinct experts and installs a router that projects each token onto the subset of that space it should interact with — collapse over which region of parameters gets to respond." data-duck="Instead of one big FFN duck answering every quack, MoE keeps a whole panel of specialist ducks on the bench. A tiny referee duck listens to each quack and points it at just one or two specialists — the rest of the panel stays quiet.">An MoE layer swaps the single FFN for N separate expert FFNs (E<sub>1</sub> … E<sub>N</sub>) plus a small <strong style="color:var(--wf-accent);">router</strong> network. For each token, the router scores every expert, and only the top-k highest-scoring experts actually run:</p>
+
+            <div style="margin:1.2rem 0;padding:1.2rem 1.5rem;border:1px solid var(--wf-border);border-radius:6px;background:rgba(14,14,22,.6);font-family:'JetBrains Mono',monospace;">
+                <p style="color:var(--wf-accent);font-size:.88rem;line-height:2;margin:0;">
+                    G(x) = softmax(x · W<sub>router</sub>) &nbsp;&nbsp;<span style="color:var(--wf-muted);">// score every expert</span><br>
+                    MoE(x) = Σ<sub>i ∈ TopK(G(x))</sub> G(x)<sub>i</sub> · E<sub>i</sub>(x) &nbsp;&nbsp;<span style="color:var(--wf-muted);">// only run the top-k, weight by router score</span>
+                </p>
+            </div>
+
+            <p>Mixtral 8×7B, for example, has 8 experts per layer and routes each token to the top 2. Its total parameter count is roughly 47B, but only about 13B are actually multiplied against for any given token — the other 6 experts per layer simply don't run.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Total parameters</strong><br>
+                    Everything stored on disk / in memory: every expert, every layer. This is your storage and VRAM bill — <em>all</em> experts must be loaded even though most sit idle on any given token.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">Active parameters</strong><br>
+                    What actually gets multiplied for a given token: router weights + the top-k experts it picked. This is your FLOPs bill — the thing that determines inference latency and training compute cost.</p>
+                </div>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;margin-top:.8rem;">MoE's whole pitch: decouple "how much the model knows" (total parameters) from "how much compute it costs to answer" (active parameters). A dense model can't do that — for it, those two numbers are always the same.</p>
+
+            <h3 style="color:var(--wf-gold);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">The Routing Problem</h3>
+            <p data-plain="Deciding which expert should handle each token is harder than it sounds. Left alone, the router tends to send almost everything to a few favourite experts, and the rest barely get trained at all." data-psi="Routing is itself a learned collapse, and like any undamped selection process it tends toward collapse onto a small attractor unless deliberately regularised toward wider coverage.">The router is itself a small learned network, trained jointly with everything else — and left unconstrained, it tends to collapse: a few experts get routed most tokens and become very well-trained, while the rest are rarely selected and stay undertrained, making the router even less likely to pick them next time.</p>
+
+            <p style="color:#cbd5e1;font-size:.85rem;padding-left:1rem;border-left:2px solid var(--wf-gold);line-height:2.2;">
+                <strong style="color:var(--wf-gold);">Load-balancing loss</strong> — an auxiliary training loss that explicitly penalises uneven routing, pushing the router toward spreading tokens more evenly across experts. Used by Switch Transformer, GShard, and most production MoEs.<br>
+                <strong style="color:var(--wf-gold);">Expert capacity limits</strong> — each expert is only allowed to accept a fixed number of tokens per batch; tokens that overflow a full expert get dropped (skip that layer) or rerouted. Bounds worst-case compute and memory per expert.<br>
+                <strong style="color:var(--wf-gold);">Noisy routing</strong> — adding noise to router logits during training encourages exploration, so promising but currently underused experts still get a chance to receive tokens and improve.
+            </p>
+
+            <h3 style="color:var(--wf-accent);font-size:.92rem;margin-top:2.5rem;margin-bottom:.8rem;">Why Bother? And What Does It Cost?</h3>
+            <p data-plain="MoE lets a model store far more knowledge without a proportional increase in the compute needed to answer a question — but it comes with real engineering costs elsewhere.">The appeal is real: for a fixed compute (FLOPs) budget, an MoE model can have dramatically more total parameters — and therefore capacity to memorise facts, cover more languages, specialise across domains — than a dense model of the same inference cost. That's why frontier-scale models increasingly lean sparse.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.2rem 0;">
+                <div style="border-left:2px solid var(--wf-cyan);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-cyan);">Dense — pros</strong><br>
+                    Simple to train, simple to serve, predictable latency, no routing instability, no load-balancing tricks needed. Every FLOP you provision gets used on every token.</p>
+                </div>
+                <div style="border-left:2px solid var(--wf-gold);padding-left:1.2rem;">
+                    <p style="color:#cbd5e1;font-size:.82rem;line-height:1.8;font-weight:300;"><strong style="color:var(--wf-gold);">MoE — costs</strong><br>
+                    All experts must be resident in memory even though few run per token, so VRAM requirements track <em>total</em> params, not active ones. Distributed serving needs expert parallelism (tokens get shuffled across devices to reach their chosen experts — real network overhead). Training is fussier: router collapse, load imbalance, harder reproducibility.</p>
+                </div>
+            </div>
+
+            <p style="color:var(--wf-muted);font-size:.82rem;font-style:italic;">Dense trades flexibility for simplicity: one predictable cost, no routing to get wrong. MoE trades simplicity for a decoupled cost curve: more knowledge per FLOP spent answering, at the price of needing every expert in memory and a routing layer that has to be trained carefully, not just scaled up.</p>
+
+            <p data-plain="Whichever kind of model you're looking at, attention and softmax still work exactly as described in Parts 1 and 2 — MoE only changes what happens in the feed-forward step in between." style="color:var(--wf-gold);font-weight:400;margin-top:1rem;">Note what doesn't change: attention still works exactly as in Part 1, and the lm_head/tokenisation choices from Part 2 are entirely independent of this decision. Dense vs. MoE is purely a statement about the feed-forward step — everything else in the Transformer skeleton stays the same.</p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--wf-border);">
+                <a href="/ai/attention-tokenisation" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">← Part 2: Attention Variants, LM Heads &amp; Tokenisation</a>
+                <a href="/ai" style="color:var(--wf-muted);cursor:pointer;font-size:.78rem;text-decoration:none;">series index</a>
+                <a href="/ai/diffusion" style="color:var(--wf-cyan);cursor:pointer;font-size:.85rem;text-decoration:none;">Part 4: Diffusion Models →</a>
+            </div>
+        </div>
+</div>

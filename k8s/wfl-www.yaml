@@ -7,13 +7,8 @@ metadata:
     app: wfl-www
     env: prod
 spec:
-  # Single pod, two pinned worker threads, pinned to the dedicated
-  # server node (vmss000005). The nodepool has a hard 2-node cost
-  # limit: vmss000004 hosts load tests plus the low-traffic co-tenants,
-  # vmss000005 hosts picoweb. A 2-pod Azure-LB round-robin layout would
-  # need both pods on clean server nodes, which would require a third
-  # node for the rest of the cluster. Until then, one pod +
-  # SO_REUSEPORT inside the kernel does the cross-core distribution.
+  # Single pod, two worker threads. The nodepool has a hard 2-node cost
+  # limit, so the pod is intentionally schedulable on any available node.
   replicas: 1
   strategy:
     # Single-writer picowal storage: only one process may own
@@ -30,18 +25,6 @@ spec:
         app: wfl-www
         env: prod
     spec:
-      # Dedicated server node: vmss000005 carries the hard taint
-      # `dedicated=server:NoSchedule` and the label `role=server`.
-      # Only picoweb tolerates that taint, and nodeSelector pins it to
-      # that node. The rest of the low-traffic apps have tiny CPU
-      # requests and bin-pack onto vmss000004 with the load-test pod.
-      tolerations:
-        - key: dedicated
-          operator: Equal
-          value: server
-          effect: NoSchedule
-      nodeSelector:
-        role: server
       # Hardening: non-root + read-only rootfs + minimal caps. picoweb
       # binds :443 directly so it needs CAP_NET_BIND_SERVICE, and pins
       # its preallocated pool/arena/metrics via mlock so it needs
@@ -57,7 +40,7 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: wfl-www
-          image: tileforgeacr.azurecr.io/wfl-www:p47-playwright-smoke-1350
+          image: tileforgeacr.azurecr.io/wfl-www:ai-series-9parts-20260722213254
           imagePullPolicy: IfNotPresent
           env:
             - name: PICOWEB_SHUTDOWN_LAMEDUCK_MS
@@ -79,14 +62,9 @@ spec:
           # Override the image entrypoint so the tuning knobs live in
           # git instead of drifting on the cluster.
           # Positional CLI: port wwwroot workers max_reqs zc_min pool_cap
-          #   workers=2     — one per vCPU on the dedicated server node.
-          #                   With nothing else competing for cores
-          #                   (taint+nodeSelector keep co-tenants off
-          #                   this node), each worker gets its own
-          #                   SO_REUSEPORT accept queue and the kernel
-          #                   hashes connections across both. Removes
-          #                   the single-accept-loop head-of-line stall
-          #                   that capped the colocated config at 42k.
+          #   workers=2     — one per vCPU on a B2pls node. Each worker
+          #                   gets its own SO_REUSEPORT accept queue and
+          #                   the kernel hashes connections across both.
           #   max_reqs=100  — per-connection request cap before close
           #                   (mild defence vs ticket-store growth).
           #   zc_min=0      — MSG_ZEROCOPY off; bodies fit in L2 so the
@@ -101,7 +79,6 @@ spec:
             - "--tls"
             - "--tls-cert=/certs/tls.crt"
             - "--tls-key=/certs/tls.key"
-            - "--http-early-hints"
             - "--picowal-device=/data/picowal.wal"
             - "--picowal-prefix=/wal/"
             - "--picowal-bytes=10485760"
@@ -260,8 +237,6 @@ metadata:
   name: wfl-www
   namespace: wfl-www
 spec:
-  type: LoadBalancer
-  externalTrafficPolicy: Local
   selector:
     app: wfl-www
   ports:
@@ -274,11 +249,48 @@ spec:
       targetPort: 8080
       protocol: TCP
 ---
+# nginx terminates public TLS for the shared cluster ingress and proxies to
+# picoweb over HTTPS inside the cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wfl-www-shared
+  namespace: wfl-www
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - wavefunctionlabs.com
+        - www.wavefunctionlabs.com
+      secretName: wfl-www-tls
+  rules:
+    - host: wavefunctionlabs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wfl-www
+                port:
+                  number: 443
+    - host: www.wavefunctionlabs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wfl-www
+                port:
+                  number: 443
+---
 # cert-manager renews the wfl-www-tls secret via DNS-01 (azureDNS).
-# Switched from letsencrypt-prod (HTTP-01) because DNS now points at
-# picoweb's LB IP, not at the nginx ingress controller, so HTTP-01
-# challenges can no longer be served. DNS-01 issuer is provisioned
-# out-of-band — see k8s/wfl-www-staging.yaml for details.
+# DNS-01 issuer is provisioned out-of-band — see
+# k8s/wfl-www-staging.yaml for details.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
