@@ -5,18 +5,15 @@
 These are non-negotiable design rules. Do not violate them silently to keep
 the site up; if they conflict with reality, stop and ask the user.
 
-1. **picoweb owns :443 inline.** The production listener is picoweb itself,
-   serving TLS in-process via a byte-driven TLS engine over a kernel TCP
-   socket. The connection is a single hop from `accept()` through the HTTP
-   response — no reverse proxy, no TLS terminator, no service mesh sidecar
-   in front. "Fewest hops possible" is the explicit product requirement.
+1. **nginx ingress is the approved shared-IP router.** Public `:443` terminates
+   at the cluster nginx ingress so multiple sites can share one Azure public
+   IP. The ingress proxies to picoweb over HTTPS on the internal ClusterIP
+   service. This is a hosting constraint, not a replacement for picoweb.
 
-2. **Never swap picoweb out for an nginx (or other) TLS terminator without
-   explicit user approval — even temporarily, even to keep the site up.**
-   If picoweb is failing, the correct response is to diagnose and fix
-   picoweb (or roll the picoweb image back to a known-good tag). Putting
-   an nginx terminator in front silently changes the product architecture
-   and hides the bug. Past sessions have done this and it was wrong.
+2. **picoweb remains the application server and HTTPS backend.** If picoweb is
+   failing, diagnose and fix picoweb or roll back to a known-good image. Do not
+   replace it with nginx static serving, another application server, or an
+   additional proxy layer to hide the failure.
 
 3. **AF_PACKET, AF_XDP, io_uring zero-copy, DPDK, etc. are *optional*
    optimisations layered on top of the kernel-socket baseline.** They
@@ -27,8 +24,9 @@ the site up; if they conflict with reality, stop and ask the user.
    SYN-ACKs (documented failure mode).
 
 4. **TLS certs come from the `wfl-www-tls` Kubernetes secret** (managed by
-   cert-manager with the `letsencrypt-prod` ClusterIssuer) and are
-   mounted into the picoweb pod at `/certs/tls.crt` and `/certs/tls.key`.
+   cert-manager with the `letsencrypt-prod-dns01` ClusterIssuer). The same
+   Secret is used by nginx for public TLS and mounted into picoweb at
+   `/certs/tls.crt` and `/certs/tls.key` for the HTTPS backend hop.
 
 ## Architecture
 
