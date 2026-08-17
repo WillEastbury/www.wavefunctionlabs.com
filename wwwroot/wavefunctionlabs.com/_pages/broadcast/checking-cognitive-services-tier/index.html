@@ -1,0 +1,36 @@
+<div class="wf-section">
+        <a class="wf-back" href="/broadcast">← back to broadcast</a>
+        <h1 class="wf-section-hdr">Checking Your Azure Cognitive Services Tier</h1>
+        <p class="wf-section-desc">A small Azure CLI check for a useful subscription detail.</p>
+
+        <div class="wf-article-body">
+            <p class="wf-insight">The portal is useful. The command line is repeatable.</p>
+            <p>Azure Cognitive Services subscriptions have quota tiers that affect available capacity and upgrade eligibility. The current tier can be read directly from Azure Resource Manager without navigating the portal or exposing an API key.</p>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">The script</h3>
+            <pre style="overflow:auto;background:var(--wf-surface);border:1px solid var(--wf-border);border-radius:6px;padding:1rem;color:#e2e8f0;font-size:.8rem;line-height:1.6;"><code>#!/usr/bin/env bash
+set -euo pipefail
+
+API_VERSION="2025-10-01-preview"
+SUBSCRIPTION_ID="${1:-$(az account show --query id -o tsv)}"
+
+URL="https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/providers/Microsoft.CognitiveServices/quotaTiers?api-version=${API_VERSION}"
+
+az rest --method get --url "$URL" \
+  --query "value[].properties.currentTierName" \
+  --output tsv</code></pre>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">Run it</h3>
+            <p>Authenticate with Azure CLI, then run the script without arguments to use the active subscription:</p>
+            <pre style="overflow:auto;background:var(--wf-surface);border:1px solid var(--wf-border);border-radius:6px;padding:1rem;color:#e2e8f0;font-size:.8rem;line-height:1.6;"><code>az login
+./cog-tier.sh</code></pre>
+            <p>To query another subscription, pass its ID explicitly:</p>
+            <pre style="overflow:auto;background:var(--wf-surface);border:1px solid var(--wf-border);border-radius:6px;padding:1rem;color:#e2e8f0;font-size:.8rem;line-height:1.6;"><code>./cog-tier.sh &lt;subscription-id&gt;</code></pre>
+
+            <h3 style="color:var(--wf-cyan);font-size:.92rem;margin-top:2rem;margin-bottom:.8rem;">What it returns</h3>
+            <p>The query selects <code>properties.currentTierName</code>, so the output is the actual subscription tier rather than the resource name:</p>
+            <pre style="overflow:auto;background:var(--wf-surface);border:1px solid var(--wf-border);border-radius:6px;padding:1rem;color:#e2e8f0;font-size:.8rem;line-height:1.6;"><code>Tier 1</code></pre>
+
+            <p style="color:var(--wf-muted);font-size:.85rem;font-style:italic;margin-top:2rem;border-top:1px solid var(--wf-border);padding-top:1.2rem;">This uses the Azure Resource Manager <code>quotaTiers</code> endpoint with a preview API version. Review the API version before building long-lived production automation.</p>
+        </div>
+    </div>
