@@ -65,7 +65,9 @@ static uint64_t key_hash(const char* host, size_t host_len,
 }
 
 static void flat_init(jumptable_t* jt, size_t expected_entries) {
-    size_t need = expected_entries * 2 + 1;
+    /* Host aliases can duplicate most resources; leave room for their
+     * expanded key set and keep linear probing away from saturation. */
+    size_t need = expected_entries * 4 + 1;
     size_t cap = metal_next_pow2(need);
     if (cap < 16) cap = 16;
     jt->slots = (flat_slot_t*)arena_alloc(&jt->arena,
@@ -870,9 +872,9 @@ bool jumptable_build(jumptable_t* jt, const char* wwwroot) {
     /* Plus 2 special endpoints (/health, /stats) per host. */
     size_t metric_entries = total_hosts * 2;
     total_entries += metric_entries;
-    /* Slot count → flat table size. Load factor ~0.5 means cap = 2x.
-     * Each slot is 40B; 4x oversize is still trivial for typical sites. */
-    size_t slot_count = metal_next_pow2(total_entries * 2 + 1);
+    /* Slot count → flat table size. Host aliases can expand the inserted key
+     * set beyond the scanned file and alias counts; 4x leaves probe headroom. */
+    size_t slot_count = metal_next_pow2(total_entries * 4 + 1);
     if (slot_count < 16) slot_count = 16;
 
     /* Estimate arena: file bytes + ~768B per resource (head x2 + struct
